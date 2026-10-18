@@ -1,0 +1,595 @@
+{
+  "description": "Streaming time per cell over DRAM-resident records (roofline.py). 'null' reads all inputs and updates all outputs without arithmetic: the per-core DRAM bound. 'hot' repeats one L1-resident record.",
+  "baseline_commit": "a71e283098f9f7f35e932f43021df7c708b81f9a",
+  "variants": {
+    "head": "baseline commit",
+    "new": "local component blocks, symmetric block reuse and point-major evaluation"
+  },
+  "cpu": "Intel Xeon w7-3445, one pinned core",
+  "compilers": {
+    "gcc-16": "gcc-16 (Ubuntu 16-20260322-1ubuntu1) 16.0.1 20260322 (experimental) [trunk r16-8246-g569ace1fa50]",
+    "clang-22": "Ubuntu clang version 22.1.2 (1ubuntu1)"
+  },
+  "flags": "-O3 -march=native -ffp-contract=fast -ffast-math",
+  "allocation_bytes": 1073741824,
+  "repetitions": 7,
+  "note": "Poisson and linear elasticity simplex kernels are unchanged by this work; their rows show run-to-run variation.",
+  "cases": {
+    "poisson-triangle_p1": {
+      "gcc-16-null": {
+        "dram_ns": 22.04618354539889,
+        "dram_median_ns": 22.08385613267083,
+        "hot_ns": 2.2943748626857996
+      },
+      "gcc-16-head": {
+        "dram_ns": 22.286493039924693,
+        "dram_median_ns": 22.332615146059,
+        "hot_ns": 4.451625281944871
+      },
+      "gcc-16-new": {
+        "dram_ns": 22.062151938673225,
+        "dram_median_ns": 22.264185883802412,
+        "hot_ns": 4.533500177785754
+      },
+      "clang-22-null": {
+        "dram_ns": 21.93099808692932,
+        "dram_median_ns": 21.943088054656982,
+        "hot_ns": 2.3323750000000003
+      },
+      "clang-22-head": {
+        "dram_ns": 26.749768018722534,
+        "dram_median_ns": 26.796136140823368,
+        "hot_ns": 7.627090000000002
+      },
+      "clang-22-new": {
+        "dram_ns": 26.573482751846317,
+        "dram_median_ns": 26.780930519104007,
+        "hot_ns": 7.6358250000000005
+      }
+    },
+    "poisson-triangle_p2": {
+      "gcc-16-null": {
+        "dram_ns": 40.22003470193955,
+        "dram_median_ns": 40.4573644969133,
+        "hot_ns": 3.474500263109803
+      },
+      "gcc-16-head": {
+        "dram_ns": 38.37651225726914,
+        "dram_median_ns": 38.403656573460914,
+        "hot_ns": 7.567754946649074
+      },
+      "gcc-16-new": {
+        "dram_ns": 38.28296995278679,
+        "dram_median_ns": 38.374559263830115,
+        "hot_ns": 7.627476006746292
+      },
+      "clang-22-null": {
+        "dram_ns": 40.65885357015452,
+        "dram_median_ns": 40.83341448506203,
+        "hot_ns": 3.4652450000000004
+      },
+      "clang-22-head": {
+        "dram_ns": 38.576551531347725,
+        "dram_median_ns": 38.70288745778129,
+        "hot_ns": 6.97146
+      },
+      "clang-22-new": {
+        "dram_ns": 38.43815591562724,
+        "dram_median_ns": 38.94688212554945,
+        "hot_ns": 6.96719
+      }
+    },
+    "poisson-triangle_p3": {
+      "gcc-16-null": {
+        "dram_ns": 92.26085737414576,
+        "dram_median_ns": 92.5299544265058,
+        "hot_ns": 10.415839496999979
+      },
+      "gcc-16-head": {
+        "dram_ns": 95.37203491699302,
+        "dram_median_ns": 95.42001154252728,
+        "hot_ns": 28.57561456039548
+      },
+      "gcc-16-new": {
+        "dram_ns": 94.67916473942955,
+        "dram_median_ns": 95.46133016018602,
+        "hot_ns": 28.423505136743188
+      },
+      "clang-22-null": {
+        "dram_ns": 89.26255072728102,
+        "dram_median_ns": 89.45244666650575,
+        "hot_ns": 9.001085
+      },
+      "clang-22-head": {
+        "dram_ns": 87.45182618211663,
+        "dram_median_ns": 88.65306607801116,
+        "hot_ns": 24.808609999999998
+      },
+      "clang-22-new": {
+        "dram_ns": 87.46368244073884,
+        "dram_median_ns": 88.33405931794996,
+        "hot_ns": 24.818285000000003
+      }
+    },
+    "poisson-tetrahedron_p1": {
+      "gcc-16-null": {
+        "dram_ns": 22.663484089413544,
+        "dram_median_ns": 22.716538650158213,
+        "hot_ns": 2.7380441315472126
+      },
+      "gcc-16-head": {
+        "dram_ns": 23.537685134300546,
+        "dram_median_ns": 23.739098797825875,
+        "hot_ns": 13.078235788270831
+      },
+      "gcc-16-new": {
+        "dram_ns": 23.50988148602795,
+        "dram_median_ns": 23.583045960506865,
+        "hot_ns": 13.770324876531959
+      },
+      "clang-22-null": {
+        "dram_ns": 22.345877170562744,
+        "dram_median_ns": 22.536573171615604,
+        "hot_ns": 2.1634650000000004
+      },
+      "clang-22-head": {
+        "dram_ns": 24.601751565933213,
+        "dram_median_ns": 24.819813489913944,
+        "hot_ns": 11.856710000000001
+      },
+      "clang-22-new": {
+        "dram_ns": 24.285871505737305,
+        "dram_median_ns": 24.466371059417725,
+        "hot_ns": 14.037515
+      }
+    },
+    "poisson-tetrahedron_p2": {
+      "gcc-16-null": {
+        "dram_ns": 91.98951357719466,
+        "dram_median_ns": 92.45509222227108,
+        "hot_ns": 10.582145769149065
+      },
+      "gcc-16-head": {
+        "dram_ns": 100.49298284650725,
+        "dram_median_ns": 100.67755375773869,
+        "hot_ns": 57.492509949952364
+      },
+      "gcc-16-new": {
+        "dram_ns": 99.52143765259048,
+        "dram_median_ns": 100.21109248530509,
+        "hot_ns": 57.297644671052694
+      },
+      "clang-22-null": {
+        "dram_ns": 88.97595131253907,
+        "dram_median_ns": 89.27620317198058,
+        "hot_ns": 8.721415
+      },
+      "clang-22-head": {
+        "dram_ns": 99.96634989776314,
+        "dram_median_ns": 100.68272147671709,
+        "hot_ns": 56.29749000000001
+      },
+      "clang-22-new": {
+        "dram_ns": 99.70348892828757,
+        "dram_median_ns": 100.40532829793264,
+        "hot_ns": 56.526525
+      }
+    },
+    "poisson-tetrahedron_p3": {
+      "gcc-16-null": {
+        "dram_ns": 413.4445632691264,
+        "dram_median_ns": 413.8805655992637,
+        "hot_ns": 39.58711982704699
+      },
+      "gcc-16-head": {
+        "dram_ns": 390.04826460050674,
+        "dram_median_ns": 391.3225194537424,
+        "hot_ns": 141.23562490567565
+      },
+      "gcc-16-new": {
+        "dram_ns": 388.5539428685621,
+        "dram_median_ns": 389.660396104362,
+        "hot_ns": 139.65301914140582
+      },
+      "clang-22-null": {
+        "dram_ns": 404.71683434685315,
+        "dram_median_ns": 405.70942356449024,
+        "hot_ns": 33.019965000000006
+      },
+      "clang-22-head": {
+        "dram_ns": 393.7636701194528,
+        "dram_median_ns": 395.3445936312524,
+        "hot_ns": 149.93965
+      },
+      "clang-22-new": {
+        "dram_ns": 393.8487561911493,
+        "dram_median_ns": 397.64402519232067,
+        "hot_ns": 150.91401000000002
+      }
+    },
+    "elasticity-triangle_p1": {
+      "gcc-16-null": {
+        "dram_ns": 40.325956618384794,
+        "dram_median_ns": 40.41869485767142,
+        "hot_ns": 3.487879876047373
+      },
+      "gcc-16-head": {
+        "dram_ns": 39.86013358545052,
+        "dram_median_ns": 39.90863813594225,
+        "hot_ns": 17.159830313175917
+      },
+      "gcc-16-new": {
+        "dram_ns": 39.25093291475658,
+        "dram_median_ns": 39.66663870101522,
+        "hot_ns": 17.294579884037375
+      },
+      "clang-22-null": {
+        "dram_ns": 40.682433884288905,
+        "dram_median_ns": 40.80587296520906,
+        "hot_ns": 3.4889100000000006
+      },
+      "clang-22-head": {
+        "dram_ns": 41.80056993964732,
+        "dram_median_ns": 42.01817882169359,
+        "hot_ns": 16.012895000000004
+      },
+      "clang-22-new": {
+        "dram_ns": 41.662814775873116,
+        "dram_median_ns": 41.98936515983136,
+        "hot_ns": 17.427465
+      }
+    },
+    "elasticity-triangle_p2": {
+      "gcc-16-null": {
+        "dram_ns": 125.0098909196569,
+        "dram_median_ns": 125.10075082597571,
+        "hot_ns": 13.224690919741988
+      },
+      "gcc-16-head": {
+        "dram_ns": 141.62255690713948,
+        "dram_median_ns": 141.7150563368735,
+        "hot_ns": 44.92854932323098
+      },
+      "gcc-16-new": {
+        "dram_ns": 140.18113521605343,
+        "dram_median_ns": 140.64510063607375,
+        "hot_ns": 46.612805454060435
+      },
+      "clang-22-null": {
+        "dram_ns": 120.7030338793124,
+        "dram_median_ns": 120.92753021958373,
+        "hot_ns": 11.898400000000002
+      },
+      "clang-22-head": {
+        "dram_ns": 137.66488448608825,
+        "dram_median_ns": 140.92982738478412,
+        "hot_ns": 99.28985000000002
+      },
+      "clang-22-new": {
+        "dram_ns": 136.86861812459767,
+        "dram_median_ns": 140.45841856805666,
+        "hot_ns": 99.99043
+      }
+    },
+    "elasticity-triangle_p3": {
+      "gcc-16-null": {
+        "dram_ns": 409.5204073499595,
+        "dram_median_ns": 410.42418467054955,
+        "hot_ns": 39.143385365605354
+      },
+      "gcc-16-head": {
+        "dram_ns": 411.94149157110735,
+        "dram_median_ns": 414.27445335042097,
+        "hot_ns": 100.88353999890387
+      },
+      "gcc-16-new": {
+        "dram_ns": 412.56039020242304,
+        "dram_median_ns": 413.4950655475442,
+        "hot_ns": 99.76736386306584
+      },
+      "clang-22-null": {
+        "dram_ns": 399.3044185743773,
+        "dram_median_ns": 399.58079643439396,
+        "hot_ns": 34.10501
+      },
+      "clang-22-head": {
+        "dram_ns": 501.53040869333444,
+        "dram_median_ns": 505.09443710908204,
+        "hot_ns": 232.93431
+      },
+      "clang-22-new": {
+        "dram_ns": 505.69443462952285,
+        "dram_median_ns": 511.32804567347927,
+        "hot_ns": 233.39821
+      }
+    },
+    "elasticity-tetrahedron_p1": {
+      "gcc-16-null": {
+        "dram_ns": 124.23348956875353,
+        "dram_median_ns": 125.01886014247081,
+        "hot_ns": 14.859585789963603
+      },
+      "gcc-16-head": {
+        "dram_ns": 131.10331167008573,
+        "dram_median_ns": 131.3758589149877,
+        "hot_ns": 73.88308993540704
+      },
+      "gcc-16-new": {
+        "dram_ns": 130.57348775743708,
+        "dram_median_ns": 131.25590558656296,
+        "hot_ns": 73.47345002926886
+      },
+      "clang-22-null": {
+        "dram_ns": 120.04502062322676,
+        "dram_median_ns": 120.72162220155927,
+        "hot_ns": 11.80615
+      },
+      "clang-22-head": {
+        "dram_ns": 140.47106668574017,
+        "dram_median_ns": 142.0665569940156,
+        "hot_ns": 66.28838499999999
+      },
+      "clang-22-new": {
+        "dram_ns": 137.02898457430325,
+        "dram_median_ns": 137.47711060248432,
+        "hot_ns": 79.431555
+      }
+    },
+    "elasticity-tetrahedron_p2": {
+      "gcc-16-null": {
+        "dram_ns": 685.8754332262527,
+        "dram_median_ns": 686.7817631497959,
+        "hot_ns": 84.70569038763642
+      },
+      "gcc-16-head": {
+        "dram_ns": 1030.0404486024966,
+        "dram_median_ns": 1044.5829812130057,
+        "hot_ns": 439.6177502349019
+      },
+      "gcc-16-new": {
+        "dram_ns": 1047.3655681836722,
+        "dram_median_ns": 1052.8279355091613,
+        "hot_ns": 442.359724547714
+      },
+      "clang-22-null": {
+        "dram_ns": 689.6984056262339,
+        "dram_median_ns": 691.554322493968,
+        "hot_ns": 65.54616500000002
+      },
+      "clang-22-head": {
+        "dram_ns": 1331.769508115815,
+        "dram_median_ns": 1354.9009582693573,
+        "hot_ns": 661.9010549999999
+      },
+      "clang-22-new": {
+        "dram_ns": 1308.874239142356,
+        "dram_median_ns": 1312.1878907106823,
+        "hot_ns": 759.4452649999997
+      }
+    },
+    "elasticity-tetrahedron_p3": {
+      "gcc-16-null": {
+        "dram_ns": 2361.073123277234,
+        "dram_median_ns": 2367.8282731106965,
+        "hot_ns": 332.79184019193053
+      },
+      "gcc-16-head": {
+        "dram_ns": 3431.9723023107563,
+        "dram_median_ns": 3447.5922105787167,
+        "hot_ns": 1386.157595552504
+      },
+      "gcc-16-new": {
+        "dram_ns": 3425.497751134295,
+        "dram_median_ns": 3443.0586528754147,
+        "hot_ns": 1414.7476991638541
+      },
+      "clang-22-null": {
+        "dram_ns": 2327.7365897028317,
+        "dram_median_ns": 2331.120591642644,
+        "hot_ns": 255.35968000000003
+      },
+      "clang-22-head": {
+        "dram_ns": 3827.5892448204327,
+        "dram_median_ns": 3886.152894899911,
+        "hot_ns": 1509.7913699999997
+      },
+      "clang-22-new": {
+        "dram_ns": 3786.494705929897,
+        "dram_median_ns": 3805.6211170083793,
+        "hot_ns": 1490.9771250000001
+      }
+    },
+    "hyper-residual1": {
+      "gcc-16-null": {
+        "dram_ns": 31.420252563583006,
+        "dram_median_ns": 31.662330562325053,
+        "hot_ns": 2.64651607722044
+      },
+      "gcc-16-head": {
+        "dram_ns": 41.43594131511623,
+        "dram_median_ns": 41.949770416987555,
+        "hot_ns": 32.92297478765249
+      },
+      "gcc-16-new": {
+        "dram_ns": 41.73237051703174,
+        "dram_median_ns": 42.67630167549941,
+        "hot_ns": 34.63295986875892
+      },
+      "clang-22-null": {
+        "dram_ns": 30.574281829424322,
+        "dram_median_ns": 30.65049270403211,
+        "hot_ns": 2.421385
+      },
+      "clang-22-head": {
+        "dram_ns": 37.09329082805892,
+        "dram_median_ns": 37.411492445824706,
+        "hot_ns": 27.951845000000002
+      },
+      "clang-22-new": {
+        "dram_ns": 37.27296847652638,
+        "dram_median_ns": 37.391806457473386,
+        "hot_ns": 28.060745
+      }
+    },
+    "hyper-tangent1": {
+      "gcc-16-null": {
+        "dram_ns": 131.21216750388425,
+        "dram_median_ns": 131.32227508758126,
+        "hot_ns": 14.11500503309071
+      },
+      "gcc-16-head": {
+        "dram_ns": 167.50996078003308,
+        "dram_median_ns": 169.64889310276902,
+        "hot_ns": 109.57797057926655
+      },
+      "gcc-16-new": {
+        "dram_ns": 167.2803539218058,
+        "dram_median_ns": 168.07517960790713,
+        "hot_ns": 110.09507463313639
+      },
+      "clang-22-null": {
+        "dram_ns": 129.4413585103593,
+        "dram_median_ns": 129.65643849986887,
+        "hot_ns": 11.787790000000001
+      },
+      "clang-22-head": {
+        "dram_ns": 169.87617623918175,
+        "dram_median_ns": 170.69015211119847,
+        "hot_ns": 109.08546500000001
+      },
+      "clang-22-new": {
+        "dram_ns": 169.1376462103331,
+        "dram_median_ns": 171.45312614739052,
+        "hot_ns": 111.61641
+      }
+    },
+    "hyper-residual2": {
+      "gcc-16-null": {
+        "dram_ns": 49.4074681614659,
+        "dram_median_ns": 49.52740365481814,
+        "hot_ns": 4.428359679877758
+      },
+      "gcc-16-head": {
+        "dram_ns": 323.6232573548525,
+        "dram_median_ns": 339.3807397025087,
+        "hot_ns": 319.21565532684326
+      },
+      "gcc-16-new": {
+        "dram_ns": 166.23174661444654,
+        "dram_median_ns": 170.80633965057902,
+        "hot_ns": 160.26794561184943
+      },
+      "clang-22-null": {
+        "dram_ns": 49.48545377926366,
+        "dram_median_ns": 49.72826947984796,
+        "hot_ns": 4.29842
+      },
+      "clang-22-head": {
+        "dram_ns": 256.0212878064946,
+        "dram_median_ns": 259.69204355193745,
+        "hot_ns": 267.8699050000001
+      },
+      "clang-22-new": {
+        "dram_ns": 190.8772966422904,
+        "dram_median_ns": 192.02878964976895,
+        "hot_ns": 170.25872
+      }
+    },
+    "hyper-tangent2": {
+      "gcc-16-null": {
+        "dram_ns": 705.6791652952495,
+        "dram_median_ns": 707.6216055364412,
+        "hot_ns": 85.6352353002876
+      },
+      "gcc-16-head": {
+        "dram_ns": 4023.31680048071,
+        "dram_median_ns": 4138.093031568955,
+        "hot_ns": 3483.4219107870013
+      },
+      "gcc-16-new": {
+        "dram_ns": 2407.6204343477657,
+        "dram_median_ns": 2493.329396582425,
+        "hot_ns": 1820.5026153009385
+      },
+      "clang-22-null": {
+        "dram_ns": 707.7567329857782,
+        "dram_median_ns": 708.5348370394009,
+        "hot_ns": 69.391315
+      },
+      "clang-22-head": {
+        "dram_ns": 6782.837273468809,
+        "dram_median_ns": 6865.9838280668155,
+        "hot_ns": 6024.841085
+      },
+      "clang-22-new": {
+        "dram_ns": 2298.792658793489,
+        "dram_median_ns": 2339.1799056637233,
+        "hot_ns": 1560.91261
+      }
+    },
+    "hyper-residual3": {
+      "gcc-16-null": {
+        "dram_ns": 92.92945356689286,
+        "dram_median_ns": 93.12293216544978,
+        "hot_ns": 7.072320440784097
+      },
+      "gcc-16-head": {
+        "dram_ns": 985.3667387479832,
+        "dram_median_ns": 1000.572365576156,
+        "hot_ns": 921.6866898350418
+      },
+      "gcc-16-new": {
+        "dram_ns": 492.0988844398809,
+        "dram_median_ns": 503.51688879298894,
+        "hot_ns": 465.7479946035892
+      },
+      "clang-22-null": {
+        "dram_ns": 94.45365300992312,
+        "dram_median_ns": 94.54081949044436,
+        "hot_ns": 7.43777
+      },
+      "clang-22-head": {
+        "dram_ns": 940.4983643879679,
+        "dram_median_ns": 952.9829432862659,
+        "hot_ns": 922.68317
+      },
+      "clang-22-new": {
+        "dram_ns": 528.9556126329974,
+        "dram_median_ns": 544.7041403675914,
+        "hot_ns": 493.50109000000003
+      }
+    },
+    "hyper-tangent3": {
+      "gcc-16-null": {
+        "dram_ns": 2403.7635783548644,
+        "dram_median_ns": 2407.630978846307,
+        "hot_ns": 334.7327304072678
+      },
+      "gcc-16-head": {
+        "dram_ns": 20902.703720365345,
+        "dram_median_ns": 21250.996517843192,
+        "hot_ns": 19030.742490431294
+      },
+      "gcc-16-new": {
+        "dram_ns": 11272.081819743516,
+        "dram_median_ns": 11377.790583506796,
+        "hot_ns": 9207.26015465334
+      },
+      "clang-22-null": {
+        "dram_ns": 2373.557715507787,
+        "dram_median_ns": 2379.6195163413026,
+        "hot_ns": 258.87765
+      },
+      "clang-22-head": {
+        "dram_ns": 20190.97110111867,
+        "dram_median_ns": 20514.807633252905,
+        "hot_ns": 23267.321669999998
+      },
+      "clang-22-new": {
+        "dram_ns": 11960.427177012503,
+        "dram_median_ns": 12193.028377933759,
+        "hot_ns": 8070.857824999999
+      }
+    }
+  }
+}

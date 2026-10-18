@@ -39,3 +39,21 @@ Findings so far:
 
 The results file records completed experiments and pending validation. This is
 an investigation checkpoint, not evidence of a regression-free optimisation.
+
+Memory-traffic bound (roofline.py)
+
+roofline.py times generated simplex kernels for Poisson, linear elasticity and
+hyperelasticity over DRAM-resident cell records, together with a null kernel
+that reads every input and updates every output entry without arithmetic. The
+null time is the per-core DRAM bound for the record layout. Each kernel is also
+timed on one record held in L1 ("hot"), which isolates its arithmetic cost.
+All output entries are checked, with zero and nonzero initial output, against
+independent quadrature (Poisson, elasticity) or the first variant (hyper):
+
+  python benchmarks/streaming/generate.py head        # in each revision
+  python benchmarks/streaming/roofline.py --variant head=$FFCX_STREAM_WORKDIR/head \
+      --variant new=$FFCX_STREAM_WORKDIR/new --mib 1024 --reps 7 --output roofline.json
+
+The driver zeroes each output record before calling the kernel. Arithmetic
+performed before a kernel first touches A largely overlaps with that traffic,
+while arithmetic interleaved with or after updates of A adds to it.

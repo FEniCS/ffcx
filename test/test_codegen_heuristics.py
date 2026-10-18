@@ -5,6 +5,8 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Tests for code-generation size and storage heuristics."""
 
+import re
+
 import basix.ufl
 import pytest
 import ufl
@@ -101,6 +103,27 @@ def test_curved_simplex_geometry_uses_a_coordinate_dof_loop(compile_args):
         [form], options={"scalar_type": "float64"}, cffi_extra_compile_args=compile_args
     )
     assert "for (int ic = 0; ic < 21; ++ic)" in implementation
+
+
+def test_tiled_factor_caches_keep_the_stack_budget(compile_args):
+    """Factor caches of a tiled quadrature loop hold one tile, not all points."""
+    element = basix.ufl.element("Lagrange", "tetrahedron", 2, shape=(3,))
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+    space = ufl.FunctionSpace(domain, element)
+    state = ufl.Coefficient(space)
+    test, trial = ufl.TestFunction(space), ufl.TrialFunction(space)
+    F = ufl.Identity(3) + ufl.grad(state)
+    energy = ufl.inner(F, F) / 2 - ufl.ln(ufl.det(F)) + ufl.ln(ufl.det(F)) ** 2
+    measure = ufl.dx(metadata={"quadrature_degree": 8})
+    tangent = ufl.derivative(ufl.derivative(energy * measure, state, test), state, trial)
+
+    _, _, (_, implementation) = ffcx.codegeneration.jit.compile_forms(
+        [tangent], options={"scalar_type": "float64"}, cffi_extra_compile_args=compile_args
+    )
+    points = int(re.search(r"weights_\w+\[(\d+)\]", implementation)[1])
+    sizes = [int(n) for n in re.findall(r"double fw\d+_q\[(\d+)\];", implementation)]
+    assert sizes and all(size < points for size in sizes)
+    assert len(sizes) * max(sizes) * 16 <= 32768
 
 
 def test_dead_scalar_pruning_respects_section_declarations():

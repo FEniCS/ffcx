@@ -99,7 +99,7 @@ class Formatter(FormatterInterface):
         if arr.values is None:
             return f"{symbol} = np.empty({arr.sizes}, dtype={typename})\n"
         elif arr.values.size == 1:
-            return f"{symbol} = np.full({arr.sizes}, {arr.values[0]}, dtype={typename})\n"
+            return f"{symbol} = np.full({arr.sizes}, {arr.values.flat[0]}, dtype={typename})\n"
         av = build_initializer_lists(arr.values)
         av = f"np.array({av}, dtype={typename})"
         return f"{symbol} = {av}\n"

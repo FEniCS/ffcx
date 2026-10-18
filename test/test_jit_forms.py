@@ -2492,6 +2492,75 @@ def test_form_rejects_ridge_geometry_outside_ridge_integral(measure):
         ffcx.codegeneration.jit.compile_forms([integrand * ufl.Measure(measure, domain=domain)])
 
 
+@pytest.mark.parametrize("dtype", ["float64", "complex128"])
+@pytest.mark.parametrize("cell", ["triangle", "tetrahedron"])
+@pytest.mark.parametrize("symmetric", [False, True])
+def test_blocked_varying_contraction(dtype, cell, symmetric, compile_args):
+    """Check locally accumulated component blocks, reusing only symmetric ones."""
+    if sys.platform.startswith("win32") and "complex" in dtype:
+        pytest.skip("C99 complex kernels are unavailable on Windows")
+    dim = 2 if cell == "triangle" else 3
+    coordinate_element = basix.ufl.element("Lagrange", cell, 1, shape=(dim,))
+    domain = ufl.Mesh(coordinate_element)
+    element = basix.ufl.element("Lagrange", cell, 2, shape=(dim,))
+    scalar = basix.ufl.element("Lagrange", cell, 2)
+    space = ufl.FunctionSpace(domain, element)
+    u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
+    coefficient_element = basix.ufl.element("DG", cell, 1)
+    f = ufl.Coefficient(ufl.FunctionSpace(domain, coefficient_element))
+    rng = np.random.default_rng(23)
+    C = rng.standard_normal((dim,) * 4)
+    if symmetric:
+        C += C.transpose(2, 3, 0, 1)
+    i, j, k, m = ufl.indices(4)
+    points, weights = basix.make_quadrature(getattr(basix.CellType, cell), 4)
+    measure = ufl.dx(
+        metadata={
+            "quadrature_rule": "custom",
+            "quadrature_points": points,
+            "quadrature_weights": weights,
+        }
+    )
+    tensor = ufl.as_tensor(C.tolist())
+    form = (ufl.exp(f) * tensor[i, j, k, m] * u[k].dx(m) * ufl.conj(v[i].dx(j))) * measure
+    compiled, module, (_, implementation) = ffcx.codegeneration.jit.compile_forms(
+        [form], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+    # Symmetric blocks are recovered from transposed local blocks.
+    blocks = dim * (dim + 1) // 2 if symmetric else dim * dim
+    assert len(re.findall(r"\bA_local_\d+\[\d+\]\[\d+\] =", implementation)) == blocks
+
+    values = np.linspace(-0.4, 0.5, coefficient_element.dim).astype(dtype)
+    if dtype == "complex128":
+        values *= 1 + 0.3j
+    coords = np.array([[0, 0, 0], [1.1, 0.03, 0.02], [0.1, 0.92, 0.05], [0.04, 0.08, 1.2]])
+    coords = np.ascontiguousarray(coords[: dim + 1])
+    if dim == 2:
+        coords[:, 2] = 0
+    J = (coords[1:, :dim] - coords[0, :dim]).T
+    derivatives = scalar.basix_element.tabulate(1, points)[1 : dim + 1, :, :, 0]
+    gradients = np.einsum("dqn,dc->qnc", derivatives, np.linalg.inv(J))
+    factor = weights * abs(np.linalg.det(J))
+    factor = factor * np.exp(
+        coefficient_element.basix_element.tabulate(0, points)[0, :, :, 0] @ values
+    )
+    expected = np.einsum("q,ijkm,qaj,qbm->aibk", factor, C, gradients, gradients)
+    expected = expected.reshape(element.dim, element.dim)
+
+    A = np.zeros((element.dim, element.dim), dtype=dtype)
+    ctype = dtype_to_c_type(dtype)
+    getattr(compiled[0].form_integrals[0], f"tabulate_tensor_{dtype}")(
+        module.ffi.cast(f"{ctype} *", A.ctypes.data),
+        module.ffi.cast(f"{ctype} *", values.ctypes.data),
+        module.ffi.NULL,
+        module.ffi.cast("double *", coords.ctypes.data),
+        module.ffi.NULL,
+        module.ffi.NULL,
+        module.ffi.NULL,
+    )
+    np.testing.assert_allclose(A, expected, rtol=1e-11, atol=1e-12)
+
+
 @pytest.mark.parametrize("degree", [1, 2, 3])
 def test_elasticity_tangent_and_residual(degree, compile_args):
     """Check the nonlinear tangent against finite differences and its linear limit."""

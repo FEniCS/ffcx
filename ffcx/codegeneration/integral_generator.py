@@ -14,7 +14,7 @@ import math
 import platform
 import sys
 from numbers import Integral
-from typing import Any
+from typing import Any, cast
 
 import basix
 import numpy as np
@@ -43,6 +43,8 @@ logger = logging.getLogger("ffcx")
 
 
 _FW_CACHE_BUDGET_BYTES = 32768
+_MAX_LOCAL_TENSOR_BYTES = 65536
+_LOCAL_TENSOR_ALIGNMENT_BYTES = 32
 _MAX_PREINTEGRATED_TABLE_BYTES = 65536
 _MIN_PARTIAL_PREINTEGRATION_WORK = 64
 _FW_CACHE_BYTES_PER_SCALAR = 16
@@ -149,6 +151,241 @@ def _supports_vector_math_loop_split() -> bool:
     return sys.platform.startswith("linux") and platform.machine().lower() in {"amd64", "x86_64"}
 
 
+def _children(node) -> list:
+    """Return the direct sub-nodes of a statement or expression."""
+    if isinstance(node, list):
+        return node
+    if isinstance(node, L.Section):
+        return [*node.declarations, *node.statements]
+    if isinstance(node, L.StatementList):
+        return list(node.statements)
+    if isinstance(node, L.ForRange):
+        return list(node.body.statements)
+    if isinstance(node, L.VariableDecl):
+        return [] if node.value is None else [node.value]
+    if isinstance(node, (L.ArrayDecl, L.Comment)):
+        return []
+    if isinstance(node, L.Statement):
+        return [node.expr]
+    if isinstance(node, L.ArrayAccess):
+        return [node.array, *node.indices]
+    if isinstance(node, L.MultiIndex):
+        return list(node.symbols)
+    if isinstance(node, L.BinOp):
+        return [node.lhs, node.rhs]
+    if isinstance(node, (L.NaryOp, L.MathFunction)):
+        return list(node.args)
+    if isinstance(node, L.PrefixUnaryOp):
+        return [node.arg]
+    if isinstance(node, L.Conditional):
+        return [node.condition, node.true, node.false]
+    return []
+
+
+def _flat_statements(statements) -> list[L.LNode]:
+    """Flatten nested statement lists into one list of statements."""
+    out: list[L.LNode] = []
+    for s in statements:
+        if isinstance(s, L.StatementList):
+            out += _flat_statements(s.statements)
+        else:
+            out.append(s)
+    return out
+
+
+def _references(node, symbol: L.Symbol) -> bool:
+    """Return whether *node* refers to *symbol* anywhere."""
+    if isinstance(node, L.Symbol):
+        return node.name == symbol.name
+    return any(_references(child, symbol) for child in _children(node))
+
+
+def _writes_symbol(node, symbol: L.Symbol) -> bool:
+    """Return whether *node* assigns to an entry of the array *symbol*."""
+    if isinstance(node, L.AssignOp):
+        return isinstance(node.lhs, L.ArrayAccess) and node.lhs.array == symbol
+    return any(_writes_symbol(child, symbol) for child in _children(node))
+
+
+def _is_index(node, index: L.Symbol) -> bool:
+    """Return whether *node* is the loop index itself.
+
+    Accepts the index wrapped as a one-term sum, or as a product with unit
+    literals, as flattened multi-indices produce.
+    """
+    if isinstance(node, L.MultiIndex):
+        return node.dim == 1 and _is_index(node.symbols[0], index)
+    if isinstance(node, (L.Sum, L.Product)):
+        unit = isinstance(node, L.Product)
+        args = [a for a in node.args if not (unit and isinstance(a, L.LiteralInt) and a.value == 1)]
+        return len(args) == 1 and _is_index(args[0], index)
+    if isinstance(node, L.Mul):
+        for a, b in ((node.lhs, node.rhs), (node.rhs, node.lhs)):
+            if isinstance(a, L.LiteralInt) and a.value == 1:
+                return _is_index(b, index)
+        return False
+    return isinstance(node, L.Symbol) and node.name == index.name
+
+
+def _tables_indexed_last_by(
+    exprs: list[L.LExpr], index: L.Symbol, tables: dict[str, L.Symbol]
+) -> set[str] | None:
+    """Return element tables read with *index* as their final subscript.
+
+    ``None`` means *index* is also used another way, so padding the loop
+    over *index* past the table extent would not be safe.
+    """
+    found: set[str] = set()
+
+    def visit(node) -> bool:
+        if isinstance(node, L.Symbol):
+            return node.name != index.name
+        if isinstance(node, L.ArrayAccess) and _references(node, index):
+            name = node.array.name
+            if (
+                name not in tables
+                or not _is_index(node.indices[-1], index)
+                or any(_references(i, index) for i in node.indices[:-1])
+            ):
+                return False
+            found.add(name)
+            return True
+        return all(visit(child) for child in _children(node))
+
+    return found if all(visit(e) for e in exprs) else None
+
+
+def _map_expressions(node, fn):
+    """Rebuild a statement or expression tree, replacing nodes with ``fn``.
+
+    ``fn`` returns a replacement for a node or ``None`` to keep it and
+    rebuild its operands.
+    """
+    if isinstance(node, list):
+        return [_map_expressions(n, fn) for n in node]
+    replacement = fn(node)
+    if replacement is not None:
+        return replacement
+    if isinstance(node, L.Section):
+        return L.Section(
+            node.name,
+            _map_expressions(list(node.statements), fn),
+            _map_expressions(list(node.declarations), fn),
+            node.input,
+            node.output,
+            node.annotations,
+        )
+    if isinstance(node, L.StatementList):
+        return L.StatementList(_map_expressions(list(node.statements), fn))
+    if isinstance(node, L.ForRange):
+        return L.ForRange(
+            node.index, node.begin, node.end, _map_expressions(list(node.body.statements), fn)
+        )
+    if isinstance(node, L.VariableDecl):
+        value = None if node.value is None else _map_expressions(node.value, fn)
+        return L.VariableDecl(node.symbol, value)
+    if isinstance(node, (L.ArrayDecl, L.Comment)):
+        return node
+    if isinstance(node, L.Statement):
+        return L.Statement(_map_expressions(node.expr, fn))
+    if isinstance(node, L.ArrayAccess):
+        return L.ArrayAccess(node.array, [_map_expressions(i, fn) for i in node.indices])
+    if isinstance(node, L.MathFunction):
+        return L.MathFunction(node.function, [_map_expressions(a, fn) for a in node.args])
+    if isinstance(node, L.NaryOp):
+        return type(node)([_map_expressions(a, fn) for a in node.args])
+    if isinstance(node, L.BinOp):
+        return type(node)(_map_expressions(node.lhs, fn), _map_expressions(node.rhs, fn))
+    if isinstance(node, L.PrefixUnaryOp):
+        return type(node)(_map_expressions(node.arg, fn))
+    if isinstance(node, L.Conditional):
+        return L.Conditional(
+            _map_expressions(node.condition, fn),
+            _map_expressions(node.true, fn),
+            _map_expressions(node.false, fn),
+        )
+    return node
+
+
+def _contraction_nest(section: L.Section, A: L.Symbol, arguments: list[L.Symbol]):
+    """Return the loop nest of a contraction section that updates A.
+
+    Returns ``(position, indices, ranges, updates)`` for a section whose only
+    update of A is one perfect nest of one or two zero-based loops with
+    ``A[...] += expr`` statements, with ``indices`` ordered (test, trial).
+    Returns ``None`` for any other form.
+    """
+    nests = [
+        (n, s)
+        for n, s in enumerate(section.statements)
+        if isinstance(s, L.ForRange) and _writes_symbol(s, A)
+    ]
+    if len(nests) != 1 or any(
+        _writes_symbol(s, A) for s in section.statements if not isinstance(s, L.ForRange)
+    ):
+        return None
+    position, nest = nests[0]
+    loops = []
+    node: L.LNode = nest
+    while isinstance(node, L.ForRange):
+        loops.append(node)
+        statements = _flat_statements(node.body.statements)
+        if len(statements) == 1 and isinstance(statements[0], L.ForRange):
+            node = statements[0]
+        else:
+            break
+    inner = _flat_statements(loops[-1].body.statements)
+    if (
+        len(loops) not in (1, 2)
+        or not all(isinstance(s, L.Statement) and isinstance(s.expr, L.AssignAdd) for s in inner)
+        or not all(isinstance(loop.index, L.Symbol) for loop in loops)
+        or not all(isinstance(loop.begin, L.LiteralInt) and loop.begin.value == 0 for loop in loops)
+        or not all(isinstance(loop.end, L.LiteralInt) for loop in loops)
+    ):
+        return None
+    ranges = {loop.index: int(loop.end.value) for loop in loops}
+    if len(loops) == 1:
+        indices = [loops[0].index]
+    elif set(ranges) == set(arguments):
+        indices = list(arguments)
+    else:
+        return None
+    updates = [s.expr for s in inner if isinstance(s, L.Statement)]
+    if not all(
+        isinstance(u.lhs, L.ArrayAccess) and u.lhs.array == A and not _references(u.rhs, A)
+        for u in updates
+    ):
+        return None
+    return position, indices, ranges, updates
+
+
+def _evaluate_index(node, values: dict[str, int]) -> int:
+    """Evaluate an integer index expression for given loop index values."""
+    if isinstance(node, (list, tuple)):
+        if len(node) != 1:
+            raise ValueError("Expecting a flattened index.")
+        return _evaluate_index(node[0], values)
+    if isinstance(node, L.LiteralInt):
+        return int(node.value)
+    if isinstance(node, L.Symbol):
+        return values[node.name]
+    if isinstance(node, L.MultiIndex):
+        return _evaluate_index(node.global_index, values)
+    if isinstance(node, L.Sum):
+        return sum(_evaluate_index(a, values) for a in node.args)
+    if isinstance(node, L.Product):
+        return math.prod(_evaluate_index(a, values) for a in node.args)
+    if isinstance(node, L.Add):
+        return _evaluate_index(node.lhs, values) + _evaluate_index(node.rhs, values)
+    if isinstance(node, L.Sub):
+        return _evaluate_index(node.lhs, values) - _evaluate_index(node.rhs, values)
+    if isinstance(node, L.Mul):
+        return _evaluate_index(node.lhs, values) * _evaluate_index(node.rhs, values)
+    if isinstance(node, L.Neg):
+        return -_evaluate_index(node.arg, values)
+    raise ValueError(f"Cannot evaluate index {node!r}.")
+
+
 def _contraction_work(node) -> int:
     """Estimate statically repeated scalar statements in a contraction tree."""
     if isinstance(node, list):
@@ -231,6 +468,23 @@ class IntegralGenerator:
         # variables
         self.symbol_counters: dict[str, int] = collections.defaultdict(int)
 
+        # Element table name -> padded length of its final (dof) axis, for
+        # contiguous loops that read zero entries past the last dof.
+        self._padded_tables: dict[str, int] = {}
+
+        # Element table name -> padded point count of a copy with point and
+        # dof axes exchanged, read by loops that vectorise across points.
+        # Weights table name -> padded point count.
+        self._transposed_tables: dict[str, int] = {}
+        self._padded_weights: dict[str, int] = {}
+
+        # Scalar symbol name -> id of its value, equal for symbols with
+        # structurally identical definitions (see _value_key). Used to prove
+        # that two factors are identical.
+        self._value_ids: dict[str, int] = {}
+        self._interned: dict[tuple, int] = {}
+        self._polynomials: dict[str, dict[tuple[int, ...], Any]] = {}
+
     def init_scopes(self):
         """Initialize variable scope dicts."""
         # Reset variables, separate sets for each quadrature rule
@@ -311,7 +565,8 @@ class IntegralGenerator:
 
         # Generate the tables of basis function values and
         # pre-integrated blocks
-        parts += self.generate_element_tables(domain)
+        element_tables = self.generate_element_tables(domain)
+        parts += element_tables
 
         # Generate the tables of geometry data that are needed
         parts += geometry.static_tables(
@@ -340,6 +595,41 @@ class IntegralGenerator:
         # Collect parts before, during, and after quadrature loops
         parts += all_preparts
         parts += all_quadparts
+
+        # Zero-pad the dof axis of tables read by padded contiguous loops.
+        # Existing reads index real dofs only, so their values are unchanged.
+        for decl in element_tables:
+            if isinstance(decl, L.ArrayDecl) and decl.symbol.name in self._padded_tables:
+                size = self._padded_tables[decl.symbol.name]
+                values = np.asarray(decl.values)
+                pad = [(0, 0)] * (values.ndim - 1) + [(0, size - values.shape[-1])]
+                decl.values = np.pad(values, pad)
+                decl.sizes = decl.values.shape
+
+        # Point-major copies of tables for loops across quadrature points.
+        # Padded points repeat the last point, so every value stays finite.
+        transposed: list[L.LNode] = []
+        unique_tables = cast(dict[str, np.ndarray], self.ir.expression.unique_tables[domain])
+        for name, points in sorted(self._transposed_tables.items()):
+            values = np.swapaxes(np.asarray(unique_tables[name]), -1, -2)
+            pad = [(0, 0)] * (values.ndim - 1) + [(0, points - values.shape[-1])]
+            symbol = L.Symbol(f"{name}_T", dtype=L.DataType.REAL)
+            transposed.append(
+                L.ArrayDecl(symbol, values=np.pad(values, pad, mode="edge"), const=True)
+            )
+        if transposed:
+            position = len(parts)
+            if element_tables:
+                position = next(k for k, p in enumerate(parts) if p is element_tables[-1]) + 1
+            parts[position:position] = L.commented_code_list(
+                transposed, "Point-major copies of tables for evaluation across points."
+            )
+        for decl in parts:
+            if isinstance(decl, L.ArrayDecl) and decl.symbol.name in self._padded_weights:
+                values = np.asarray(decl.values)
+                size = self._padded_weights[decl.symbol.name]
+                decl.values = np.pad(values, (0, size - values.shape[-1]))
+                decl.sizes = decl.values.shape
 
         # Drop every unread scalar declaration now the kernel body is whole.
         # Done on the LNode tree, before formatting, so it respects scopes
@@ -594,6 +884,20 @@ class IntegralGenerator:
         )
         assert all([isinstance(tc, L.Section) for tc in tensor_comp])
 
+        invariant = self._quadrature_invariant(quadrature_rule, domain)
+        prologue: list[L.LNode] = []
+        epilogue: list[L.LNode] = []
+        if not invariant:
+            tensor_comp, prologue, epilogue = self._localize_tensor_updates(tensor_comp)
+            # Blocks recovered by symmetry no longer read their factors.
+            needed = referenced_symbol_names(list(tensor_comp))
+            kept = []
+            for fw in reversed(intermediates_fw):
+                if fw.symbol.name in needed:
+                    kept.append(fw)
+                    needed |= referenced_symbol_names([fw])
+            intermediates_fw = kept[::-1]
+
         # Check if we only have Section objects
         inputs = []
         for definition in definitions:
@@ -620,7 +924,7 @@ class IntegralGenerator:
         code = definitions + intermediates + tensor_comp
         code = optimize(code, quadrature_rule)
 
-        if self._quadrature_invariant(quadrature_rule, domain):
+        if invariant:
             return preintegrated_code + L.commented_code_list(
                 code,
                 [
@@ -631,15 +935,338 @@ class IntegralGenerator:
 
         split = self._split_quadrature_loop(code, iq, intermediates_fw, quadrature_rule)
         if split is not None:
-            return preintegrated_code + split
+            return preintegrated_code + prologue + split + epilogue
 
-        return preintegrated_code + [
-            L.Comment(
-                f"Quadrature rule {quadrature_rule.id()}: evaluate and accumulate at "
-                f"{quadrature_rule.weights.size} points."
-            ),
-            L.create_nested_for_loops([iq], code),
-        ]
+        return (
+            preintegrated_code
+            + prologue
+            + [
+                L.Comment(
+                    f"Quadrature rule {quadrature_rule.id()}: evaluate and accumulate at "
+                    f"{quadrature_rule.weights.size} points."
+                ),
+                L.create_nested_for_loops([iq], code),
+            ]
+            + epilogue
+        )
+
+    def _localize_tensor_updates(
+        self, sections: list[L.Section]
+    ) -> tuple[list[L.Section], list[L.LNode], list[L.LNode]]:
+        """Accumulate quadrature-loop tensor updates in local arrays.
+
+        For contractions updating several blocks of A, such as the
+        components of blocked elements, updates of each block accumulate into
+        their own zero-initialised array, with the trial (or only) argument
+        index innermost and contiguous. Blocked elements otherwise update
+        interleaved entries of A at a stride, which defeats vectorisation, and
+        every quadrature point would read and write A again. After the
+        quadrature loop, one pass adds the local arrays into A. Performing
+        the arithmetic before touching A also lets it overlap with any memory
+        traffic for A. The inner loop runs to a 32-byte multiple when every
+        read indexed by it is a zero-padded element table.
+
+        A block is skipped if its terms are exactly those of another block,
+        or those with test and trial tables exchanged while its entries are
+        the transposed entries of that block, with identical scalar factors
+        (see _equivalent_blocks). Its update of A then reads the other local
+        array, transposed if required.
+
+        Returns the transformed sections, declarations to place before the
+        quadrature loop and the final update of A to place after it.
+        Sections with fewer than three distinct blocks or without a plain
+        contraction loop nest are kept, and all sections are kept if the
+        local arrays exceed a fixed stack budget.
+        """
+        A = self.backend.symbols.element_tensor
+        arguments = [self.backend.symbols.argument_loop_index(k) for k in range(2)]
+        scalar_type = np.dtype(self.backend.access.options["scalar_type"])
+        scalar_bytes = scalar_type.itemsize
+        if np.issubdtype(scalar_type, np.complexfloating):
+            real_bytes = scalar_bytes // 2
+        else:
+            real_bytes = scalar_bytes
+        width = _LOCAL_TENSOR_ALIGNMENT_BYTES // real_bytes
+
+        out: list[L.Section] = []
+        prologue: list[L.LNode] = []
+        epilogue: list[L.LNode] = []
+        padded: dict[str, int] = {}
+        total_bytes = 0
+        for section in sections:
+            nest = _contraction_nest(section, A, arguments)
+            if nest is None:
+                out.append(section)
+                continue
+            position, indices, ranges, updates = nest
+
+            # Group the updates by element tensor entry map
+            groups: dict[tuple, tuple[L.ArrayAccess, list[L.LExpr]]] = {}
+            for update in updates:
+                groups.setdefault(expr_key(update.lhs), (update.lhs, []))[1].append(update.rhs)
+            equivalent = self._equivalent_blocks(list(groups.values()), indices, ranges)
+            if len(groups) - len(equivalent) < 3:
+                # A single block already updates contiguous rows of A, in a
+                # loop order chosen for it. A few blocks leave too little work
+                # per entry to pay for the extra pass over local arrays, and
+                # small loop bodies can lead compilers to vectorise across
+                # rows with gathers and scatters.
+                out.append(section)
+                continue
+
+            innermost = indices[-1]
+            tables = _tables_indexed_last_by(
+                [u.rhs for u in updates], innermost, self.backend.symbols.element_tables
+            )
+            size = ranges[innermost]
+            if tables is not None and size % width:
+                size += width - size % width
+                for name in tables:
+                    padded[name] = max(padded.get(name, 0), size)
+            sizes = [ranges[index] for index in indices[:-1]] + [size]
+            total_bytes += (len(groups) - len(equivalent)) * math.prod(sizes) * scalar_bytes
+            if total_bytes > _MAX_LOCAL_TENSOR_BYTES:
+                return sections, [], []
+
+            body: list[L.LNode] = []
+            scatter: list[L.LNode] = []
+            locals_: dict[int, L.Symbol] = {}
+            for g, (lhs, rhs) in enumerate(groups.values()):
+                if g in equivalent:
+                    continue
+                local = self.new_temp_symbol("A_local_")
+                locals_[g] = local
+                # A single initial value, nested to the array rank, zero-fills
+                # the whole array.
+                prologue.append(L.ArrayDecl(local, sizes=sizes, values=np.zeros((1,) * len(sizes))))
+                body += [L.AssignAdd(L.ArrayAccess(local, indices), r) for r in rhs]
+            for g, (lhs, _) in enumerate(groups.values()):
+                source, transpose = equivalent.get(g, (g, False))
+                access = L.ArrayAccess(locals_[source], indices[::-1] if transpose else indices)
+                scatter.append(L.AssignAdd(lhs, access))
+            for index, end in reversed(list(zip(indices, sizes))):
+                body = [L.ForRange(index, 0, end, body)]
+            for index in reversed(indices):
+                scatter = [L.ForRange(index, 0, ranges[index], scatter)]
+            epilogue += scatter
+            statements = list(section.statements)
+            statements[position] = body[0]
+            out.append(
+                L.Section(
+                    section.name,
+                    statements,
+                    section.declarations,
+                    section.input,
+                    section.output,
+                    section.annotations,
+                )
+            )
+
+        if not prologue:
+            return sections, [], []
+        for name, size in padded.items():
+            self._padded_tables[name] = max(self._padded_tables.get(name, 0), size)
+        prologue = L.commented_code_list(
+            prologue,
+            "Local element tensor blocks, accumulated over quadrature points.",
+        )
+        epilogue = L.commented_code_list(
+            epilogue, "Add the local blocks into A in a single pass after the quadrature loop."
+        )
+        return out, prologue, epilogue
+
+    def _record_value(self, symbol: L.Symbol, value: L.LExpr, expand: bool = True) -> None:
+        """Record the definition of a scalar symbol for value comparisons.
+
+        With ``expand``, small polynomial definitions are expanded over their
+        atoms, which include unexpanded symbols, so equal polynomials
+        evaluated in different orders share an id. Coefficients must match
+        exactly. Definitions are recorded in order, so operands already have
+        ids and keys never recurse through chains of definitions.
+        """
+        polynomial = self._polynomial(value) if expand else None
+        if polynomial is None:
+            self._value_ids[symbol.name] = self._value_key(value)
+        elif list(polynomial.values()) == [1] and len(monomial := next(iter(polynomial))) == 1:
+            # A single atom, such as an alias, keeps the id of that atom.
+            self._value_ids[symbol.name] = monomial[0]
+        else:
+            self._polynomials[symbol.name] = polynomial
+            terms = sorted((monomial, repr(c)) for monomial, c in polynomial.items())
+            self._value_ids[symbol.name] = self._intern(("polynomial", *terms))
+
+    def _polynomial(self, node) -> dict[tuple[int, ...], Any] | None:
+        """Expand an expression into a polynomial over atom ids, if small.
+
+        Returns ``{monomial: coefficient}``, with sorted atom ids as the
+        monomial, or ``None`` when the expansion exceeds a fixed size.
+        """
+        max_terms = 64
+
+        def add(a, b, sign=1):
+            out = dict(a)
+            for k, v in b.items():
+                out[k] = out.get(k, 0) + sign * v
+            return {k: v for k, v in out.items() if v != 0}
+
+        def mul(a, b):
+            if len(a) * len(b) > max_terms:
+                return None
+            out: dict[tuple[int, ...], Any] = {}
+            for ka, va in a.items():
+                for kb, vb in b.items():
+                    k = tuple(sorted(ka + kb))
+                    out[k] = out.get(k, 0) + va * vb
+            return {k: v for k, v in out.items() if v != 0}
+
+        def expand(node):
+            if isinstance(node, (L.LiteralFloat, L.LiteralInt)):
+                return {(): node.value} if node.value != 0 else {}
+            if isinstance(node, L.Symbol) and node.name in self._polynomials:
+                return self._polynomials[node.name]
+            if isinstance(node, (L.Add, L.Sub, L.Sum)):
+                args = node.args if isinstance(node, L.Sum) else [node.lhs, node.rhs]
+                out: dict | None = {}
+                for k, arg in enumerate(args):
+                    term = expand(arg)
+                    if term is None or out is None:
+                        return None
+                    out = add(out, term, -1 if isinstance(node, L.Sub) and k else 1)
+                return out if len(out) <= max_terms else None
+            if isinstance(node, L.Neg):
+                term = expand(node.arg)
+                return None if term is None else {k: -v for k, v in term.items()}
+            if isinstance(node, (L.Mul, L.Product)):
+                args = node.args if isinstance(node, L.Product) else [node.lhs, node.rhs]
+                out = {(): 1}
+                for arg in args:
+                    term = expand(arg)
+                    if term is None or out is None:
+                        return None
+                    out = mul(out, term)
+                return out
+            if isinstance(node, L.Div) and isinstance(node.rhs, (L.LiteralFloat, L.LiteralInt)):
+                term = expand(node.lhs)
+                return None if term is None else {k: v / node.rhs.value for k, v in term.items()}
+            return {(self._value_key(node),): 1}
+
+        result: dict[tuple[int, ...], Any] | None = expand(node)
+        return result
+
+    def _value_key(self, node) -> int:
+        """Return an id shared by structurally identical expressions.
+
+        Recorded scalar symbols take the id of their definition, and the
+        operands of commutative operations are ordered. Ids are interned so
+        large expression graphs are keyed in linear time.
+        """
+        if isinstance(node, L.Symbol):
+            if node.name not in self._value_ids:
+                self._value_ids[node.name] = self._intern(("symbol", node.name))
+            return self._value_ids[node.name]
+        if isinstance(node, (L.LiteralFloat, L.LiteralInt)):
+            return self._intern(("literal", node.value))
+        children = [self._value_key(c) for c in _children(node)]
+        if isinstance(node, (L.Sum, L.Product, L.Add, L.Mul)):
+            children.sort()
+        return self._intern((type(node).__name__, getattr(node, "function", None), *children))
+
+    def _intern(self, key: tuple) -> int:
+        """Return a unique integer for a hashable key."""
+        return self._interned.setdefault(key, len(self._interned))
+
+    def _equivalent_blocks(
+        self,
+        groups: list[tuple[L.ArrayAccess, list[L.LExpr]]],
+        indices: list[L.Symbol],
+        ranges: dict[L.Symbol, int],
+    ) -> dict[int, tuple[int, bool]]:
+        """Map blocks equal to an earlier block, or its transpose, to that block.
+
+        Values are compared through their terms, each a product of scalar
+        factors, one test table and one trial table, so two blocks are equal
+        when their terms are the same and transposed when their tables are
+        exchanged. A transposed block also needs a square tensor, with entry
+        maps evaluated for every dof pair to check that they are transposed.
+        Returns ``{block: (earlier block, transposed)}``.
+        """
+        if len(indices) != 2 or self.ir.part != TensorPart.full:
+            return {}
+        test, trial = indices
+        tables = self.backend.symbols.element_tables
+
+        def table_key(node, index):
+            if (
+                isinstance(node, L.ArrayAccess)
+                and node.array.name in tables
+                and _references(node.indices[-1], index)
+                and not any(_references(i, index) for i in node.indices[:-1])
+            ):
+                return (node.array.name, *(self._value_key(i) for i in node.indices[:-1]))
+            return None
+
+        def signature(rhs: list[L.LExpr]):
+            terms: collections.Counter[tuple] = collections.Counter()
+            for term in rhs:
+                if not isinstance(term, L.Product):
+                    return None
+                rows, cols, scalars = [], [], []
+                for arg in term.args:
+                    if _references(arg, test):
+                        rows.append(table_key(arg, test))
+                    elif _references(arg, trial):
+                        cols.append(table_key(arg, trial))
+                    else:
+                        scalars.append(self._value_key(arg))
+                if len(rows) != 1 or len(cols) != 1 or None in rows + cols:
+                    return None
+                terms[(tuple(sorted(scalars)), rows[0], cols[0])] += 1
+            return terms
+
+        signatures = [signature(rhs) for _, rhs in groups]
+        if any(s is None for s in signatures):
+            return {}
+        equivalent: dict[int, tuple[int, bool]] = {}
+        for h, sh in enumerate(signatures):
+            for g in range(h):
+                if g not in equivalent and signatures[g] == sh:
+                    equivalent[h] = (g, False)
+                    break
+
+        shape = self.ir.expression.tensor_shape
+        n = ranges[test]
+        if len(shape) != 2 or shape[0] != shape[1] or ranges[trial] != n or n > 64:
+            return equivalent
+
+        def entries(lhs):
+            try:
+                return tuple(
+                    divmod(_evaluate_index(lhs.indices, {test.name: i, trial.name: j}), shape[1])
+                    for i in range(n)
+                    for j in range(n)
+                )
+            except (KeyError, TypeError, ValueError):
+                return None
+
+        maps = [entries(lhs) for lhs, _ in groups]
+        if any(m is None for m in maps):
+            return equivalent
+        # Entries of a block's transpose, in the same (test, trial) dof order
+        transposed: dict[tuple, int] = {}
+        for g, m in enumerate(maps):
+            assert m is not None
+            t = tuple((m[j * n + i][1], m[j * n + i][0]) for i in range(n) for j in range(n))
+            transposed.setdefault(t, g)
+        for h, m in enumerate(maps):
+            source = transposed.get(m)
+            if source is None or source >= h or source in equivalent or h in equivalent:
+                continue
+            sg, sh = signatures[source], signatures[h]
+            assert sg is not None and sh is not None
+            swapped = collections.Counter({(s, c, r): k for (s, r, c), k in sg.items()})
+            if swapped == sh:
+                equivalent[h] = (source, True)
+        return equivalent
 
     def _quadrature_invariant(
         self, quadrature_rule: QuadratureRule, domain: basix.CellType
@@ -741,11 +1368,33 @@ class IntegralGenerator:
         if tile is None:
             return None
 
+        evaluation, paddable, transposed = self._point_major(evaluation, index, quadrature_rule)
+        points = num_points
+        scalar_type = np.dtype(self.backend.access.options["scalar_type"])
+        real_bytes = scalar_type.itemsize
+        if np.issubdtype(scalar_type, np.complexfloating):
+            real_bytes //= 2
+        width = _LOCAL_TENSOR_ALIGNMENT_BYTES // real_bytes
+        padded = -(-num_points // width) * width
+        # Run whole SIMD vectors across points. Factors at the padded points
+        # are cached but never contracted. Limit the padding, since a loop
+        # that keeps scalar math calls evaluates every padded point.
+        affordable = 4 * (padded - num_points) <= num_points
+        if tile >= num_points and paddable and transposed and affordable:
+            points = padded
+            weights = self.backend.symbols.weights_table(quadrature_rule)
+            self._padded_weights[weights.name] = points
+        for name in transposed:
+            self._transposed_tables[name] = max(self._transposed_tables.get(name, 0), points)
+
         caches = {
             fw.symbol.name: L.Symbol(f"{fw.symbol.name}_q", fw.symbol.dtype)
             for fw in intermediates_fw
         }
-        declarations: list[L.LNode] = [L.ArrayDecl(cache, sizes=tile) for cache in caches.values()]
+        cache_size = points if tile >= num_points else tile
+        declarations: list[L.LNode] = [
+            L.ArrayDecl(cache, sizes=cache_size) for cache in caches.values()
+        ]
 
         if tile >= num_points:
             # Whole rule fits in one tile: no need for an outer tiling loop.
@@ -759,7 +1408,7 @@ class IntegralGenerator:
             ]
             return declarations + [
                 L.Comment("Evaluate and cache weighted scalar factors at quadrature points."),
-                L.create_nested_for_loops([iq], evaluation + store),
+                L.ForRange(index, 0, points, evaluation + store),
                 L.Comment(
                     "Reuse cached factors to contract argument tables and accumulate into A."
                 ),
@@ -801,6 +1450,49 @@ class IntegralGenerator:
             L.Comment("Tile quadrature points to bound temporary storage for weighted factors."),
             L.ForRange(tile_index, 0, num_tiles, tile_body),
         ]
+
+    def _point_major(
+        self, evaluation: list[L.LNode], index: L.Symbol, quadrature_rule: QuadratureRule
+    ) -> tuple[list[L.LNode], bool, set[str]]:
+        """Read element tables point-major in a loop over quadrature points.
+
+        Table reads ``FE[...][iq][k]`` become ``FE_T[...][k][iq]``, so
+        consecutive points are contiguous for SIMD across points. Returns
+        the rewritten code, whether every read indexed by the point is a
+        table or the weights (so the loop may run past the last point), and
+        the transposed table names.
+        """
+        tables = self.backend.symbols.element_tables
+        weights = None
+        if self.ir.expression.integral_type not in ufl.custom_integral_types:
+            weights = self.backend.symbols.weights_table(quadrature_rule).name
+        paddable = True
+        transposed: set[str] = set()
+
+        def replace(node):
+            nonlocal paddable
+            if isinstance(node, L.Symbol) and node.name == index.name:
+                paddable = False
+                return node
+            if not isinstance(node, L.ArrayAccess) or not _references(node, index):
+                return None
+            name = node.array.name
+            *outer, point, dof = node.indices if len(node.indices) >= 2 else (None, None)
+            if (
+                name in tables
+                and point is not None
+                and _is_index(point, index)
+                and not _references(dof, index)
+                and not any(_references(i, index) for i in outer)
+            ):
+                transposed.add(name)
+                table = L.Symbol(f"{name}_T", dtype=L.DataType.REAL)
+                return L.ArrayAccess(table, [*outer, dof, point])
+            if not (name == weights and len(node.indices) == 1):
+                paddable = False
+            return node
+
+        return _map_expressions(evaluation, replace), paddable, transposed
 
     def generate_piecewise_partition(self, quadrature_rule, domain: basix.CellType):
         """Generate a piecewise partition."""
@@ -895,6 +1587,14 @@ class IntegralGenerator:
                 )
 
         intermediates = factor_scalar_sums(intermediates)
+
+        # Record scalar definitions so the tensor contraction can recognise
+        # factors with identical values.
+        # Point-varying values are expanded over the cellwise ones, which stay
+        # atoms to bound the expansion.
+        for stmt in intermediates:
+            if isinstance(stmt, L.VariableDecl) and stmt.value is not None:
+                self._record_value(stmt.symbol, stmt.value, expand=mode == "varying")
 
         return definitions, intermediates
 
@@ -1131,7 +1831,9 @@ class IntegralGenerator:
                 scale_key = (quadrature_rule, expr_key(shared))
                 combined, defined = self.get_temp_symbol("fwscale", scale_key)
                 if not defined:
-                    intermediates += [L.VariableDecl(combined, L.float_product([shared, weight]))]
+                    value = L.float_product([shared, weight])
+                    self._record_value(combined, value)
+                    intermediates += [L.VariableDecl(combined, value)]
                 f, weight = base, combined
 
             # Define fw = f * weight
@@ -1152,6 +1854,7 @@ class IntegralGenerator:
                     assert all(isinstance(i, L.Symbol) for i in input)
                     assert all(isinstance(o, L.Symbol) for o in output)
 
+                    self._record_value(fw, fw_rhs)
                     intermediates += [L.VariableDecl(fw, fw_rhs)]
 
             var = fw if isinstance(fw, L.Symbol) else fw.array
