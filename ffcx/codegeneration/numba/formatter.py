@@ -118,7 +118,9 @@ class Formatter(FormatterInterface):
     def _(self, v: L.VariableDecl) -> str:
         """Format a variable declaration."""
         sym = self(v.symbol)
-        val = self(v.value)
+        # Python has no bare "declare without a value" statement, unlike C,
+        # so a value-less VariableDecl still needs one here.
+        val = self(v.value) if v.value is not None else "0"
         return f"{sym} = {val}\n"
 
     @__call__.register

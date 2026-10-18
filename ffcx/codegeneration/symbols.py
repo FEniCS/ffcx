@@ -5,14 +5,10 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """FFCx/UFCx specific symbol naming."""
 
-import logging
-
 import ufl
 
 import ffcx.codegeneration.lnodes as L
 from ffcx.definitions import entity_types
-
-logger = logging.getLogger("ffcx")
 
 
 def ufcx_restriction_postfix(restriction):
@@ -107,12 +103,10 @@ class FFCXBackendSymbols:
                 return self.entity_local_index[1]
             else:
                 return self.entity_local_index[0]
-        elif entity_type == "vertex":
-            return self.entity_local_index[0]
-        elif entity_type == "ridge":
+        elif entity_type in ("vertex", "ridge", "peak"):
             return self.entity_local_index[0]
         else:
-            logger.exception(f"Unknown entity_type {entity_type}")
+            raise ValueError(f"Unknown entity_type {entity_type}")
 
     def argument_loop_index(self, iarg):
         """Loop index for argument iarg."""
@@ -179,6 +173,12 @@ class FFCXBackendSymbols:
         c = self.constants
         return c[offset + index]
 
+    def entity_permutation(self, restriction):
+        """Access the quadrature permutation value for a given restriction."""
+        if restriction == "-":
+            return self.quadrature_permutation[1]
+        return self.quadrature_permutation[0]
+
     # TODO: Remove this, use table_access instead
     def element_table(self, tabledata, entity_type: entity_types, restriction):
         """Get an element table."""
@@ -195,9 +195,7 @@ class FFCXBackendSymbols:
             iq = self.quadrature_loop_index
 
         if tabledata.is_permuted:
-            qp = self.quadrature_permutation[0]
-            if restriction == "-":
-                qp = self.quadrature_permutation[1]
+            qp = self.entity_permutation(restriction)
         else:
             qp = 0
 

@@ -1,0 +1,46 @@
+spack:
+  view: /opt/view
+  config:
+    install_tree:
+      root: /opt/spack
+      padded_length: 128
+
+  concretizer:
+    unify: true
+    reuse: false
+
+  packages:
+    all:
+      require:
+      - target=x86_64_v3
+
+    blas:
+      require:
+      - netlib-lapack
+    lapack:
+      require:
+      - netlib-lapack
+
+    # Use the container's mesa instead of building one. mesa@25.0.5 (the
+    # newest version the pinned packages_ref knows) does not compile
+    # against Ubuntu 26.04's glibc -- its bundled C11 threads polyfill
+    # redeclares 'once_flag'/'call_once' -- and newer mesa releases reject
+    # meson options the recipe still passes ('gallium-vdpau'). The distro
+    # build matches the container's glibc by construction. Keep the
+    # version in step with the ubuntu:26.04 image used by dolfinx.yml.
+    # (Same fix as FEniCS/dolfinx's own
+    # .github/workflows/spack-config/gh-actions-env-test.yml.)
+    mesa:
+      buildable: false
+      externals:
+      - spec: mesa@25.1.7+osmesa+glx+opengl
+        prefix: /usr
+
+  mirrors:
+    local-buildcache:
+      url: oci://ghcr.io/fenics/spack-buildcache
+      binary: true
+      signed: false
+      access_pair:
+        id_variable: GITHUB_USER
+        secret_variable: GITHUB_TOKEN

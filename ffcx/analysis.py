@@ -50,12 +50,14 @@ def analyze_ufl_objects(
         | tuple[ufl.core.expr.Expr, npt.NDArray[np.floating]]
     ],
     scalar_type: npt.DTypeLike,
+    do_cancel_jacobian_products: bool = True,
 ) -> UFLData:
     """Analyze ufl object(s).
 
     Args:
         ufl_objects: UFL objects
         scalar_type: Scalar type that should be used for the analysis
+        do_cancel_jacobian_products: Whether to cancel jacobian products.
 
     Returns:
         A named tuple :class:`UFLData`.
@@ -88,7 +90,9 @@ def analyze_ufl_objects(
         else:
             raise TypeError("UFL objects not recognised.")
 
-    form_data = tuple(_analyze_form(form, scalar_type) for form in forms)
+    form_data = tuple(
+        _analyze_form(form, scalar_type, do_cancel_jacobian_products) for form in forms
+    )
     for data in form_data:
         elements += data.unique_sub_elements
         coordinate_elements += data.coordinate_elements
@@ -143,13 +147,16 @@ def _analyze_expression(
     return expression
 
 
-def _analyze_form(form: ufl.Form, scalar_type: npt.DTypeLike) -> FormData:
+def _analyze_form(
+    form: ufl.Form, scalar_type: npt.DTypeLike, do_cancel_jacobian_products: bool
+) -> FormData:
     """Analyzes UFL form and attaches metadata.
 
     Args:
         form: forms
         scalar_type: Scalar type used for form. This is used to simplify
             real valued forms.
+        do_cancel_jacobian_products: Whether to cancel jacobian products.
 
     Returns:
         Form data computed by UFL with metadata attached
@@ -180,6 +187,7 @@ def _analyze_form(form: ufl.Form, scalar_type: npt.DTypeLike) -> FormData:
         preserve_geometry_types=(ufl.classes.Jacobian,),
         do_apply_restrictions=True,
         do_append_everywhere_integrals=False,  # do not add dx integrals to dx(i) in UFL
+        do_cancel_jacobian_products=do_cancel_jacobian_products,
         complex_mode=complex_mode,
     )
 

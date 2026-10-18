@@ -58,10 +58,16 @@ def generator(ir: ExpressionIR, options):
         d["original_coefficient_positions"] = "NULL"
         d["original_coefficient_positions_init"] = ""
 
-    values = ", ".join(str(p) for p in points.flatten())
-    sizes = points.size
-    d["points_init"] = f"static double points_{factory_name}[{sizes}] = {{{values}}};"
-    d["points"] = f"points_{factory_name}"
+    if points.size > 0:
+        values = ", ".join(str(p) for p in points.flatten())
+        sizes = points.size
+        d["points_init"] = f"static double points_{factory_name}[{sizes}] = {{{values}}};"
+        d["points"] = f"points_{factory_name}"
+    else:
+        # An entity with topological dimension 0 (vertex) has a reference point with
+        # 0 components. A zero-length array is not VALID C, and MSVC rejects it.
+        d["points_init"] = ""
+        d["points"] = "NULL"
 
     if len(ir.expression.shape) > 0:
         values = ", ".join(str(i) for i in ir.expression.shape)

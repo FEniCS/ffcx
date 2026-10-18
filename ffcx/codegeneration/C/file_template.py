@@ -36,12 +36,30 @@ implementation_pre = """
 //
 {options}
 
+// The integer-order Bessel functions jn/yn are XSI extensions rather than ISO
+// C, and glibc's <math.h> hides them in strict ISO mode (e.g. -std=c17). Ask
+// for the XSI declarations before any system header is included.
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 700
+#endif
+
 #include <math.h>
 #include <stdalign.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ufcx.h>
 {extra_c_includes}
+
+// MSVC's CRT spells the integer-order Bessel functions with a leading
+// underscore and deprecates the POSIX names, so calling jn/yn directly
+// is a diagnostic there. Redirect them to the CRT names, after the
+// system headers so that their own declarations are not affected. No
+// other C library provides the underscored names, so the mapping is
+// guarded on MSVC alone.
+#if defined(_MSC_VER)
+#define jn(n, x) _jn((n), (x))
+#define yn(n, x) _yn((n), (x))
+#endif
 
 """
 
