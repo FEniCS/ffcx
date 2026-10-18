@@ -145,6 +145,7 @@ def get_ffcx_table_values(
     """
     deriv_order = sum(derivative_counts)
 
+    weights = None
     if integral_type in ufl.custom_integral_types:
         # Use quadrature points on cell for analysis in custom integral types
         integral_type = "cell"
@@ -206,6 +207,7 @@ def get_ffcx_table_values(
 
     if avg in ("cell", "facet"):
         # Compute numeric integral of the each component table
+        assert weights is not None
         wsum = sum(weights)
         for entity, tbl in enumerate(component_tables):
             num_dofs = tbl.shape[1]
@@ -545,6 +547,14 @@ def build_optimized_tables(
                                 )
                         t = new_table[0]
                         t["array"] = np.vstack([td["array"] for td in new_table])
+                    else:
+                        raise NotImplementedError(
+                            f"Cannot build a permuted element table for a facet of a {cell_type}."
+                        )
+                else:
+                    raise NotImplementedError(
+                        f"Cannot build a permuted element table for a facet at tdim {tdim}."
+                    )
             elif entity_type == "ridge":
                 if tdim < 3 or codim == 2 or (integral_type == "ridge" and not is_mixed_dim):
                     # No permutation is needed when the ridge is a vertex

@@ -86,11 +86,12 @@ implicit-any-parameter = true
 unannotated-return = true
 # mypy's warn_unused_ignores
 unused-ignore = true
-# mypy's equivalent (possibly-undefined) was not enabled, so this is off
-# to keep the set of checks the conversion inherits. It currently fires on
-# four sites, of which ffcx/ir/elementtables.py (`t`) looks genuinely
-# reachable: an unhandled 3D cell type falls through with `t` unset.
-unbound-name = false
+# mypy's warn_return_any
+no-any-return = true
+# Stricter than the mypy configuration this replaced: mypy's equivalent of
+# unbound-name (possibly-undefined) is opt-in and was not enabled.
+unbound-name = true
+implicit-reexport = true
 
 # mypy turned check_untyped_defs and disallow_untyped_defs off for these
 # two packages. Goal would be to drop these long-term.
