@@ -2624,7 +2624,20 @@ def test_elasticity_tangent_and_residual(degree, compile_args):
     np.testing.assert_allclose(jacobian @ direction, difference, atol=1e-8, rtol=1e-7)
 
 
-@pytest.mark.parametrize("dtype", ["float64", "complex128"])
+_REAL_AND_COMPLEX = [
+    "float64",
+    pytest.param(
+        "complex128",
+        marks=pytest.mark.xfail(
+            sys.platform.startswith("win32"),
+            raises=NotImplementedError,
+            reason="missing _Complex",
+        ),
+    ),
+]
+
+
+@pytest.mark.parametrize("dtype", _REAL_AND_COMPLEX)
 @pytest.mark.parametrize("mode", ["constant", "varying", "budget"])
 def test_preintegrated_rectangular_tensor(dtype, mode, monkeypatch, compile_args):
     """Preserve rectangular spaces, signed custom weights and varying factors."""
@@ -2680,7 +2693,7 @@ def test_preintegrated_rectangular_tensor(dtype, mode, monkeypatch, compile_args
     np.testing.assert_allclose(A, expected, atol=1e-12)
 
 
-@pytest.mark.parametrize("dtype", ["float64", "complex128"])
+@pytest.mark.parametrize("dtype", _REAL_AND_COMPLEX)
 @pytest.mark.parametrize("cell", ["triangle", "tetrahedron"])
 @pytest.mark.parametrize("mode", ["constant", "varying", "budget", "curved"])
 @pytest.mark.parametrize("blocked", [False, True])
@@ -2752,7 +2765,7 @@ def test_preintegrated_linear_form(dtype, cell, mode, blocked, monkeypatch, comp
     np.testing.assert_allclose(A, expected, atol=1e-12)
 
 
-@pytest.mark.parametrize("dtype", ["float64", "complex128"])
+@pytest.mark.parametrize("dtype", _REAL_AND_COMPLEX)
 @pytest.mark.parametrize("family", ["Lagrange", "RT", "N1curl"])
 def test_preintegrated_constant_blocks_in_varying_form(dtype, family, monkeypatch, compile_args):
     """Preintegrate constant blocks while retaining point-dependent contractions."""
@@ -2800,7 +2813,7 @@ def test_preintegrated_constant_blocks_in_varying_form(dtype, family, monkeypatc
     np.testing.assert_allclose(tensors[0], tensors[1], atol=1e-12)
 
 
-@pytest.mark.parametrize("dtype", ["float64", "complex128"])
+@pytest.mark.parametrize("dtype", _REAL_AND_COMPLEX)
 @pytest.mark.parametrize("cell", ["triangle", "tetrahedron", "quadrilateral", "hexahedron"])
 @pytest.mark.parametrize("family", ["Lagrange", "RT", "N1curl"])
 @pytest.mark.parametrize("coefficient_degree", [0, 1])
