@@ -36,19 +36,19 @@ file_dir = os.path.dirname(os.path.abspath(__file__))
 with open(file_dir + "/ufcx.h") as f:
     ufcx_h = "".join(f.readlines())
 
-# Emulate C preprocessor on __STDC_NO_COMPLEX__
+# Emulate C preprocessor on UFCX_NO_COMPLEX
 if sys.platform.startswith("win32"):
     # Remove macro statements and content
     ufcx_h = re.sub(
-        r"\#ifndef __STDC_NO_COMPLEX__.*?\#endif // __STDC_NO_COMPLEX__",
+        r"\#ifndef UFCX_NO_COMPLEX.*?\#endif // UFCX_NO_COMPLEX",
         "",
         ufcx_h,
         flags=re.DOTALL,
     )
 else:
     # Remove only macros keeping content
-    ufcx_h = ufcx_h.replace("#ifndef __STDC_NO_COMPLEX__", "")
-    ufcx_h = ufcx_h.replace("#endif // __STDC_NO_COMPLEX__", "")
+    ufcx_h = ufcx_h.replace("#ifndef UFCX_NO_COMPLEX", "")
+    ufcx_h = ufcx_h.replace("#endif // UFCX_NO_COMPLEX", "")
 
 header = ufcx_h.split("<HEADER_DECL>")[1].split("</HEADER_DECL>")[0].strip(" /\n")
 header = header.replace("{", "{{").replace("}", "}}")
