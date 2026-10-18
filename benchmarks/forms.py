@@ -105,6 +105,12 @@ def cases(cells, degrees, geometry="affine", quadrature_from=None):
                 "transport": f * ufl.dot(direction, ufl.grad(u)) * v * ufl.dx,
                 "reaction_diffusion": (f * u * v + ufl.inner(ufl.grad(u), ufl.grad(v))) * ufl.dx,
             }
+            x = ufl.SpatialCoordinate(mesh)
+            forms["sin_load"] = ufl.sin(x[0]) * v * ufl.dx
+            forms["exp_weighted_load"] = f * ufl.exp(0.2 * x[0]) * v * ufl.dx
+            forms["log_gradient_load"] = (
+                ufl.ln(2 + x[0]) * ufl.inner(direction, ufl.grad(v)) * ufl.dx
+            )
             vector = basix.ufl.blocked_element(scalar, shape=(dim,))
             W = ufl.FunctionSpace(mesh, vector)
             a, b = ufl.TrialFunction(W), ufl.TestFunction(W)
