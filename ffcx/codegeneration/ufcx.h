@@ -42,12 +42,9 @@ extern "C"
 #endif // restrict
 #endif // __cplusplus
 
-// Complex kernels need C99 _Complex, which MSVC lacks in C++ mode without
-// defining __STDC_NO_COMPLEX__. clang-cl also defines _MSC_VER but supports
-// _Complex. Generated code tests this macro too, so it stays defined after the
-// header.
-#if defined(__STDC_NO_COMPLEX__)                                               \
-    || (defined(__cplusplus) && defined(_MSC_VER) && !defined(__clang__))
+// No complex kernels without C99 _Complex or with MSVC-compatible compilers,
+// as in DOLFINx. Generated code tests this macro, so it stays defined.
+#if defined(__STDC_NO_COMPLEX__) || defined(_MSC_VER)
 #define UFCX_NO_COMPLEX
 #endif
 
