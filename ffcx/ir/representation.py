@@ -726,10 +726,12 @@ def _compute_expression_ir(
             base_ir["entity_type"] = "facet"
         elif tdim - 2 == pdim:
             base_ir["entity_type"] = "ridge"
+        elif tdim - 3 == pdim:
+            base_ir["entity_type"] = "peak"
         else:
             raise ValueError(
-                f"Expression on domain with topological dimension {tdim}"
-                + f"with points of dimension {pdim} not supported."
+                f"Expression on domain with topological dimension {tdim} "
+                f"with points of dimension {pdim} not supported."
             )
     else:
         # For spatially invariant expressions, all expressions are evaluated in the cell

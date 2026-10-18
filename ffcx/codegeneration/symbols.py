@@ -5,14 +5,10 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """FFCx/UFCx specific symbol naming."""
 
-import logging
-
 import ufl
 
 import ffcx.codegeneration.lnodes as L
 from ffcx.definitions import entity_types
-
-logger = logging.getLogger("ffcx")
 
 
 def ufcx_restriction_postfix(restriction):
@@ -107,12 +103,10 @@ class FFCXBackendSymbols:
                 return self.entity_local_index[1]
             else:
                 return self.entity_local_index[0]
-        elif entity_type == "vertex":
-            return self.entity_local_index[0]
-        elif entity_type == "ridge":
+        elif entity_type in ("vertex", "ridge", "peak"):
             return self.entity_local_index[0]
         else:
-            logger.error(f"Unknown entity_type {entity_type}")
+            raise ValueError(f"Unknown entity_type {entity_type}")
 
     def argument_loop_index(self, iarg):
         """Loop index for argument iarg."""
