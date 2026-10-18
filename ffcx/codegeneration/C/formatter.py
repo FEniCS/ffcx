@@ -169,11 +169,16 @@ class Formatter(FormatterInterface):
 
     def _format_number(self, x):
         """Format a number."""
+        # Floating point literals are 'double' in C unless suffixed. In a
+        # float32 kernel every one of them is then a narrowing conversion
+        # that compilers warn about, once per table entry (MSVC C4305 and
+        # C4244), so suffix them when the real type is 'float'.
+        suffix = "f" if self.real_type == np.float32 else ""
         # Use 16sf for precision (good for float64 or less)
         if isinstance(x, complex):
-            return f"({x.real:.16}+I*{x.imag:.16})"
+            return f"({x.real:.16}{suffix}+I*{x.imag:.16}{suffix})"
         elif isinstance(x, float):
-            return f"{x:.16}"
+            return f"{x:.16}{suffix}"
         return str(x)
 
     def _build_initializer_lists(self, values):
