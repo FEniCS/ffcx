@@ -58,3 +58,41 @@ def test_generated_code_without_complex(tmp_path):
             ],
             check=True,
         )
+
+
+def test_generated_code_included_in_cpp(tmp_path):
+    """Generated code must compile when included in C++ without C99 complex.
+
+    DOLFINx's custom kernel demo includes generated C in a C++ file, which
+    MSVC compiles without `_Complex`. `-D__STDC_NO_COMPLEX__` reproduces
+    that on other compilers.
+    """
+    cxx = shutil.which("c++") or shutil.which("g++") or shutil.which("clang++")
+    if cxx is None:
+        pytest.skip("no C++ compiler found.")
+
+    dir = Path(__file__).parent
+    subprocess.run(["ffcx", "-d", str(tmp_path), str(dir / "poisson.py")], check=True)
+
+    # ufcx.h undefines its restrict workaround, so define it after the header
+    wrapper = tmp_path / "wrapper.cpp"
+    wrapper.write_text(
+        '#include "poisson.h"\n#define restrict __restrict__\n#include "poisson.c"\n'
+    )
+
+    include = Path(ffcx.codegeneration.__file__).parent
+    for extra in ([], ["-D__STDC_NO_COMPLEX__"]):
+        subprocess.run(
+            [
+                cxx,
+                "-std=c++20",
+                "-c",
+                f"-I{include}",
+                f"-I{tmp_path}",
+                *extra,
+                str(wrapper),
+                "-o",
+                str(tmp_path / "wrapper.o"),
+            ],
+            check=True,
+        )
