@@ -25,13 +25,25 @@ class FFCXBackendAccess:
 
     entity_type: entity_types
 
-    def __init__(self, entity_type: entity_types, integral_type: str, symbols, options):
+    def __init__(
+        self,
+        entity_type: entity_types,
+        integral_type: str,
+        symbols,
+        options,
+        integration_domain_coordinate_element: basix.ufl._ElementBase | None = None,
+    ):
         """Initialise."""
         # Store ir and options
         self.entity_type = entity_type
         self.integral_type = integral_type
         self.symbols = symbols
         self.options = options
+        # The integration domain's own coordinate element (a
+        # `basix.ufl` element), needed to look up which of its scalar
+        # dofs belong to a given local facet/ridge's closure, for the
+        # mixed-dimensional-submesh gather above.
+        self.integration_domain_coordinate_element = integration_domain_coordinate_element
 
         # Lookup table for handler to call when the "get" method (below)
         # is called, depending on the first argument type.
@@ -452,9 +464,7 @@ class FFCXBackendAccess:
         # FIXME: Hopefully tabledata is not permuted when applying sum
         # factorization
         if tabledata.is_permuted:
-            qp = self.symbols.quadrature_permutation[0]
-            if restriction == "-":
-                qp = self.symbols.quadrature_permutation[1]
+            qp = self.symbols.entity_permutation(restriction)
 
         if dof_index.dim == 1 and quadrature_index.dim == 1:
             symbols += [L.Symbol(tabledata.name, dtype=L.DataType.REAL)]
@@ -466,7 +476,11 @@ class FFCXBackendAccess:
             assert tabledata.tensor_factors is not None
             for i in range(dof_index.dim):
                 factor = tabledata.tensor_factors[i]
-                iq_i = quadrature_index.local_index(i)
+                # A piecewise table's 1D factors are constant over the points,
+                # and it's accessed outside the quadrature loop
+                iq_i = (
+                    L.LiteralInt(0) if tabledata.is_piecewise else quadrature_index.local_index(i)
+                )
                 ic_i = dof_index.local_index(i)
                 table = self.symbols.element_tables[factor.name][qp][entity][iq_i][ic_i]
                 symbols += [L.Symbol(factor.name, dtype=L.DataType.REAL)]

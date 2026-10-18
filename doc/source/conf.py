@@ -12,13 +12,13 @@
 # import os
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
-import datetime
+import datetime as dt
 import importlib.metadata
 
 # -- Project information -----------------------------------------------------
 
 project = "FFCx"
-this_year = datetime.date.today().year
+this_year = dt.date.today().year
 copyright = f"{this_year}, FEniCS Project"
 author = "FEniCS Project"
 

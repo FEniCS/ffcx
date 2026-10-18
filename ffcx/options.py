@@ -21,7 +21,6 @@ logger = logging.getLogger("ffcx")
 
 FFCX_DEFAULT_OPTIONS = {
     "language": (str, "C", "Language to output kernel in", None),
-    "epsilon": (float, 1e-14, "Machine precision, used for dropping zero terms in tables.", None),
     "scalar_type": (
         str,
         "float64",
@@ -48,6 +47,12 @@ FFCX_DEFAULT_OPTIONS = {
         None,
     ),
     "part": (str, "full", "Part of bilinear tensor to assemble", ("full", "diagonal")),
+    "do_cancel_jacobian_products": (
+        bool,
+        True,
+        "Cancel contractions of the Jacobian with its inverse in form integrands.",
+        None,
+    ),
 }
 
 
@@ -102,7 +107,7 @@ def get_options(
 
         Example `ffcx_options.json` file:
 
-          { "epsilon": 1e-7 }
+          { "table_atol": 1e-10 }
 
     """
     options: dict[str, npt.DTypeLike | int | float] = {}
@@ -119,8 +124,10 @@ def get_options(
         options.update(priority_options)
 
     logger.setLevel(int(options["verbosity"]))  # type: ignore
-    logger.info("Final option values")
-    logger.info(pprint.pformat(options))
+    # pformat dominates this function and runs on every JIT cache hit.
+    if logger.isEnabledFor(logging.INFO):
+        logger.info("Final option values")
+        logger.info(pprint.pformat(options))
 
     return options
 

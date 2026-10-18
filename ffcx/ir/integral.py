@@ -124,12 +124,16 @@ class CommonExpressionIR(typing.NamedTuple):
     original_constant_offsets: dict[ufl.Constant, int]
     unique_tables: dict[basix.CellType, npt.NDArray[np.float64]]
     unique_table_types: dict[basix.CellType, dict[str, str]]
-    integrand: dict[tuple[basix.CellType, QuadratureRule], dict]
+    integrand: dict[tuple[basix.CellType, QuadratureRule], IntermediateIntegrandIR]
     name: str
     needs_facet_permutations: bool
     shape: list[int]
     coordinate_element_hash: str
     number_coordinate_dofs: int
+    # The integration domain's own coordinate element, used to
+    # get the coordinate closure dofs for each mixed-dimensional
+    # submesh. Avoids having to pack duplicate coordinates.
+    integration_domain_coordinate_element: basix.ufl._ElementBase | None = None
 
 
 def _compute_integral_ir(
@@ -177,6 +181,14 @@ def _compute_integral_ir(
     ) + ufl.algorithms.analysis.extract_coefficients(expression)
     domains = map(ufl.domain.extract_unique_domain, coeffs_and_arguments)
     for domain in domains:
+        assert domain is not None
+        if domain.topological_dimension != cell.topological_dimension:
+            is_mixed_dim = True
+    # Check geometric terminals for mixed-dimensionality
+    for mt in initial_terminals.values():
+        if type(mt.terminal) not in (ufl.geometry.SpatialCoordinate, ufl.geometry.Jacobian):
+            continue
+        domain = ufl.domain.extract_unique_domain(mt.terminal)
         assert domain is not None
         if domain.topological_dimension != cell.topological_dimension:
             is_mixed_dim = True

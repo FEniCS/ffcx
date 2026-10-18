@@ -61,7 +61,7 @@ def test_C(file, scalar_type):
             )
     else:
         cc = os.environ.get("CC", "cc")
-        extra_flags = "-std=c17 -Wunused-variable -Werror -fPIC"
+        extra_flags = "-std=c17 -pedantic-errors -Wall -Werror -fPIC"
         subprocess.run(
             [
                 cc,

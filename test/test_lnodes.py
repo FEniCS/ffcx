@@ -1,12 +1,69 @@
 import importlib
 
+import basix.ufl
 import numpy as np
 import pytest
+import ufl
 from cffi import FFI
 
+import ffcx.codegeneration.jit
 from ffcx.codegeneration import lnodes as L
 from ffcx.codegeneration.C import Formatter
 from ffcx.codegeneration.utils import dtype_to_c_type
+
+
+def _power_lnode(exponent):
+    """Translate ``base**exponent`` through ufl_to_lnodes, given a symbolic base.
+
+    Uses ufl.variable to stop UFL constant-folding the power away before it
+    reaches ufl_to_lnodes.
+    """
+    x = ufl.variable(ufl.constantvalue.FloatValue(3.0))
+    op = x**exponent
+    base = L.Symbol("x", L.DataType.SCALAR)
+    exponent_lnode = L.ufl_to_lnodes(op.ufl_operands[1])
+    return L.ufl_to_lnodes(op, base, exponent_lnode)
+
+
+@pytest.mark.parametrize(
+    "exponent,expected_type",
+    # Exponent 0 and 1 aren't tested: UFL itself constant-folds/simplifies
+    # x**0 and x**1 away before a Power node ever reaches ufl_to_lnodes.
+    [(2, L.Mul), (3, L.Mul), (-1, L.Div), (-2, L.Div)],
+)
+def test_power_expansion_small_integer_exponents(exponent, expected_type):
+    """Small integer powers expand to multiplications/a reciprocal, not pow()."""
+    result = _power_lnode(exponent)
+    assert isinstance(result, expected_type)
+    assert not isinstance(result, L.MathFunction)
+
+
+@pytest.mark.parametrize("exponent", [5, -5, 0.5])
+def test_power_expansion_falls_back_to_pow_outside_small_range(exponent):
+    """Exponents outside the small integer range still emit a pow() call."""
+    result = _power_lnode(exponent)
+    assert isinstance(result, L.MathFunction)
+    assert result.function == "power"
+
+
+def test_squared_coefficient_generates_no_pow_call(compile_args):
+    """A squared term in a form compiles without a pow() call in the generated code.
+
+    Also matters beyond the arithmetic: a stray pow() call can make the
+    vector-math split treat the kernel as containing a transcendental call,
+    despite there being no useful vectorised function to expose.
+    """
+    element = basix.ufl.element("Lagrange", "triangle", 2)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    space = ufl.FunctionSpace(domain, element)
+    u = ufl.Coefficient(space)
+    v = ufl.TestFunction(space)
+    form = (u**2) * v * ufl.dx
+
+    _, _, (_, impl) = ffcx.codegeneration.jit.compile_forms(
+        [form], options={"scalar_type": "float64"}, cffi_extra_compile_args=compile_args
+    )
+    assert "pow(" not in impl
 
 
 @pytest.mark.parametrize("dtype", ("float32", "float64", "intc"))
@@ -102,3 +159,30 @@ def test_gemv(dtype):
 
     gemv(py, pA, px)
     assert np.all(y == result)
+
+
+@pytest.mark.parametrize(
+    "dtype,suffix",
+    [("float32", "f"), ("complex64", "f"), ("float64", ""), ("complex128", "")],
+)
+def test_float_literals_suffixed_for_float_real_type(dtype, suffix):
+    """Float literals carry an 'f' suffix when the real type is 'float'.
+
+    An unsuffixed literal is a 'double' in C, so assigning it to a float
+    is a narrowing conversion that compilers warn about once per table
+    entry (MSVC C4305/C4244).
+    """
+    fmt = Formatter(np.dtype(dtype))
+
+    value = L.LiteralFloat(0.5)
+    assert fmt(value) == f"0.5{suffix}"
+
+    # Table initialisers go through a separate path
+    array = L.ArrayDecl(
+        L.Symbol("table", L.DataType.REAL), sizes=(2,), values=np.array([0.5, 1.5]), const=True
+    )
+    assert f"0.5{suffix}" in fmt(array)
+    assert f"1.5{suffix}" in fmt(array)
+
+    # Integer literals are never suffixed
+    assert fmt(L.LiteralInt(2)) == "2"
