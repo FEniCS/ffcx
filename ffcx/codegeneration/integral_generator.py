@@ -1323,7 +1323,6 @@ class IntegralGenerator:
                 return sections, [], []
 
             body: list[L.LNode] = []
-            upper: list[L.LNode] = []
             scatter: list[L.LNode] = []
             locals_: dict[int, L.Symbol] = {}
             names = [index.name for index in indices]
@@ -1342,11 +1341,7 @@ class IntegralGenerator:
                 # A single initial value, nested to the array rank, zero-fills
                 # the whole array.
                 prologue.append(L.ArrayDecl(local, sizes=sizes, values=np.zeros((1,) * len(sizes))))
-                accumulate = [L.AssignAdd(L.ArrayAccess(local, indices), r) for r in rhs]
-                if g in symmetric:
-                    upper += accumulate
-                else:
-                    body += accumulate
+                body += [L.AssignAdd(L.ArrayAccess(local, indices), r) for r in rhs]
             if size > ranges[innermost]:
                 prologue += [
                     L.Comment(
@@ -1364,7 +1359,7 @@ class IntegralGenerator:
                 scatter.append(L.AssignAdd(lhs, values[-1]))
             n = ranges[indices[0]]
             if (
-                upper
+                symmetric
                 and _MIN_SYMMETRIC_ROW_GROUPS * width <= n <= _MAX_SYMMETRIC_ROW_GROUPS * width
             ):
                 # Split into row groups after optimisation (see _split_upper_rows)
@@ -1383,7 +1378,6 @@ class IntegralGenerator:
                         for node in _mirror_lower(locals_[g], indices, n, width)
                     ],
                 ]
-            body += upper
             for index, end in reversed(list(zip(indices, sizes))):
                 body = [L.ForRange(index, 0, end, body)]
             layouts = [self._block_layout(lhs, indices) for lhs, _ in groups.values()]
