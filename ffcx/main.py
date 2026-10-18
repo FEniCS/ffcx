@@ -116,8 +116,12 @@ def main(args: Sequence[str] | None = None) -> int:
     else:
         outfiles = xargs.outfile
 
-    # Parse all other options
-    priority_options = {k: v for k, v in xargs.__dict__.items() if v is not None}
+    # Parse all other options. Only forward the parsed arguments that
+    # are FFCx options; the rest (input files, output directory, ...)
+    # are handled here and are not option values.
+    priority_options = {
+        k: v for k, v in xargs.__dict__.items() if v is not None and k in FFCX_DEFAULT_OPTIONS
+    }
     options = get_options(priority_options)
 
     for filename, namespace, outfile in zip(filenames, namespaces, outfiles):
