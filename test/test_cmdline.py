@@ -83,9 +83,11 @@ def test_generated_code_included_in_cpp(tmp_path):
     dir = Path(__file__).parent
     subprocess.run(["ffcx", "-d", str(tmp_path), str(dir / "poisson.py")], check=True)
 
-    # ufcx.h undefines its restrict workaround, so define it after the header
+    # ufcx.h undefines its restrict workaround, so define it after the header.
+    # Include the C headers first, as MSVC's declare `__declspec(restrict)`.
     wrapper = tmp_path / "wrapper.cpp"
     wrapper.write_text(
+        "#include <math.h>\n#include <stdalign.h>\n#include <stdlib.h>\n#include <string.h>\n"
         '#include "poisson.h"\n'
         "#ifdef _MSC_VER\n#define restrict __restrict\n"
         "#else\n#define restrict __restrict__\n#endif\n"
