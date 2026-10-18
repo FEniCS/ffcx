@@ -2743,3 +2743,70 @@ def test_nonaffine_cell_operators(dtype, cell, family, coefficient_degree, compi
         module.ffi.NULL,
     )
     np.testing.assert_allclose(A, expected, rtol=2e-11, atol=2e-11)
+
+
+@pytest.mark.parametrize("dtype", ["float32", "float64", "complex64", "complex128"])
+@pytest.mark.parametrize("cell", ["triangle", "tetrahedron"])
+@pytest.mark.parametrize("blocked", [False, True])
+@pytest.mark.parametrize("rectangular", [False, True])
+def test_preintegrated_gradient_tensor(dtype, cell, blocked, rectangular, compile_args):
+    """Check merged gradient contractions, rectangular spaces and component maps."""
+    if sys.platform.startswith("win32") and "complex" in dtype:
+        pytest.skip("C99 complex kernels are unavailable on Windows")
+    dim = 2 if cell == "triangle" else 3
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(dim,)))
+    trial_scalar = basix.ufl.element("Lagrange", cell, 2)
+    test_scalar = basix.ufl.element("Lagrange", cell, 3 if rectangular else 2)
+    trial_element = basix.ufl.blocked_element(trial_scalar, shape=(2,)) if blocked else trial_scalar
+    test_element = basix.ufl.blocked_element(test_scalar, shape=(2,)) if blocked else test_scalar
+    trial = ufl.TrialFunction(ufl.FunctionSpace(domain, trial_element))
+    test = ufl.TestFunction(ufl.FunctionSpace(domain, test_element))
+    coefficient = ufl.Constant(domain)
+    integrand = ufl.inner(ufl.grad(trial), ufl.grad(test))
+    if blocked:
+        integrand += 0.25 * ufl.inner(ufl.grad(trial[0]), ufl.grad(test[1]))
+    points = np.array([[0.1, 0.1, 0.1], [0.2, 0.3, 0.1], [0.2, 0.1, 0.4]])[:, :dim]
+    weights = np.array([0.1, -0.05, 0.2])
+    form = (
+        coefficient
+        * integrand
+        * ufl.dx(
+            metadata={
+                "quadrature_rule": "custom",
+                "quadrature_points": points,
+                "quadrature_weights": weights,
+            }
+        )
+    )
+    compiled, module, _ = ffcx.codegeneration.jit.compile_forms(
+        [form], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+    coords = np.array(
+        [[0, 0, 0], [1.1, 0.03, 0.02], [0.1, 0.92, 0.05], [0.04, 0.08, 1.2]],
+        dtype=dtype_to_scalar_dtype(dtype),
+    )[: dim + 1].copy()
+    value = np.array([1.2 + 0.3j if "complex" in dtype else 1.2], dtype=dtype)
+    A = np.full((test_element.dim, trial_element.dim), 0.17, dtype=dtype)
+    ctype = dtype_to_c_type(dtype)
+    real_ctype = dtype_to_c_type(dtype_to_scalar_dtype(dtype))
+    getattr(compiled[0].form_integrals[0], f"tabulate_tensor_{dtype}")(
+        module.ffi.cast(f"{ctype} *", A.ctypes.data),
+        module.ffi.NULL,
+        module.ffi.cast(f"{ctype} *", value.ctypes.data),
+        module.ffi.cast(f"{real_ctype} *", coords.ctypes.data),
+        module.ffi.NULL,
+        module.ffi.NULL,
+        module.ffi.NULL,
+    )
+    J = (coords[1:, :dim] - coords[0, :dim]).T.astype(np.float64)
+    inverse = np.linalg.inv(J)
+    trial_derivatives = trial_scalar.basix_element.tabulate(1, points)[1 : dim + 1, :, :, 0]
+    test_derivatives = test_scalar.basix_element.tabulate(1, points)[1 : dim + 1, :, :, 0]
+    trial_gradients = np.einsum("dqi,dc->qic", trial_derivatives, inverse)
+    test_gradients = np.einsum("dqi,dc->qic", test_derivatives, inverse)
+    expected = np.einsum("q,qic,qjc->ij", weights, test_gradients, trial_gradients)
+    expected *= abs(np.linalg.det(J))
+    if blocked:
+        expected = np.kron(expected, np.array([[1, 0], [0.25, 1]]))
+    tolerance = 3e-5 if dtype in ("float32", "complex64") else 1e-11
+    np.testing.assert_allclose(A, 0.17 + value[0] * expected, atol=tolerance, rtol=tolerance)

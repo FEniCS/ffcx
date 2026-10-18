@@ -414,7 +414,8 @@ class IntegralGenerator:
         Each table holds an argument table or product of two tables summed over
         quadrature points. Runtime assembly contracts these reference tensors
         with the cellwise factors, avoiding repeated output updates for each
-        point. The table budget bounds generated data for large argument spaces.
+        point. Contributions sharing a factor and output map are added into one
+        reference table. The table budget bounds data for large argument spaces.
         Return the generated code and identities of the integrated IR blocks so
         the remaining quadrature contraction can omit those exact contributions.
         """
@@ -467,8 +468,7 @@ class IntegralGenerator:
         if table_bytes > _MAX_PREINTEGRATED_TABLE_BYTES:
             return None
 
-        declarations: list[L.LNode] = []
-        tables: dict[tuple[str, ...], L.Symbol] = {}
+        tables: dict[tuple[str, ...], np.ndarray] = {}
         for names, pair in pairs.items():
             argument_values = [
                 np.broadcast_to(
@@ -477,12 +477,10 @@ class IntegralGenerator:
                 for table in pair
             ]
             contraction = "q,qi->i" if len(pair) == 1 else "q,qi,qj->ij"
-            values = np.einsum(contraction, quadrature_rule.weights, *argument_values)
-            symbol = L.Symbol(f"RI_{quadrature_rule.id()}_{len(tables)}", L.DataType.REAL)
-            tables[names] = symbol
-            declarations.append(L.ArrayDecl(symbol, values=values, const=True))
+            tables[names] = np.einsum(contraction, quadrature_rule.weights, *argument_values)
 
-        groups = collections.defaultdict(list)
+        groups: dict[tuple, dict[tuple, tuple[L.LExpr, np.ndarray]]] = collections.defaultdict(dict)
+        term_counts: collections.Counter[tuple] = collections.Counter()
         F = integrand["factorization"]
         A = self.backend.symbols.element_tensor
         shape = self.ir.expression.tensor_shape
@@ -495,19 +493,57 @@ class IntegralGenerator:
                 domain,
                 F.nodes[block.factor_indices_comp_indices[0][0]]["expression"],
             )
+            sizes = tuple(t.values.shape[-1] for t in data)
             output = tuple(t.block_size * index + t.offset for t, index in zip(data, indices))
-            table = tables[tuple(t.name for t in data)]
-            access = L.ArrayAccess(table, indices)
-            groups[tuple(t.values.shape[-1] for t in data)].append((output, factor * access))
+            values = tables[tuple(t.name for t in data)]
+            # A shared cellwise factor can multiply the sum of reference tables.
+            # Merge only contributions with the same output map and dimensions.
+            entries = groups[sizes, output]
+            term_counts[sizes, output] += 1
+            key = expr_key(factor)
+            # Preserve the unrolling of small constant-argument updates when
+            # they are followed by a remaining quadrature contraction.
+            if len(blocks) < num_blocks and all(t.is_piecewise for t in data):
+                key = (key, term_counts[sizes, output])
+            if key in entries:
+                previous_factor, previous_values = entries[key]
+                entries[key] = (previous_factor, previous_values + values)
+            else:
+                entries[key] = (factor, values)
+
+        declarations: list[L.LNode] = []
+        symbols: dict[tuple, L.Symbol] = {}
+        loops: dict[tuple[int, ...], list[L.LNode]] = collections.defaultdict(list)
+        table_bytes = 0
+        for (sizes, output), entries in groups.items():
+            # A full contiguous tensor has no row boundaries to preserve. One
+            # linear loop lets vectorizers use contiguous loads and stores.
+            # Keep existing loops for unmerged contractions: flattening can
+            # worsen unrolling for small mass tensors or many table streams.
+            flat = (
+                sizes == tuple(shape)
+                and output == tuple(indices)
+                and 1 < len(entries) < term_counts[sizes, output]
+            )
+            table_indices = [indices[0]] if flat else indices
+            terms = []
+            for factor, values in entries.values():
+                if flat:
+                    values = values.ravel()
+                key = (values.shape, values.tobytes())
+                if key not in symbols:
+                    symbol = L.Symbol(f"RI_{quadrature_rule.id()}_{len(symbols)}", L.DataType.REAL)
+                    symbols[key] = symbol
+                    declarations.append(L.ArrayDecl(symbol, values=values, const=True))
+                    table_bytes += values.nbytes
+                terms.append(factor * L.ArrayAccess(symbols[key], table_indices))
+            target = A[indices[0]] if flat else A[L.MultiIndex(list(output), shape)]
+            loop_sizes = (math.prod(sizes),) if flat else sizes
+            loops[loop_sizes].append(L.AssignAdd(target, L.Sum(terms)))
+        if table_bytes > _MAX_PREINTEGRATED_TABLE_BYTES:
+            return None
         code: list[L.LNode] = []
-        for sizes, entries in groups.items():
-            updates = collections.defaultdict(list)
-            for output, term in entries:
-                updates[output].append(term)
-            body: list[L.LNode] = [
-                L.AssignAdd(A[L.MultiIndex(list(output), shape)], L.Sum(terms))
-                for output, terms in updates.items()
-            ]
+        for sizes, body in loops.items():
             for index, size in reversed(list(zip(indices, sizes))):
                 body = [L.ForRange(index, 0, size, body)]
             code.extend(body)
