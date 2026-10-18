@@ -23,6 +23,7 @@ import basix.ufl
 import numpy as np
 import numpy.typing as npt
 import ufl.algorithms
+import ufl.corealg.traversal
 
 logger = logging.getLogger("ffcx")
 
