@@ -43,8 +43,7 @@ ci = [
     "coverage>=7.0.0",
     "pytest-cov",
     "pytest-xdist",
-    "types-setuptools",
-    "mypy",
+    "pyrefly",
     "fenics-ffcx[docs]",
     "fenics-ffcx[lint]",
     "fenics-ffcx[test]",
@@ -67,29 +66,47 @@ testpaths = ["test"]
 norecursedirs = ["libs", "docs"]
 log_cli = true
 
-[tool.mypy]
-# Suggested at https://blog.wolt.com/engineering/2021/09/30/professional-grade-mypy-configuration/
-# Goal would be to make all of the below True long-term
-disallow_untyped_defs = true
-disallow_any_unimported = true
-no_implicit_optional = true
-check_untyped_defs = true
-warn_return_any = true
-warn_unused_ignores = true
-show_error_codes = true
+[tool.pyrefly]
+project-includes = ["ffcx"]
 
-[[tool.mypy.overrides]]
-module = ['basix', 'cffi', 'numba.*', 'pygraphviz', 'ufl.*']
-ignore_missing_imports = true
+# Modules the mypy configuration this replaced exempted from checking.
+# They are replaced with Any unconditionally rather than only when they
+# cannot be imported, so the result does not depend on whether a given
+# platform happens to have the package installed: pygraphviz is only
+# installed on some CI platforms, and cffi ships no type information.
+# UFL is included because most of the Any values in FFCx come from it.
+replace-imports-with-any = ["cffi", "pygraphviz", "ufl", "ufl.*"]
 
-[[tool.mypy.overrides]]
-module = ["ffcx.*", "ffcx.ir.*", "ffcx.codegeneration.*"]
-disallow_any_unimported = false                           # most of these come from UFL
+# mypy's check_untyped_defs
+check-unannotated-defs = true
 
-[[tool.mypy.overrides]]
-module = ["ffcx.ir.*", "ffcx.codegeneration.*"]
-check_untyped_defs = false
-disallow_untyped_defs = false
+[tool.pyrefly.errors]
+# mypy's disallow_untyped_defs
+implicit-any-parameter = true
+unannotated-return = true
+# mypy's warn_unused_ignores
+unused-ignore = true
+# mypy's equivalent (possibly-undefined) was not enabled, so this is off
+# to keep the set of checks the conversion inherits. It currently fires on
+# four sites, of which ffcx/ir/elementtables.py (`t`) looks genuinely
+# reachable: an unhandled 3D cell type falls through with `t` unset.
+unbound-name = false
+
+# mypy turned check_untyped_defs and disallow_untyped_defs off for these
+# two packages. Goal would be to drop these long-term.
+[[tool.pyrefly.sub-config]]
+matches = "ffcx/ir/**"
+check-unannotated-defs = false
+[tool.pyrefly.sub-config.errors]
+implicit-any-parameter = false
+unannotated-return = false
+
+[[tool.pyrefly.sub-config]]
+matches = "ffcx/codegeneration/**"
+check-unannotated-defs = false
+[tool.pyrefly.sub-config.errors]
+implicit-any-parameter = false
+unannotated-return = false
 
 [tool.ruff]
 line-length = 100
