@@ -44,6 +44,7 @@ logger = logging.getLogger("ffcx")
 
 _FW_CACHE_BUDGET_BYTES = 32768
 _MAX_LOCAL_TENSOR_BYTES = 65536
+_MAX_SYMMETRIC_LOCAL_BYTES = 8192
 _LOCAL_TENSOR_ALIGNMENT_BYTES = 32
 _MAX_PREINTEGRATED_TABLE_BYTES = 65536
 _MIN_PARTIAL_PREINTEGRATION_WORK = 64
@@ -386,6 +387,34 @@ def _evaluate_index(node, values: dict[str, int]) -> int:
     raise ValueError(f"Cannot evaluate index {node!r}.")
 
 
+def _blocked_rows(
+    layouts: list[tuple[int, int, int, int]],
+) -> tuple[int, int, dict[int, dict[int, int]]] | None:
+    """Group blocked updates of a rank-two tensor by rows.
+
+    Each layout is ``(row step, row offset, column step, column offset)`` of
+    one update, whose entries are ``(step * i + offset, step * j + offset)``.
+    Returns ``(row step, column step, {row offset: {column offset: update}})``
+    when all updates share the steps, the column step exceeds one, and every
+    row offset has updates for one contiguous range of column step offsets.
+    """
+    if len({lay[0] for lay in layouts}) != 1 or len({lay[2] for lay in layouts}) != 1:
+        return None
+    bs0, bs1 = layouts[0][0], layouts[0][2]
+    if bs1 < 2:
+        return None
+    rows: dict[int, dict[int, int]] = collections.defaultdict(dict)
+    for k, (_, row, _, column) in enumerate(layouts):
+        if column in rows[row]:
+            return None
+        rows[row][column] = k
+    for columns in rows.values():
+        base = min(columns)
+        if sorted(columns) != list(range(base, base + bs1)):
+            return None
+    return bs0, bs1, dict(rows)
+
+
 def _contraction_work(node) -> int:
     """Estimate statically repeated scalar statements in a contraction tree."""
     if isinstance(node, list):
@@ -483,7 +512,7 @@ class IntegralGenerator:
         # that two factors are identical.
         self._value_ids: dict[str, int] = {}
         self._interned: dict[tuple, int] = {}
-        self._polynomials: dict[str, dict[tuple[int, ...], Any]] = {}
+        self._polynomials: dict[str, dict[str, dict[tuple[int, ...], Any]]] = {}
 
     def init_scopes(self):
         """Initialize variable scope dicts."""
@@ -784,6 +813,7 @@ class IntegralGenerator:
 
         groups: dict[tuple, dict[tuple, tuple[L.LExpr, np.ndarray]]] = collections.defaultdict(dict)
         term_counts: collections.Counter[tuple] = collections.Counter()
+        layouts: dict[tuple, tuple[tuple[Any, Any], ...]] = {}
         F = integrand["factorization"]
         A = self.backend.symbols.element_tensor
         shape = self.ir.expression.tensor_shape
@@ -803,6 +833,7 @@ class IntegralGenerator:
             # Merge only contributions with the same output map and dimensions.
             entries = groups[sizes, output]
             term_counts[sizes, output] += 1
+            layouts[sizes, output] = tuple((t.block_size, t.offset) for t in data)
             key = expr_key(factor)
             # Preserve the unrolling of small constant-argument updates when
             # they are followed by a remaining quadrature contraction.
@@ -817,6 +848,8 @@ class IntegralGenerator:
         declarations: list[L.LNode] = []
         symbols: dict[tuple, L.Symbol] = {}
         loops: dict[tuple[int, ...], list[L.LNode]] = collections.defaultdict(list)
+        # Unflattened updates with their (block size, offset) per argument
+        updates: dict[tuple[int, ...], list] = collections.defaultdict(list)
         table_bytes = 0
         for (sizes, output), entries in groups.items():
             # A full contiguous tensor has no row boundaries to preserve. One
@@ -843,10 +876,38 @@ class IntegralGenerator:
             target = A[indices[0]] if flat else A[L.MultiIndex(list(output), shape)]
             loop_sizes = (math.prod(sizes),) if flat else sizes
             loops[loop_sizes].append(L.AssignAdd(target, L.Sum(terms)))
+            if not flat:
+                contributions = list(entries.values())
+                updates[loop_sizes].append((layouts[sizes, output], L.Sum(terms), contributions))
         if table_bytes > _MAX_PREINTEGRATED_TABLE_BYTES:
             return None
+        tables_by_name = {
+            symbol.name: decl.values
+            for decl in declarations
+            if isinstance(decl, L.ArrayDecl)
+            for symbol in [decl.symbol]
+        }
+        flat_tables: dict[str, L.Symbol] = {}
+
+        def flat_table(symbol: L.Symbol) -> L.Symbol:
+            # A one-dimensional copy of a reference table, for flat loops.
+            if symbol.name not in flat_tables:
+                flat = L.Symbol(f"{symbol.name}_flat", L.DataType.REAL)
+                values = np.asarray(tables_by_name[symbol.name]).ravel()
+                declarations.append(L.ArrayDecl(flat, values=values, const=True))
+                flat_tables[symbol.name] = flat
+            return flat_tables[symbol.name]
+
         code: list[L.LNode] = []
         for sizes, body in loops.items():
+            rows = self._symmetric_blocked_contraction(
+                indices, sizes, updates.get(sizes, []), flat_table
+            )
+            if rows is None:
+                rows = self._row_blocked_contraction(indices, sizes, updates.get(sizes, []))
+            if rows is not None:
+                code.extend(rows)
+                continue
             for index, size in reversed(list(zip(indices, sizes))):
                 body = [L.ForRange(index, 0, size, body)]
             if len(sizes) == 1 and len(shape) == 2:
@@ -867,6 +928,197 @@ class IntegralGenerator:
             "Contract reference integrals with factors constant over quadrature points; add to A.",
         )
         return declarations + code, {id(block) for block in blocks}
+
+    def _row_blocked_contraction(
+        self,
+        indices: list[L.Symbol],
+        sizes: tuple[int, ...],
+        updates: list[tuple[tuple[tuple[Any, Any], ...], L.LExpr, list]],
+    ) -> list[L.LNode] | None:
+        """Contract a blocked rank-two tensor one test dof at a time.
+
+        Updates of a blocked trial space interleave their components in each
+        row of A, so updating A directly stores at a stride. Instead, for each
+        test dof, every component block row is computed contiguously into a
+        small local array, and the rows of A are then updated through a row
+        buffer (see _row_buffer_updates). Returns ``None`` unless the blocks
+        fill whole contiguous row ranges of A, or if there are fewer than three
+        blocks, where a strided update of A is cheaper than the row buffer.
+        """
+        if len(sizes) != 2 or len(updates) < 3:
+            return None
+        layout = _blocked_rows([(*lay[0], *lay[1]) for lay, *_ in updates])
+        if layout is None:
+            return None
+        test, trial = indices
+        n0, n1 = sizes
+        local = self.new_temp_symbol("A_rows_")
+        rows: dict[int, dict[int, L.LExpr]] = {
+            row: {o: L.ArrayAccess(local, [L.LiteralInt(k), trial]) for o, k in cols.items()}
+            for row, cols in layout[2].items()
+        }
+        compute = L.ForRange(
+            trial,
+            0,
+            n1,
+            [
+                L.Assign(L.ArrayAccess(local, [L.LiteralInt(k), trial]), rhs)
+                for k, (_, rhs, _) in enumerate(updates)
+            ],
+        )
+        declarations, updates_of_A = self._row_buffer_updates(indices, sizes, layout, rows)
+        return [
+            L.Comment("Evaluate each block row contiguously for one test dof, then interleave"),
+            L.Comment("each row of A in a buffer and add it to A contiguously."),
+            L.ArrayDecl(local, sizes=[len(updates), n1]),
+            *declarations,
+            L.ForRange(test, 0, n0, [compute, *updates_of_A]),
+        ]
+
+    def _symmetric_blocked_contraction(
+        self,
+        indices: list[L.Symbol],
+        sizes: tuple[int, ...],
+        updates: list[tuple[tuple[tuple[Any, Any], ...], L.LExpr, list]],
+        flat_table,
+    ) -> list[L.LNode] | None:
+        """Contract a symmetric blocked rank-two tensor from its upper blocks.
+
+        When each block (q, p) of argument components equals the transpose of
+        block (p, q), only blocks with p <= q are computed, into local arrays
+        that are then read transposed for the others. Symmetry requires each
+        factor value to multiply, in total, the transposed reference tables of
+        the mirrored block, up to rounding of the tables. Used for at least
+        three mirrored blocks whose local arrays fit in a small budget, so the
+        saved arithmetic pays for the extra pass. Returns ``None`` otherwise.
+        """
+        if len(sizes) != 2 or sizes[0] != sizes[1] or not updates:
+            return None
+        layout = _blocked_rows([(*lay[0], *lay[1]) for lay, *_ in updates])
+        if layout is None or layout[0] != layout[1]:
+            return None
+        bs, _, rows = layout
+        if len(rows) != bs:
+            return None
+        row_base, column_base = min(rows), min(min(c) for c in rows.values())
+        blocks = {
+            (row - row_base, column - column_base): k
+            for row, columns in rows.items()
+            for column, k in columns.items()
+        }
+        if set(blocks) != {(p, q) for p in range(bs) for q in range(bs)}:
+            return None
+        n = sizes[0]
+        kept = [(p, q) for p, q in sorted(blocks) if p <= q]
+        if bs * (bs - 1) // 2 < 3 or len(kept) * n * n * 8 > _MAX_SYMMETRIC_LOCAL_BYTES:
+            return None
+
+        def totals(k):
+            out: dict[int, np.ndarray] = {}
+            for factor, values in updates[k][2]:
+                key = self._value_key(factor)
+                out[key] = out.get(key, 0) + np.asarray(values)
+            return out
+
+        for p, q in kept:
+            if p == q:
+                continue
+            upper, lower = totals(blocks[p, q]), totals(blocks[q, p])
+            if set(upper) != set(lower) or not all(
+                np.allclose(lower[k], upper[k].T, rtol=1e-12, atol=1e-14 * np.abs(upper[k]).max())
+                for k in upper
+            ):
+                return None
+
+        test, trial = indices
+        # Compute each kept block in one contiguous loop over all its entries.
+        entry = L.Symbol(f"{test.name}{trial.name}", L.DataType.INT)
+
+        def flatten(node):
+            if (
+                isinstance(node, L.ArrayAccess)
+                and node.array.name.startswith("RI_")
+                and len(node.indices) == 2
+                and _is_index(node.indices[0], test)
+                and _is_index(node.indices[1], trial)
+            ):
+                return L.ArrayAccess(flat_table(node.array), [entry])
+            return None
+
+        rhs = {pq: _map_expressions(updates[blocks[pq]][1], flatten) for pq in kept}
+        if any(_references(r, test) or _references(r, trial) for r in rhs.values()):
+            return None
+        locals_ = {pq: self.new_temp_symbol("A_block_") for pq in kept}
+        compute = L.ForRange(
+            entry,
+            0,
+            n * n,
+            [L.Assign(L.ArrayAccess(locals_[pq], [entry]), rhs[pq]) for pq in kept],
+        )
+        values: dict[int, dict[int, L.LExpr]] = {}
+        for row, columns in rows.items():
+            values[row] = {}
+            for column in columns:
+                p, q = row - row_base, column - column_base
+                if p <= q:
+                    values[row][column] = L.ArrayAccess(locals_[p, q], [n * test + trial])
+                else:
+                    values[row][column] = L.ArrayAccess(locals_[q, p], [n * trial + test])
+        declarations, update_rows = self._row_buffer_updates(indices, sizes, layout, values)
+        return [
+            L.Comment("The tensor is symmetric: compute blocks of argument components on and"),
+            L.Comment("above the diagonal, and read them transposed for blocks below it."),
+            *[L.ArrayDecl(local, sizes=[n * n]) for local in locals_.values()],
+            *declarations,
+            compute,
+            L.ForRange(test, 0, n, update_rows),
+        ]
+
+    def _row_buffer_updates(
+        self,
+        indices: list[L.Symbol],
+        sizes: tuple[int, ...],
+        layout: tuple[int, int, dict[int, dict[int, int]]],
+        rows: dict[int, dict[int, L.LExpr]],
+    ) -> tuple[list[L.LNode], list[L.LNode]]:
+        """Add blocked rows of A for one test dof through a row buffer.
+
+        ``rows`` maps each row offset of A, then each column offset, to the
+        value for test and trial dofs ``indices``. Each row is interleaved in
+        a buffer and then added to A contiguously, avoiding strided updates.
+        Returns the buffer declaration and the updates, to place inside a
+        loop over test dofs.
+        """
+        shape = self.ir.expression.tensor_shape
+        bs0, bs1, _ = layout
+        test, trial = indices
+        n1 = sizes[1]
+        buffer = self.new_temp_symbol("A_row_")
+        column = L.Symbol(f"{trial.name}b", L.DataType.INT)
+        code: list[L.LNode] = []
+        for row in sorted(rows):
+            base = min(rows[row])
+            code.append(
+                L.ForRange(
+                    trial,
+                    0,
+                    n1,
+                    [
+                        L.Assign(L.ArrayAccess(buffer, [bs1 * trial + (offset - base)]), value)
+                        for offset, value in sorted(rows[row].items())
+                    ],
+                )
+            )
+            target = L.MultiIndex([bs0 * test + row, column + base], shape)
+            code.append(
+                L.ForRange(
+                    column,
+                    0,
+                    bs1 * n1,
+                    [L.AssignAdd(self.backend.symbols.element_tensor[target], buffer[column])],
+                )
+            )
+        return [L.ArrayDecl(buffer, sizes=[bs1 * n1])], code
 
     def generate_quadrature_loop(self, quadrature_rule: QuadratureRule, domain: basix.CellType):
         """Generate quadrature loop with for this quadrature_rule."""
@@ -1061,14 +1313,32 @@ class IntegralGenerator:
                     ),
                     L.Comment("they read zero table entries and never reach A."),
                 ]
+            values: list[L.LExpr] = []
             for g, (lhs, _) in enumerate(groups.values()):
                 source, transpose = equivalent.get(g, (g, False))
-                access = L.ArrayAccess(locals_[source], indices[::-1] if transpose else indices)
-                scatter.append(L.AssignAdd(lhs, access))
+                values.append(
+                    L.ArrayAccess(locals_[source], indices[::-1] if transpose else indices)
+                )
+                scatter.append(L.AssignAdd(lhs, values[-1]))
             for index, end in reversed(list(zip(indices, sizes))):
                 body = [L.ForRange(index, 0, end, body)]
-            for index in reversed(indices):
-                scatter = [L.ForRange(index, 0, ranges[index], scatter)]
+            layouts = [self._block_layout(lhs, indices) for lhs, _ in groups.values()]
+            layout = None
+            if len(indices) == 2 and None not in layouts:
+                layout = _blocked_rows(cast(list[tuple[int, int, int, int]], layouts))
+            if layout is not None:
+                # Interleave rows of A in a buffer, then add them contiguously.
+                rows = {
+                    row: {column: values[g] for column, g in columns.items()}
+                    for row, columns in layout[2].items()
+                }
+                shape_ = (ranges[indices[0]], ranges[indices[1]])
+                declarations, scatter = self._row_buffer_updates(indices, shape_, layout, rows)
+                prologue += declarations
+                scatter = [L.ForRange(indices[0], 0, ranges[indices[0]], scatter)]
+            else:
+                for index in reversed(indices):
+                    scatter = [L.ForRange(index, 0, ranges[index], scatter)]
             if any(transpose for _, transpose in equivalent.values()):
                 epilogue += [
                     L.Comment("Blocks equal to the transpose of a computed block, by symmetry"),
@@ -1104,6 +1374,30 @@ class IntegralGenerator:
         )
         return out, prologue, epilogue
 
+    def _block_layout(
+        self, lhs: L.ArrayAccess, indices: list[L.Symbol]
+    ) -> tuple[int, int, int, int] | None:
+        """Return (row step, row offset, column step, column offset) of a block.
+
+        The flat entries of A updated by ``lhs`` must be affine in the test
+        and trial dof indices, each within its own tensor axis.
+        """
+        shape = self.ir.expression.tensor_shape
+        if len(shape) != 2 or len(indices) != 2:
+            return None
+        names = [index.name for index in indices]
+        try:
+            zero = dict.fromkeys(names, 0)
+            base = _evaluate_index(lhs.indices, zero)
+            steps = [_evaluate_index(lhs.indices, {**zero, n: 1}) - base for n in names]
+            check = _evaluate_index(lhs.indices, dict.fromkeys(names, 2)) - base
+        except (KeyError, TypeError, ValueError):
+            return None
+        if check != 2 * sum(steps) or steps[0] % shape[1] or not 0 < steps[1] < shape[1]:
+            return None
+        row, column = divmod(base, shape[1])
+        return steps[0] // shape[1], row, steps[1], column
+
     def _describe_entries(self, lhs: L.ArrayAccess, names: list[str]) -> str:
         """Describe the entries of A updated by a block, for code comments."""
         shape = self.ir.expression.tensor_shape
@@ -1126,33 +1420,36 @@ class IntegralGenerator:
 
         return f"A entries ({', '.join(affine(*t) for t in terms)})"
 
-    def _record_value(self, symbol: L.Symbol, value: L.LExpr, expand: bool = True) -> None:
+    def _record_value(self, symbol: L.Symbol, value: L.LExpr, level: str = "varying") -> None:
         """Record the definition of a scalar symbol for value comparisons.
 
-        With ``expand``, small polynomial definitions are expanded over their
-        atoms, which include unexpanded symbols, so equal polynomials
-        evaluated in different orders share an id. Coefficients must match
-        exactly. Definitions are recorded in order, so operands already have
-        ids and keys never recurse through chains of definitions.
+        Small polynomial definitions are expanded over their atoms, so equal
+        polynomials evaluated in different orders share an id. Coefficients
+        must match exactly. Expansions substitute only definitions of the
+        same ``level``; symbols of other levels, such as cellwise values in
+        point-varying definitions, stay atoms to bound the expansion.
+        Definitions are recorded in order, so operands already have ids and
+        keys never recurse through chains of definitions.
         """
-        polynomial = self._polynomial(value) if expand else None
+        polynomial = self._polynomial(value, level)
         if polynomial is None:
             self._value_ids[symbol.name] = self._value_key(value)
         elif list(polynomial.values()) == [1] and len(monomial := next(iter(polynomial))) == 1:
             # A single atom, such as an alias, keeps the id of that atom.
             self._value_ids[symbol.name] = monomial[0]
         else:
-            self._polynomials[symbol.name] = polynomial
+            self._polynomials.setdefault(level, {})[symbol.name] = polynomial
             terms = sorted((monomial, repr(c)) for monomial, c in polynomial.items())
             self._value_ids[symbol.name] = self._intern(("polynomial", *terms))
 
-    def _polynomial(self, node) -> dict[tuple[int, ...], Any] | None:
+    def _polynomial(self, node, level: str) -> dict[tuple[int, ...], Any] | None:
         """Expand an expression into a polynomial over atom ids, if small.
 
         Returns ``{monomial: coefficient}``, with sorted atom ids as the
         monomial, or ``None`` when the expansion exceeds a fixed size.
         """
         max_terms = 64
+        polynomials = self._polynomials.get(level, {})
 
         def add(a, b, sign=1):
             out = dict(a)
@@ -1173,8 +1470,8 @@ class IntegralGenerator:
         def expand(node):
             if isinstance(node, (L.LiteralFloat, L.LiteralInt)):
                 return {(): node.value} if node.value != 0 else {}
-            if isinstance(node, L.Symbol) and node.name in self._polynomials:
-                return self._polynomials[node.name]
+            if isinstance(node, L.Symbol) and node.name in polynomials:
+                return polynomials[node.name]
             if isinstance(node, (L.Add, L.Sub, L.Sum)):
                 args = node.args if isinstance(node, L.Sum) else [node.lhs, node.rhs]
                 out: dict | None = {}
@@ -1650,11 +1947,9 @@ class IntegralGenerator:
 
         # Record scalar definitions so the tensor contraction can recognise
         # factors with identical values.
-        # Point-varying values are expanded over the cellwise ones, which stay
-        # atoms to bound the expansion.
         for stmt in intermediates:
             if isinstance(stmt, L.VariableDecl) and stmt.value is not None:
-                self._record_value(stmt.symbol, stmt.value, expand=mode == "varying")
+                self._record_value(stmt.symbol, stmt.value, mode)
 
         return definitions, intermediates
 

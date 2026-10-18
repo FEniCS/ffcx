@@ -2495,8 +2495,13 @@ def test_form_rejects_ridge_geometry_outside_ridge_integral(measure):
 @pytest.mark.parametrize("dtype", ["float64", "complex128"])
 @pytest.mark.parametrize("cell", ["triangle", "tetrahedron"])
 @pytest.mark.parametrize("symmetric", [False, True])
-def test_blocked_varying_contraction(dtype, cell, symmetric, compile_args):
-    """Check locally accumulated component blocks, reusing only symmetric ones."""
+@pytest.mark.parametrize("varying", [False, True])
+def test_blocked_contraction(dtype, cell, symmetric, varying, compile_args):
+    """Check blocked contractions, reusing only symmetric component blocks.
+
+    A point-varying factor accumulates local blocks over quadrature points,
+    and a cellwise factor contracts preintegrated reference tensors.
+    """
     if sys.platform.startswith("win32") and "complex" in dtype:
         pytest.skip("C99 complex kernels are unavailable on Windows")
     dim = 2 if cell == "triangle" else 3
@@ -2506,7 +2511,7 @@ def test_blocked_varying_contraction(dtype, cell, symmetric, compile_args):
     scalar = basix.ufl.element("Lagrange", cell, 2)
     space = ufl.FunctionSpace(domain, element)
     u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
-    coefficient_element = basix.ufl.element("DG", cell, 1)
+    coefficient_element = basix.ufl.element("DG", cell, 1 if varying else 0)
     f = ufl.Coefficient(ufl.FunctionSpace(domain, coefficient_element))
     rng = np.random.default_rng(23)
     C = rng.standard_normal((dim,) * 4)
@@ -2528,7 +2533,13 @@ def test_blocked_varying_contraction(dtype, cell, symmetric, compile_args):
     )
     # Symmetric blocks are recovered from transposed local blocks.
     blocks = dim * (dim + 1) // 2 if symmetric else dim * dim
-    assert len(re.findall(r"\bA_local_\d+\[\d+\]\[\d+\] =", implementation)) == blocks
+    if varying:
+        assert len(re.findall(r"\bA_local_\d+\[\d+\]\[\d+\] =", implementation)) == blocks
+    elif symmetric and dim == 3:
+        assert len(re.findall(r"\bA_block_\d+\[\d+\];", implementation)) == blocks
+    else:
+        assert "A_block_" not in implementation
+        assert "A_rows_" in implementation
 
     values = np.linspace(-0.4, 0.5, coefficient_element.dim).astype(dtype)
     if dtype == "complex128":
