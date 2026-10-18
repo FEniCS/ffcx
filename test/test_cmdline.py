@@ -61,15 +61,15 @@ def test_generated_code_without_complex(tmp_path):
 
 
 def test_generated_code_included_in_cpp(tmp_path):
-    """Generated code must compile when included in C++ without C99 complex.
+    """Generated code must compile when included in C++.
 
-    DOLFINx's custom kernel demo includes generated C in a C++ file, which
-    MSVC compiles without `_Complex`. `-D__STDC_NO_COMPLEX__` reproduces
-    that on other compilers.
+    DOLFINx's custom kernel demo includes generated C in a C++ file. This
+    uses the compiler cffi uses, so MSVC on Windows, and elsewhere also
+    defines `__STDC_NO_COMPLEX__` to take the same path as MSVC.
     """
-    cxx = shutil.which("c++") or shutil.which("g++") or shutil.which("clang++")
-    if cxx is None:
-        pytest.skip("no C++ compiler found.")
+    pytest.importorskip("setuptools")
+    from distutils.ccompiler import new_compiler
+    from distutils.sysconfig import customize_compiler
 
     dir = Path(__file__).parent
     subprocess.run(["ffcx", "-d", str(tmp_path), str(dir / "poisson.py")], check=True)
@@ -77,22 +77,21 @@ def test_generated_code_included_in_cpp(tmp_path):
     # ufcx.h undefines its restrict workaround, so define it after the header
     wrapper = tmp_path / "wrapper.cpp"
     wrapper.write_text(
-        '#include "poisson.h"\n#define restrict __restrict__\n#include "poisson.c"\n'
+        '#include "poisson.h"\n'
+        "#ifdef _MSC_VER\n#define restrict __restrict\n"
+        "#else\n#define restrict __restrict__\n#endif\n"
+        '#include "poisson.c"\n'
     )
 
+    compiler = new_compiler()
+    customize_compiler(compiler)
+    msvc = compiler.compiler_type == "msvc"
     include = Path(ffcx.codegeneration.__file__).parent
-    for extra in ([], ["-D__STDC_NO_COMPLEX__"]):
-        subprocess.run(
-            [
-                cxx,
-                "-std=c++20",
-                "-c",
-                f"-I{include}",
-                f"-I{tmp_path}",
-                *extra,
-                str(wrapper),
-                "-o",
-                str(tmp_path / "wrapper.o"),
-            ],
-            check=True,
+    for macros in ([],) if msvc else ([], [("__STDC_NO_COMPLEX__", None)]):
+        compiler.compile(
+            [str(wrapper)],
+            output_dir=str(tmp_path),
+            include_dirs=[str(include), str(tmp_path)],
+            macros=macros,
+            extra_preargs=["/std:c++20" if msvc else "-std=c++20"],
         )
