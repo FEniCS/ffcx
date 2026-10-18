@@ -36,7 +36,9 @@ SECTION_DESCRIPTIONS = {
     "SpatialCoordinate": "Evaluate physical coordinates from coordinate degrees of freedom.",
     "Coefficient": "Evaluate coefficient values or derivatives from their degrees of freedom.",
     "Intermediates": "Form assembly factors (fw*) from scalar expressions and quadrature weights.",
-    "Tensor Computation": "Contract argument basis values or derivatives and accumulate into A.",
+    "Tensor Computation": (
+        "Contract argument basis values or derivatives and accumulate the element tensor."
+    ),
 }
 
 

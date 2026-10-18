@@ -622,7 +622,12 @@ class IntegralGenerator:
             if element_tables:
                 position = next(k for k, p in enumerate(parts) if p is element_tables[-1]) + 1
             parts[position:position] = L.commented_code_list(
-                transposed, "Point-major copies of tables for evaluation across points."
+                transposed,
+                [
+                    "Point-major copies of tables for evaluation across points.",
+                    "FE*_T dimensions: [permutation][entities][dofs][points]; points past the",
+                    "rule repeat its last point.",
+                ],
             )
         for decl in parts:
             if isinstance(decl, L.ArrayDecl) and decl.symbol.name in self._padded_weights:
@@ -1031,15 +1036,31 @@ class IntegralGenerator:
             body: list[L.LNode] = []
             scatter: list[L.LNode] = []
             locals_: dict[int, L.Symbol] = {}
+            names = [index.name for index in indices]
+            entries = [self._describe_entries(lhs, names) for lhs, _ in groups.values()]
             for g, (lhs, rhs) in enumerate(groups.values()):
                 if g in equivalent:
                     continue
                 local = self.new_temp_symbol("A_local_")
                 locals_[g] = local
+                label = f"{local.name}[{']['.join(names)}]"
+                prologue.append(L.Comment(f"{label} accumulates {entries[g]}."))
+                for h, (source, transpose) in equivalent.items():
+                    if source == g:
+                        kind = "transpose also gives" if transpose else "values also give"
+                        prologue.append(L.Comment(f"Its {kind} {entries[h]}."))
                 # A single initial value, nested to the array rank, zero-fills
                 # the whole array.
                 prologue.append(L.ArrayDecl(local, sizes=sizes, values=np.zeros((1,) * len(sizes))))
                 body += [L.AssignAdd(L.ArrayAccess(local, indices), r) for r in rhs]
+            if size > ranges[innermost]:
+                prologue += [
+                    L.Comment(
+                        f"Entries with {innermost.name} >= {ranges[innermost]} pad the loop "
+                        "to whole SIMD vectors;"
+                    ),
+                    L.Comment("they read zero table entries and never reach A."),
+                ]
             for g, (lhs, _) in enumerate(groups.values()):
                 source, transpose = equivalent.get(g, (g, False))
                 access = L.ArrayAccess(locals_[source], indices[::-1] if transpose else indices)
@@ -1048,6 +1069,11 @@ class IntegralGenerator:
                 body = [L.ForRange(index, 0, end, body)]
             for index in reversed(indices):
                 scatter = [L.ForRange(index, 0, ranges[index], scatter)]
+            if any(transpose for _, transpose in equivalent.values()):
+                epilogue += [
+                    L.Comment("Blocks equal to the transpose of a computed block, by symmetry"),
+                    L.Comment("of the integrand, read that block transposed."),
+                ]
             epilogue += scatter
             statements = list(section.statements)
             statements[position] = body[0]
@@ -1057,7 +1083,7 @@ class IntegralGenerator:
                     statements,
                     section.declarations,
                     section.input,
-                    section.output,
+                    list(locals_.values()),
                     section.annotations,
                 )
             )
@@ -1068,12 +1094,37 @@ class IntegralGenerator:
             self._padded_tables[name] = max(self._padded_tables.get(name, 0), size)
         prologue = L.commented_code_list(
             prologue,
-            "Local element tensor blocks, accumulated over quadrature points.",
+            [
+                "Local blocks of the element tensor, one per block of argument components,",
+                "accumulated over quadrature points and added into A after the loop.",
+            ],
         )
         epilogue = L.commented_code_list(
             epilogue, "Add the local blocks into A in a single pass after the quadrature loop."
         )
         return out, prologue, epilogue
+
+    def _describe_entries(self, lhs: L.ArrayAccess, names: list[str]) -> str:
+        """Describe the entries of A updated by a block, for code comments."""
+        shape = self.ir.expression.tensor_shape
+        try:
+            zero = dict.fromkeys(names, 0)
+            base = _evaluate_index(lhs.indices, zero)
+            steps = [_evaluate_index(lhs.indices, {**zero, n: 1}) - base for n in names]
+        except (KeyError, TypeError, ValueError):
+            return "a block of A"
+        # Express the flat entry as (row, column) for a rank-two tensor.
+        if len(shape) == 2 and len(names) == 2 and steps[0] % shape[1] == 0 and steps[1] < shape[1]:
+            row, column = divmod(base, shape[1])
+            terms = [(steps[0] // shape[1], names[0], row), (steps[1], names[1], column)]
+        else:
+            terms = [(steps[0], names[0], base)]
+
+        def affine(scale, name, offset):
+            text = name if scale == 1 else f"{scale}*{name}"
+            return f"{text} + {offset}" if offset else text
+
+        return f"A entries ({', '.join(affine(*t) for t in terms)})"
 
     def _record_value(self, symbol: L.Symbol, value: L.LExpr, expand: bool = True) -> None:
         """Record the definition of a scalar symbol for value comparisons.
@@ -1406,12 +1457,21 @@ class IntegralGenerator:
                 L.VariableDecl(fw.symbol, L.ArrayAccess(caches[fw.symbol.name], [index]))
                 for fw in intermediates_fw
             ]
+            evaluate = ["Evaluate and cache weighted scalar factors at quadrature points."]
+            if points > num_points:
+                extra = (
+                    f"Point {num_points} repeats"
+                    if points - num_points == 1
+                    else f"Points {num_points} to {points - 1} repeat"
+                )
+                evaluate += [
+                    f"{extra} the last point with zero weight to fill whole SIMD",
+                    f"vectors; only the first {num_points} points are contracted below.",
+                ]
             return declarations + [
-                L.Comment("Evaluate and cache weighted scalar factors at quadrature points."),
+                *[L.Comment(c) for c in evaluate],
                 L.ForRange(index, 0, points, evaluation + store),
-                L.Comment(
-                    "Reuse cached factors to contract argument tables and accumulate into A."
-                ),
+                L.Comment("Reuse cached factors to contract argument tables."),
                 L.create_nested_for_loops([iq], load + contraction),
             ]
 
@@ -1443,7 +1503,7 @@ class IntegralGenerator:
         tile_body = setup + [
             L.Comment("Evaluate weighted scalar factors for the current tile of points."),
             L.ForRange(index, tile_base, tile_end, evaluation + store),
-            L.Comment("Reuse the tile cache to contract argument tables and accumulate into A."),
+            L.Comment("Reuse the tile cache to contract argument tables."),
             L.ForRange(index, tile_base, tile_end, load + contraction),
         ]
         return declarations + [
