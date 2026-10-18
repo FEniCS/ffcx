@@ -44,7 +44,9 @@ def _compile(compiler: str, source: Path, include_dirs: list[Path], defines: lis
     else:
         cmd = [compiler, "-c", f"-std={std}", "-o", str(source.with_suffix(".o"))]
         cmd += [f"-I{d}" for d in include_dirs] + [f"-D{d}" for d in defines]
-    subprocess.run([*cmd, str(source)], check=True)
+    result = subprocess.run([*cmd, str(source)], capture_output=True, text=True)
+    if result.returncode != 0:
+        pytest.fail(f"{' '.join(cmd)} failed:\n{result.stdout}{result.stderr}")
 
 
 def test_generated_code_without_complex(tmp_path):
