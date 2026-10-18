@@ -246,6 +246,12 @@ def _compute_integral_ir(
         visualise_graph(S, "S.pdf")
 
     # Compute factorization of arguments
+    # FIXME: p["part"] is the option string "full"/"diagonal", while
+    # TensorPart is a plain Enum over ints, so this comparison is always
+    # False and the branch below never runs. Making it run (by comparing
+    # TensorPart.from_str(p["part"])) sets rank = 1 and fails every
+    # part="diagonal" test, so the intended behaviour here needs deciding
+    # rather than the comparison simply being repaired.
     if p["part"] == TensorPart.diagonal:
         assert len(argument_shape) == 2, "Can only diagonalize bi-linear forms."
         rank = 1
@@ -302,6 +308,10 @@ def _compute_integral_ir(
     )
     for ma_indices, fi_ci in sorted(argument_factorization.items()):
         # Get a bunch of information about this term
+        # pyrefly: ignore[bad-argument-type]
+        # p["part"] is a str, but the comparison above is against a
+        # TensorPart member, so the checker narrows it to that member.
+        # See the FIXME above: that comparison never holds.
         if TensorPart.from_str(p["part"]) != TensorPart.diagonal:
             assert rank == len(ma_indices)
 

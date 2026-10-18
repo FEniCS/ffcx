@@ -43,7 +43,7 @@ ci = [
     "coverage>=7.0.0",
     "pytest-cov",
     "pytest-xdist",
-    "pyrefly",
+    "pyrefly>=1.4",
     "fenics-ffcx[docs]",
     "fenics-ffcx[lint]",
     "fenics-ffcx[test]",

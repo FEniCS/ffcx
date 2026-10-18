@@ -43,7 +43,7 @@ file_generator = Callable[[dict[str, int | float | npt.DTypeLike]], tuple[tuple[
 Note:
     Needs to be callable as form.generator.
 """
-form_generator = Callable[[FormIR, dict[str, int | float | npt.DTypeLike]], tuple[str]]
+form_generator = Callable[[FormIR, dict[str, int | float | npt.DTypeLike]], tuple[str, ...]]
 
 """Integral to source string.
 

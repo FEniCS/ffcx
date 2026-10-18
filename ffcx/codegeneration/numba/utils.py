@@ -61,7 +61,9 @@ def empty_void_pointer(
 
 
 @numba.extending.intrinsic
-def get_void_pointer(typingctx: Any, arr: npt.NDArray) -> tuple[numba.types.RawPointer, Callable]:
+def get_void_pointer(
+    typingctx: Any, arr: npt.NDArray
+) -> tuple[numba.core.typing.Signature, Callable]:
     """Custom intrinsic to get a void* pointer from a NumPy array.
 
     This function takes a NumPy array and returns a void pointer to the array's data.

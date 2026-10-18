@@ -117,6 +117,14 @@ _EXPRESSION_INTEGRAL_TYPES = {
 _ENTITY_CODIM = {"cell": 0, "facet": 1, "ridge": 2, "peak": 3}
 
 
+class TableValues(typing.TypedDict):
+    """Tabulated values of an element, with the component's offset and stride."""
+
+    array: npt.NDArray[np.float64]
+    offset: int
+    stride: int
+
+
 def get_ffcx_table_values(
     points,
     cell,
@@ -127,7 +135,7 @@ def get_ffcx_table_values(
     derivative_counts,
     flat_component,
     codim,
-):
+) -> TableValues:
     """Extract values from FFCx element table.
 
     Returns a 4D numpy array with axes
@@ -648,7 +656,7 @@ def build_optimized_tables(
             and len(factors) == 1
             and quadrature_rule.has_tensor_factors
         ):
-            tensor_factors = []
+            factors_for_mt: list[UniqueTableReferenceT] = []
             for i, j in enumerate(factors[0]):
                 pts = quadrature_rule.tensor_factors[i][0]
                 d = local_derivatives[i]
@@ -658,7 +666,7 @@ def build_optimized_tables(
                     if tensor_factor.values.shape == sub_tbl.shape and np.allclose(
                         tensor_factor.values, sub_tbl
                     ):
-                        tensor_factors.append(tensor_factor)
+                        factors_for_mt.append(tensor_factor)
                         break
                 else:
                     ut = UniqueTableReferenceT(
@@ -668,9 +676,10 @@ def build_optimized_tables(
                         is_permuted=False,
                     )
                     all_tensor_factors.append(ut)
-                    tensor_factors.append(ut)
+                    factors_for_mt.append(ut)
                     mt_tables[ut.name] = ut
                     tensor_n += 1
+            tensor_factors = factors_for_mt
 
         if mt.restriction == "-" and isinstance(mt.terminal, ufl.classes.FormArgument):
             # offset = 0 or number of element dofs, if restricted to "-"
