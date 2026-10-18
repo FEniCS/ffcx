@@ -224,6 +224,7 @@ class FFCXBackendDefinitions:
         ):
             active = np.flatnonzero(tabledata.values.any(axis=(0, 1, 2)))
             domain = ufl.domain.extract_unique_domain(mt.terminal)
+            assert isinstance(domain, ufl.Mesh)
             unroll_dense = (
                 num_dofs <= _MAX_UNROLLED_DENSE_COEFFICIENT_DOFS
                 and not domain.is_piecewise_linear_simplex_domain()
