@@ -2496,19 +2496,21 @@ def test_form_rejects_ridge_geometry_outside_ridge_integral(measure):
 @pytest.mark.parametrize("cell", ["triangle", "tetrahedron"])
 @pytest.mark.parametrize("symmetric", [False, True])
 @pytest.mark.parametrize("varying", [False, True])
-def test_blocked_contraction(dtype, cell, symmetric, varying, compile_args):
+@pytest.mark.parametrize("degree", [2, 3])
+def test_blocked_contraction(dtype, cell, symmetric, varying, degree, compile_args):
     """Check blocked contractions, reusing only symmetric component blocks.
 
     A point-varying factor accumulates local blocks over quadrature points,
-    and a cellwise factor contracts preintegrated reference tensors.
+    and a cellwise factor contracts preintegrated reference tensors. Large
+    symmetric point-varying blocks are contracted on and above the diagonal.
     """
     if sys.platform.startswith("win32") and "complex" in dtype:
         pytest.skip("C99 complex kernels are unavailable on Windows")
     dim = 2 if cell == "triangle" else 3
     coordinate_element = basix.ufl.element("Lagrange", cell, 1, shape=(dim,))
     domain = ufl.Mesh(coordinate_element)
-    element = basix.ufl.element("Lagrange", cell, 2, shape=(dim,))
-    scalar = basix.ufl.element("Lagrange", cell, 2)
+    element = basix.ufl.element("Lagrange", cell, degree, shape=(dim,))
+    scalar = basix.ufl.element("Lagrange", cell, degree)
     space = ufl.FunctionSpace(domain, element)
     u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
     coefficient_element = basix.ufl.element("DG", cell, 1 if varying else 0)
@@ -2535,7 +2537,9 @@ def test_blocked_contraction(dtype, cell, symmetric, varying, compile_args):
     blocks = dim * (dim + 1) // 2 if symmetric else dim * dim
     if varying:
         assert len(re.findall(r"\bA_local_\d+\[\d+\]\[\d+\] =", implementation)) == blocks
-    elif symmetric and dim == 3:
+        split = symmetric and scalar.dim >= 16
+        assert ("Complete symmetric blocks" in implementation) == split
+    elif symmetric and dim == 3 and degree == 2:
         assert len(re.findall(r"\bA_block_\d+\[\d+\];", implementation)) == blocks
     else:
         assert "A_block_" not in implementation

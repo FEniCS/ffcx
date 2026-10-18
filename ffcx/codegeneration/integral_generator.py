@@ -45,6 +45,11 @@ logger = logging.getLogger("ffcx")
 _FW_CACHE_BUDGET_BYTES = 32768
 _MAX_LOCAL_TENSOR_BYTES = 65536
 _MAX_SYMMETRIC_LOCAL_BYTES = 8192
+# Row groups of a symmetric point-varying block computed on and above its
+# diagonal. Each group is a separate loop nest in the generated code, and
+# with fewer groups the saving does not pay for the extra loops.
+_MIN_SYMMETRIC_ROW_GROUPS = 4
+_MAX_SYMMETRIC_ROW_GROUPS = 16
 _LOCAL_TENSOR_ALIGNMENT_BYTES = 32
 _MAX_PREINTEGRATED_TABLE_BYTES = 65536
 _MIN_PARTIAL_PREINTEGRATION_WORK = 64
@@ -415,6 +420,34 @@ def _blocked_rows(
     return bs0, bs1, dict(rows)
 
 
+def _mirror_lower(local: L.Symbol, indices: list[L.Symbol], n: int, width: int) -> list[L.LNode]:
+    """Copy the upper entries of a symmetric local array below row groups.
+
+    Rows ``r`` to ``r + width - 1`` lack the columns before ``r``.
+    """
+    test, trial = indices
+    return [
+        L.ForRange(
+            test,
+            start,
+            min(start + width, n),
+            [
+                L.ForRange(
+                    trial,
+                    0,
+                    start,
+                    [
+                        L.Assign(
+                            L.ArrayAccess(local, [test, trial]), L.ArrayAccess(local, [trial, test])
+                        )
+                    ],
+                )
+            ],
+        )
+        for start in range(width, n, width)
+    ]
+
+
 def _contraction_work(node) -> int:
     """Estimate statically repeated scalar statements in a contraction tree."""
     if isinstance(node, list):
@@ -500,6 +533,9 @@ class IntegralGenerator:
         # Element table name -> padded length of its final (dof) axis, for
         # contiguous loops that read zero entries past the last dof.
         self._padded_tables: dict[str, int] = {}
+        # Symmetric local arrays contracted on and above the diagonal, with the
+        # SIMD width of their row groups
+        self._upper_locals: dict[str, int] = {}
 
         # Element table name -> padded point count of a copy with point and
         # dof axes exchanged, read by loops that vectorise across points.
@@ -1180,6 +1216,7 @@ class IntegralGenerator:
 
         code = definitions + intermediates + tensor_comp
         code = optimize(code, quadrature_rule)
+        code = self._split_upper_rows(code)
 
         if invariant:
             return preintegrated_code + L.commented_code_list(
@@ -1261,7 +1298,7 @@ class IntegralGenerator:
             groups: dict[tuple, tuple[L.ArrayAccess, list[L.LExpr]]] = {}
             for update in updates:
                 groups.setdefault(expr_key(update.lhs), (update.lhs, []))[1].append(update.rhs)
-            equivalent = self._equivalent_blocks(list(groups.values()), indices, ranges)
+            equivalent, symmetric = self._equivalent_blocks(list(groups.values()), indices, ranges)
             if len(groups) - len(equivalent) < 3:
                 # A single block already updates contiguous rows of A, in a
                 # loop order chosen for it. A few blocks leave too little work
@@ -1286,6 +1323,7 @@ class IntegralGenerator:
                 return sections, [], []
 
             body: list[L.LNode] = []
+            upper: list[L.LNode] = []
             scatter: list[L.LNode] = []
             locals_: dict[int, L.Symbol] = {}
             names = [index.name for index in indices]
@@ -1304,7 +1342,11 @@ class IntegralGenerator:
                 # A single initial value, nested to the array rank, zero-fills
                 # the whole array.
                 prologue.append(L.ArrayDecl(local, sizes=sizes, values=np.zeros((1,) * len(sizes))))
-                body += [L.AssignAdd(L.ArrayAccess(local, indices), r) for r in rhs]
+                accumulate = [L.AssignAdd(L.ArrayAccess(local, indices), r) for r in rhs]
+                if g in symmetric:
+                    upper += accumulate
+                else:
+                    body += accumulate
             if size > ranges[innermost]:
                 prologue += [
                     L.Comment(
@@ -1320,6 +1362,28 @@ class IntegralGenerator:
                     L.ArrayAccess(locals_[source], indices[::-1] if transpose else indices)
                 )
                 scatter.append(L.AssignAdd(lhs, values[-1]))
+            n = ranges[indices[0]]
+            if (
+                upper
+                and _MIN_SYMMETRIC_ROW_GROUPS * width <= n <= _MAX_SYMMETRIC_ROW_GROUPS * width
+            ):
+                # Split into row groups after optimisation (see _split_upper_rows)
+                self._upper_locals.update({locals_[g].name: width for g in symmetric})
+                symmetric_locals = ", ".join(locals_[g].name for g in sorted(symmetric))
+                prologue += [
+                    L.Comment(f"Symmetric blocks ({symmetric_locals}) are accumulated"),
+                    L.Comment(f"only from the {width}-column group holding the diagonal onwards,"),
+                    L.Comment("and mirrored after the loop."),
+                ]
+                epilogue += [
+                    L.Comment("Complete symmetric blocks from their upper groups of columns."),
+                    *[
+                        node
+                        for g in sorted(symmetric)
+                        for node in _mirror_lower(locals_[g], indices, n, width)
+                    ],
+                ]
+            body += upper
             for index, end in reversed(list(zip(indices, sizes))):
                 body = [L.ForRange(index, 0, end, body)]
             layouts = [self._block_layout(lhs, indices) for lhs, _ in groups.values()]
@@ -1373,6 +1437,69 @@ class IntegralGenerator:
             epilogue, "Add the local blocks into A in a single pass after the quadrature loop."
         )
         return out, prologue, epilogue
+
+    def _split_upper_rows(self, code: list[L.LNode]) -> list[L.LNode]:
+        """Contract symmetric local blocks only on and above their diagonal.
+
+        Applies to optimised contraction nests over a test index ``i`` with a
+        single trial loop over ``j`` updating a symmetric local array recorded
+        by _localize_tensor_updates. Rows are taken in groups of one SIMD
+        vector width ``w``. For the group starting at row ``r``, updates of
+        other arrays run over all columns, while those of symmetric arrays
+        run only over columns from ``r``. Every loop keeps constant bounds and
+        all blocks still share their table loads. The epilogue mirrors the
+        omitted entries.
+        """
+        if not self._upper_locals:
+            return code
+
+        def split(node: L.LNode) -> list[L.LNode]:
+            if not (
+                isinstance(node, L.ForRange)
+                and isinstance(node.begin, L.LiteralInt)
+                and node.begin.value == 0
+                and isinstance(node.end, L.LiteralInt)
+                and len(node.body.statements) == 1
+                and isinstance(node.body.statements[0], L.ForRange)
+            ):
+                return [node]
+            inner = node.body.statements[0]
+            statements = inner.body.statements
+            updates = [s.expr if isinstance(s, L.Statement) else s for s in statements]
+            if not all(
+                isinstance(u, L.AssignAdd) and isinstance(u.lhs, L.ArrayAccess) for u in updates
+            ):
+                return [node]
+            names = [u.lhs.array.name for u in updates]
+            upper = [s for s, a in zip(statements, names) if a in self._upper_locals]
+            full = [s for s, a in zip(statements, names) if a not in self._upper_locals]
+            if not upper or not isinstance(inner.end, L.LiteralInt):
+                return [node]
+            width = min(self._upper_locals[a] for a in names if a in self._upper_locals)
+            n, size = node.end.value, inner.end.value
+            loops: list[L.LNode] = []
+            for start in range(0, n, width):
+                rows: list[L.LNode] = []
+                if start > 0 and full:
+                    rows.append(L.ForRange(inner.index, 0, start, full))
+                rows.append(L.ForRange(inner.index, start, size, full + upper))
+                loops.append(L.ForRange(node.index, start, min(start + width, n), rows))
+            return loops
+
+        out: list[L.LNode] = []
+        for node in code:
+            if isinstance(node, L.Section):
+                statements = [s for statement in node.statements for s in split(statement)]
+                node = L.Section(
+                    node.name,
+                    statements,
+                    node.declarations,
+                    node.input,
+                    node.output,
+                    node.annotations,
+                )
+            out.append(node)
+        return out
 
     def _block_layout(
         self, lhs: L.ArrayAccess, indices: list[L.Symbol]
@@ -1528,7 +1655,7 @@ class IntegralGenerator:
         groups: list[tuple[L.ArrayAccess, list[L.LExpr]]],
         indices: list[L.Symbol],
         ranges: dict[L.Symbol, int],
-    ) -> dict[int, tuple[int, bool]]:
+    ) -> tuple[dict[int, tuple[int, bool]], set[int]]:
         """Map blocks equal to an earlier block, or its transpose, to that block.
 
         Values are compared through their terms, each a product of scalar
@@ -1536,10 +1663,13 @@ class IntegralGenerator:
         when their terms are the same and transposed when their tables are
         exchanged. A transposed block also needs a square tensor, with entry
         maps evaluated for every dof pair to check that they are transposed.
-        Returns ``{block: (earlier block, transposed)}``.
+        A block whose entries and terms are both unchanged by transposition
+        is symmetric.
+        Returns ``{block: (earlier block, transposed)}`` and the symmetric
+        blocks.
         """
         if len(indices) != 2 or self.ir.part != TensorPart.full:
-            return {}
+            return {}, set()
         test, trial = indices
         tables = self.backend.symbols.element_tables
 
@@ -1573,7 +1703,7 @@ class IntegralGenerator:
 
         signatures = [signature(rhs) for _, rhs in groups]
         if any(s is None for s in signatures):
-            return {}
+            return {}, set()
         equivalent: dict[int, tuple[int, bool]] = {}
         for h, sh in enumerate(signatures):
             for g in range(h):
@@ -1584,7 +1714,7 @@ class IntegralGenerator:
         shape = self.ir.expression.tensor_shape
         n = ranges[test]
         if len(shape) != 2 or shape[0] != shape[1] or ranges[trial] != n or n > 64:
-            return equivalent
+            return equivalent, set()
 
         def entries(lhs):
             try:
@@ -1598,23 +1728,27 @@ class IntegralGenerator:
 
         maps = [entries(lhs) for lhs, _ in groups]
         if any(m is None for m in maps):
-            return equivalent
+            return equivalent, set()
         # Entries of a block's transpose, in the same (test, trial) dof order
         transposed: dict[tuple, int] = {}
         for g, m in enumerate(maps):
             assert m is not None
             t = tuple((m[j * n + i][1], m[j * n + i][0]) for i in range(n) for j in range(n))
             transposed.setdefault(t, g)
+        symmetric: set[int] = set()
         for h, m in enumerate(maps):
             source = transposed.get(m)
-            if source is None or source >= h or source in equivalent or h in equivalent:
+            if source is None or source > h or source in equivalent or h in equivalent:
                 continue
             sg, sh = signatures[source], signatures[h]
             assert sg is not None and sh is not None
             swapped = collections.Counter({(s, c, r): k for (s, r, c), k in sg.items()})
             if swapped == sh:
-                equivalent[h] = (source, True)
-        return equivalent
+                if source == h:
+                    symmetric.add(h)
+                else:
+                    equivalent[h] = (source, True)
+        return equivalent, symmetric
 
     def _quadrature_invariant(
         self, quadrature_rule: QuadratureRule, domain: basix.CellType
