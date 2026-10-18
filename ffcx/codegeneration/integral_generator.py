@@ -302,7 +302,9 @@ class IntegralGenerator:
         # once
         assert not any(d for d in self.scopes.values())
 
-        parts = []
+        parts: list[L.LNode] = [
+            L.Comment("Accumulate this integral into A; existing tensor entries are incremented.")
+        ]
 
         # Generate the tables of quadrature points and weights
         parts += self.generate_quadrature_tables(domain, self.ir.expression)
@@ -363,7 +365,13 @@ class IntegralGenerator:
                 parts += [L.ArrayDecl(wsym, values=quadrature_rule.weights, const=True)]
 
         # Add leading comment if there are any tables
-        parts = L.commented_code_list(parts, "Quadrature rules")
+        parts = L.commented_code_list(
+            parts,
+            [
+                "Quadrature weights on the reference integration entity.",
+                "Geometry scaling is applied when assembling the tensor.",
+            ],
+        )
         return parts
 
     def generate_element_tables(self, domain: basix.CellType):
@@ -389,7 +397,7 @@ class IntegralGenerator:
         parts = L.commented_code_list(
             parts,
             [
-                "Precomputed values of basis functions and precomputations",
+                "Precomputed reference basis values and derivatives.",
                 "FE* dimensions: [permutation][entities][points][dofs]",
             ],
         )
@@ -546,7 +554,23 @@ class IntegralGenerator:
         for sizes, body in loops.items():
             for index, size in reversed(list(zip(indices, sizes))):
                 body = [L.ForRange(index, 0, size, body)]
-            code.extend(body)
+            if len(sizes) == 1 and len(shape) == 2:
+                comment = "Traverse the full tensor in contiguous storage order."
+            else:
+                comment = "Map argument dof indices to element tensor entries."
+            code.extend([L.Comment(comment), *body])
+        declarations = L.commented_code_list(
+            declarations,
+            [
+                "Reference integrals (RI_*): argument basis values or products integrated",
+                "with quadrature weights at code generation time.",
+                "Contributions sharing a scalar factor and output map may share a summed table.",
+            ],
+        )
+        code = L.commented_code_list(
+            code,
+            "Contract reference integrals with factors constant over quadrature points; add to A.",
+        )
         return declarations + code, {id(block) for block in blocks}
 
     def generate_quadrature_loop(self, quadrature_rule: QuadratureRule, domain: basix.CellType):
@@ -597,13 +621,25 @@ class IntegralGenerator:
         code = optimize(code, quadrature_rule)
 
         if self._quadrature_invariant(quadrature_rule, domain):
-            return preintegrated_code + code
+            return preintegrated_code + L.commented_code_list(
+                code,
+                [
+                    "The integrand is constant across quadrature points.",
+                    "Apply the summed quadrature weight once, without a point loop.",
+                ],
+            )
 
         split = self._split_quadrature_loop(code, iq, intermediates_fw, quadrature_rule)
         if split is not None:
             return preintegrated_code + split
 
-        return preintegrated_code + [L.create_nested_for_loops([iq], code)]
+        return preintegrated_code + [
+            L.Comment(
+                f"Quadrature rule {quadrature_rule.id()}: evaluate and accumulate at "
+                f"{quadrature_rule.weights.size} points."
+            ),
+            L.create_nested_for_loops([iq], code),
+        ]
 
     def _quadrature_invariant(
         self, quadrature_rule: QuadratureRule, domain: basix.CellType
@@ -722,7 +758,11 @@ class IntegralGenerator:
                 for fw in intermediates_fw
             ]
             return declarations + [
+                L.Comment("Evaluate and cache weighted scalar factors at quadrature points."),
                 L.create_nested_for_loops([iq], evaluation + store),
+                L.Comment(
+                    "Reuse cached factors to contract argument tables and accumulate into A."
+                ),
                 L.create_nested_for_loops([iq], load + contraction),
             ]
 
@@ -752,17 +792,32 @@ class IntegralGenerator:
         ]
 
         tile_body = setup + [
+            L.Comment("Evaluate weighted scalar factors for the current tile of points."),
             L.ForRange(index, tile_base, tile_end, evaluation + store),
+            L.Comment("Reuse the tile cache to contract argument tables and accumulate into A."),
             L.ForRange(index, tile_base, tile_end, load + contraction),
         ]
-        return declarations + [L.ForRange(tile_index, 0, num_tiles, tile_body)]
+        return declarations + [
+            L.Comment("Tile quadrature points to bound temporary storage for weighted factors."),
+            L.ForRange(tile_index, 0, num_tiles, tile_body),
+        ]
 
     def generate_piecewise_partition(self, quadrature_rule, domain: basix.CellType):
         """Generate a piecewise partition."""
         # Get annotated graph of factorisation
         F = self.ir.expression.integrand[(domain, quadrature_rule)]["factorization"]
         arraysymbol = L.Symbol(f"sp_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
-        return self.generate_partition(arraysymbol, F, "piecewise", None, None)
+        definitions, intermediates = self.generate_partition(
+            arraysymbol, F, "piecewise", None, None
+        )
+        intermediates = L.commented_code_list(
+            intermediates,
+            [
+                "Scalar factors (sp_*): geometry transforms, coefficient expressions and other",
+                "quantities constant across quadrature points of this integration entity.",
+            ],
+        )
+        return definitions, intermediates
 
     def generate_varying_partition(self, quadrature_rule, domain: basix.CellType):
         """Generate a varying partition."""

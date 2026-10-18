@@ -64,6 +64,8 @@ class Formatter(FormatterInterface):
         comments += self._format_comment_str(
             f"Outputs: {', '.join(w.name for w in section.output)}"
         )
+        if description := L.SECTION_DESCRIPTIONS.get(section.name):
+            comments += self._format_comment_str(description)
         declarations = "".join(self(s) for s in section.declarations)
 
         body = ""
