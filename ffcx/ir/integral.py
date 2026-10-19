@@ -145,7 +145,8 @@ def _compute_integral_ir(
     integral_type: supported_integral_types,
     entity_type: entity_types,
     argument_shape: tuple[int, ...],
-    visualise: bool,
+    visualise: str | None,
+    graph_name: str,
     p: dict,
 ) -> tuple[
     dict[str, npt.NDArray[np.float64]],
@@ -244,7 +245,7 @@ def _compute_integral_ir(
 
     # Output diagnostic graph as pdf
     if visualise:
-        visualise_graph(S, "S.pdf")
+        visualise_graph(S, f"{graph_name}_S.{visualise}")
 
     # Compute factorization of arguments
     if p["part"] == TensorPart.diagonal:
@@ -295,7 +296,7 @@ def _compute_integral_ir(
 
     # Output diagnostic graph as pdf
     if visualise:
-        visualise_graph(F, "F.pdf")
+        visualise_graph(F, f"{graph_name}_F.{visualise}")
 
     # Loop over factorization terms
     block_contributions: dict[tuple[tuple[int, ...], ...], list[BlockDataT]] = (
@@ -406,6 +407,21 @@ def _compute_integral_ir(
     )
 
 
+def _graph_name(name, integral_domain, quadrature_rule) -> str:
+    """Build the file name stem for an integrand's graph visualisation.
+
+    An integral may be split over several cell types and quadrature
+    rules, each with its own graph, so the stem identifies which one it
+    is. The quadrature rule identifier is the one used to name tables in
+    the generated code, so the two can be matched up.
+    """
+    parts = [name]
+    if integral_domain != "":
+        parts.append(integral_domain.name)
+    parts.append(f"Q{quadrature_rule.id()}")
+    return "_".join(parts)
+
+
 def compute_integral_ir(
     cell: ufl.Cell,
     integral_type: supported_integral_types,
@@ -413,7 +429,8 @@ def compute_integral_ir(
     integrands: dict[basix.CellType, dict[QuadratureRule, ufl.core.expr.Expr]],
     argument_shape: tuple[int, ...],
     p: dict,
-    visualise: bool,
+    visualise: str | None,
+    name: str,
 ) -> IntermediateIntegralIR:
     """Compute intermediate representation for an integral.
 
@@ -424,8 +441,10 @@ def compute_integral_ir(
         integrands: Dictionary mapping a quadrature rule to a sequence of integrands
         argument_shape: Shape of the output tensor of the integral (used for tensor factorization)
         p: Parameters used for clamping tables and for activating sum factorization
-        visualise: If True, store the graph representation of the integrand in a pdf file
-            `S.pdf` and `F.pdf`
+        visualise: If set, the image format in which to store the graph
+            representation of each integrand, e.g. "pdf" or "png"
+        name: Name of the integral or expression, used as the stem of the
+            graph file names
     """
     # Data that will populate the intermediate representation.
     needs_facet_permutations: bool = False
@@ -458,6 +477,7 @@ def compute_integral_ir(
                 entity_type,
                 argument_shape,
                 visualise,
+                _graph_name(name, integral_domain, quadrature_rule),
                 p,
             )
 
