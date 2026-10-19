@@ -23,11 +23,40 @@ def test_cmdline_simple():
 @pytest.mark.skipif(
     importlib.util.find_spec("pygraphviz") is None, reason="pygraphviz not installed."
 )
-def test_visualise():
+@pytest.mark.parametrize("args,suffix", [([], "pdf"), (["--visualise-format", "png"], "png")])
+def test_visualise(tmp_path, args, suffix):
+    """Each integrand's graphs are named after the integral they belong to.
+
+    The graphs are written relative to the working directory, so the
+    command is run inside `tmp_path`.
+    """
     dir = Path(__file__).parent
-    subprocess.run(["ffcx", "-o", dir, "--visualise", dir / "poisson.py"], check=True)
-    assert (Path.cwd() / "S.pdf").is_file()
-    assert (Path.cwd() / "F.pdf").is_file()
+    subprocess.run(
+        ["ffcx", "-d", str(tmp_path), "--visualise", *args, str(dir / "poisson.py")],
+        check=True,
+        cwd=tmp_path,
+    )
+    s_graphs = sorted(tmp_path.glob(f"*_S.{suffix}"))
+    f_graphs = sorted(tmp_path.glob(f"*_F.{suffix}"))
+    assert len(s_graphs) == len(f_graphs) > 0
+
+    # poisson.py holds a bilinear and a linear form, which must not
+    # overwrite each other's graphs
+    assert len(s_graphs) > 1
+    assert all(p.stat().st_size > 0 for p in s_graphs + f_graphs)
+
+    # The old, fixed names are no longer used
+    assert not (tmp_path / f"S.{suffix}").exists()
+
+
+def test_visualise_format_normalisation():
+    """`True` is still accepted, and means the default format."""
+    from ffcx.compiler import _visualise_format
+
+    assert _visualise_format(True) == "pdf"
+    assert _visualise_format(False) is None
+    assert _visualise_format(None) is None
+    assert _visualise_format("png") == "png"
 
 
 def _find_compiler(cpp: bool) -> str | None:
