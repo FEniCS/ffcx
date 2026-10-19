@@ -1742,6 +1742,10 @@ class IntegralGenerator:
                     symmetric.add(h)
                 else:
                     equivalent[h] = (source, True)
+                    # Blocks equal to h are transposes of source too
+                    for k, (s, transpose) in list(equivalent.items()):
+                        if s == h:
+                            equivalent[k] = (source, not transpose)
         return equivalent, symmetric
 
     def _quadrature_invariant(
@@ -2340,8 +2344,12 @@ class IntegralGenerator:
                     self._record_value(fw, fw_rhs)
                     intermediates += [L.VariableDecl(fw, fw_rhs)]
 
-            var = fw if isinstance(fw, L.Symbol) else fw.array
-            vars += [var]
+            # A factor folded to a literal (e.g. a constant on a point facet) has
+            # no symbol to list as an input.
+            if isinstance(fw, L.Symbol):
+                vars.append(fw)
+            elif isinstance(fw, L.ArrayAccess):
+                vars.append(fw.array)
             assert not blockdata.transposed, "Not handled yet"
 
             if unroll:

@@ -3024,3 +3024,77 @@ def test_bessel_functions(compile_args):
 
     # Vertex rule on [a, b]: (b - a) / 2 * (f(a) + f(b))
     assert np.isclose(J[0], 0.5 * (b - a) * (f(a) + f(b)))
+
+
+def test_point_facet_constant_factor(compile_args):
+    """A constant factor on a point facet folds to a literal weighted factor."""
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "interval", 1, shape=(1,)))
+    form = ufl.FacetArea(domain) * ufl.ds(domain=domain)
+    compiled, module, _ = ffcx.codegeneration.jit.compile_forms(
+        [form], options={"scalar_type": "float64"}, cffi_extra_compile_args=compile_args
+    )
+    J = np.zeros(1)
+    coords = np.array([0.2, 0.0, 0.0, 0.7, 0.0, 0.0])
+    facet = np.array([1], dtype=np.intc)
+    compiled[0].form_integrals[0].tabulate_tensor_float64(
+        module.ffi.cast("double *", J.ctypes.data),
+        module.ffi.NULL,
+        module.ffi.NULL,
+        module.ffi.cast("double *", coords.ctypes.data),
+        module.ffi.cast("int *", facet.ctypes.data),
+        module.ffi.NULL,
+        module.ffi.NULL,
+    )
+    assert np.isclose(J[0], 1.0)
+
+
+def test_interior_facet_blocks_equal_to_transposes(tmp_path, monkeypatch, compile_args):
+    """Blocks equal to a block that is itself a transposed block reuse the original.
+
+    In the jump of a vector argument, a block may equal another whose values
+    are the transpose of a third; local accumulation must match the plain loops.
+    """
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    space = ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
+    form = ufl.inner(ufl.jump(u), ufl.jump(v)) * ufl.dS
+
+    coords = np.array(
+        [
+            [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+            [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.1, 1.2, 0.0],
+        ]
+    )
+    facets = np.array([0, 2], dtype=np.intc)
+    perms = np.array([0, 1], dtype=np.uint8)
+
+    def tabulate(cache):
+        compiled, module, _ = ffcx.codegeneration.jit.compile_forms(
+            [form],
+            options={"scalar_type": "float64"},
+            cache_dir=tmp_path / cache,
+            cffi_extra_compile_args=compile_args,
+        )
+        A = np.zeros((12, 12))
+        compiled[0].form_integrals[0].tabulate_tensor_float64(
+            module.ffi.cast("double *", A.ctypes.data),
+            module.ffi.NULL,
+            module.ffi.NULL,
+            module.ffi.cast("double *", coords.ctypes.data),
+            module.ffi.cast("int *", facets.ctypes.data),
+            module.ffi.cast("uint8_t *", perms.ctypes.data),
+            module.ffi.NULL,
+        )
+        return A
+
+    A = tabulate("local")
+    import ffcx.codegeneration.integral_generator as integral_generator
+
+    monkeypatch.setattr(
+        integral_generator.IntegralGenerator,
+        "_localize_tensor_updates",
+        lambda self, sections: (sections, [], []),
+    )
+    reference = tabulate("plain")
+    assert np.abs(reference).max() > 0
+    np.testing.assert_allclose(A, reference, rtol=1e-13, atol=1e-14)
