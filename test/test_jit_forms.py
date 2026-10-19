@@ -1468,7 +1468,7 @@ def test_ds_prism(compile_args, dtype):
 
     # Test integral over triangle (facet 0)
     A = np.zeros((6, 6), dtype=dtype)
-    entity_index = np.array([0], dtype=int)
+    entity_index = np.array([0], dtype=np.intc)
 
     xdtype = dtype_to_scalar_dtype(dtype)
     coords = np.array(
@@ -1513,7 +1513,7 @@ def test_ds_prism(compile_args, dtype):
 
     # Test integral over quadrilateral (facet 1)
     A = np.zeros((6, 6), dtype=dtype)
-    entity_index = np.array([1], dtype=np.int64)
+    entity_index = np.array([1], dtype=np.intc)
 
     xdtype = dtype_to_scalar_dtype(dtype)
     coords = np.array(
