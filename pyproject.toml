@@ -43,8 +43,7 @@ ci = [
     "coverage>=7.0.0",
     "pytest-cov",
     "pytest-xdist",
-    "types-setuptools",
-    "mypy",
+    "pyrefly>=1.4",
     "fenics-ffcx[docs]",
     "fenics-ffcx[lint]",
     "fenics-ffcx[test]",
@@ -67,29 +66,62 @@ testpaths = ["test"]
 norecursedirs = ["libs", "docs"]
 log_cli = true
 
-[tool.mypy]
-# Suggested at https://blog.wolt.com/engineering/2021/09/30/professional-grade-mypy-configuration/
-# Goal would be to make all of the below True long-term
-disallow_untyped_defs = true
-disallow_any_unimported = true
-no_implicit_optional = true
-check_untyped_defs = true
-warn_return_any = true
-warn_unused_ignores = true
-show_error_codes = true
+[tool.pyrefly]
+project-includes = ["ffcx"]
 
-[[tool.mypy.overrides]]
-module = ['basix', 'cffi', 'numba.*', 'pygraphviz', 'ufl.*']
-ignore_missing_imports = true
+# Everything in the strict preset except the four kinds opted out of
+# below, which is considerably more than the mypy configuration this
+# replaced enabled.
+preset = "strict"
 
-[[tool.mypy.overrides]]
-module = ["ffcx.*", "ffcx.ir.*", "ffcx.codegeneration.*"]
-disallow_any_unimported = false                           # most of these come from UFL
+# Modules the mypy configuration this replaced exempted from checking.
+# They are replaced with Any unconditionally rather than only when they
+# cannot be imported, so the result does not depend on whether a given
+# platform happens to have the package installed: pygraphviz is only
+# installed on some CI platforms, and cffi ships no type information.
+# UFL is included because most of the Any values in FFCx come from it.
+replace-imports-with-any = ["cffi", "pygraphviz", "ufl", "ufl.*"]
 
-[[tool.mypy.overrides]]
-module = ["ffcx.ir.*", "ffcx.codegeneration.*"]
-check_untyped_defs = false
-disallow_untyped_defs = false
+# mypy's check_untyped_defs
+check-unannotated-defs = true
+enabled-ignores = ["pyrefly"]
+
+[tool.pyrefly.errors]
+# mypy's disallow_untyped_defs
+implicit-any-parameter = true
+unannotated-return = true
+# mypy's warn_unused_ignores
+unused-ignore = true
+# mypy's warn_return_any
+no-any-return = true
+# Stricter than the mypy configuration this replaced: mypy's equivalent of
+# unbound-name (possibly-undefined) is opt-in and was not enabled.
+unbound-name = true
+implicit-reexport = true
+
+# The four kinds of the strict preset that FFCx does not satisfy yet, with
+# what each currently costs. They are annotation debt rather than defects,
+# so they are best paid down a package at a time.
+implicit-any-lambda = false          # 43
+implicit-any-type-argument = false   # 38
+missing-override-decorator = false   # 18
+implicit-any-empty-container = false # 16
+
+# mypy turned check_untyped_defs and disallow_untyped_defs off for these
+# two packages. Goal would be to drop these long-term.
+[[tool.pyrefly.sub-config]]
+matches = "ffcx/ir/**"
+check-unannotated-defs = false
+[tool.pyrefly.sub-config.errors]
+implicit-any-parameter = false
+unannotated-return = false
+
+[[tool.pyrefly.sub-config]]
+matches = "ffcx/codegeneration/**"
+check-unannotated-defs = false
+[tool.pyrefly.sub-config.errors]
+implicit-any-parameter = false
+unannotated-return = false
 
 [tool.ruff]
 line-length = 100

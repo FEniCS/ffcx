@@ -117,6 +117,14 @@ _EXPRESSION_INTEGRAL_TYPES = {
 _ENTITY_CODIM = {"cell": 0, "facet": 1, "ridge": 2, "peak": 3}
 
 
+class TableValues(typing.TypedDict):
+    """Tabulated values of an element, with the component's offset and stride."""
+
+    array: npt.NDArray[np.float64]
+    offset: int
+    stride: int
+
+
 def get_ffcx_table_values(
     points,
     cell,
@@ -127,7 +135,7 @@ def get_ffcx_table_values(
     derivative_counts,
     flat_component,
     codim,
-):
+) -> TableValues:
     """Extract values from FFCx element table.
 
     Returns a 4D numpy array with axes
@@ -137,6 +145,7 @@ def get_ffcx_table_values(
     """
     deriv_order = sum(derivative_counts)
 
+    weights = None
     if integral_type in ufl.custom_integral_types:
         # Use quadrature points on cell for analysis in custom integral types
         integral_type = "cell"
@@ -198,6 +207,7 @@ def get_ffcx_table_values(
 
     if avg in ("cell", "facet"):
         # Compute numeric integral of the each component table
+        assert weights is not None
         wsum = sum(weights)
         for entity, tbl in enumerate(component_tables):
             num_dofs = tbl.shape[1]
@@ -264,7 +274,7 @@ def get_modified_terminal_element(mt) -> ModifiedTerminalElement | None:
             raise RuntimeError("Global derivatives of reference values not defined.")
         elif ld and not mt.reference_value:
             raise RuntimeError("Local derivatives of global values not defined.")
-        element = mt.terminal.ufl_function_space().ufl_element()  # type: ignore
+        element = mt.terminal.ufl_function_space().ufl_element()
         fc = mt.flat_component
     elif isinstance(mt.terminal, ufl.classes.SpatialCoordinate):
         if mt.reference_value:
@@ -537,6 +547,14 @@ def build_optimized_tables(
                                 )
                         t = new_table[0]
                         t["array"] = np.vstack([td["array"] for td in new_table])
+                    else:
+                        raise NotImplementedError(
+                            f"Cannot build a permuted element table for a facet of a {cell_type}."
+                        )
+                else:
+                    raise NotImplementedError(
+                        f"Cannot build a permuted element table for a facet at tdim {tdim}."
+                    )
             elif entity_type == "ridge":
                 if tdim < 3 or codim == 2 or (integral_type == "ridge" and not is_mixed_dim):
                     # No permutation is needed when the ridge is a vertex
@@ -648,7 +666,7 @@ def build_optimized_tables(
             and len(factors) == 1
             and quadrature_rule.has_tensor_factors
         ):
-            tensor_factors = []
+            factors_for_mt: list[UniqueTableReferenceT] = []
             for i, j in enumerate(factors[0]):
                 pts = quadrature_rule.tensor_factors[i][0]
                 d = local_derivatives[i]
@@ -658,7 +676,7 @@ def build_optimized_tables(
                     if tensor_factor.values.shape == sub_tbl.shape and np.allclose(
                         tensor_factor.values, sub_tbl
                     ):
-                        tensor_factors.append(tensor_factor)
+                        factors_for_mt.append(tensor_factor)
                         break
                 else:
                     ut = UniqueTableReferenceT(
@@ -668,9 +686,10 @@ def build_optimized_tables(
                         is_permuted=False,
                     )
                     all_tensor_factors.append(ut)
-                    tensor_factors.append(ut)
+                    factors_for_mt.append(ut)
                     mt_tables[ut.name] = ut
                     tensor_n += 1
+            tensor_factors = factors_for_mt
 
         if mt.restriction == "-" and isinstance(mt.terminal, ufl.classes.FormArgument):
             # offset = 0 or number of element dofs, if restricted to "-"

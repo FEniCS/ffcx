@@ -224,7 +224,7 @@ def compile_forms(
                         diagonal_form += blocked_form[j][j]
                 if diagonal_form == 0:
                     raise RuntimeError("Diagonal form seems to be zero.")
-                forms[i] = diagonal_form  # type: ignore
+                forms[i] = diagonal_form
 
     # Get a signature for these forms
     module_name = "libffcx_forms_" + ffcx.naming.compute_signature(
@@ -245,7 +245,8 @@ def compile_forms(
 
     try:
         decl = (
-            UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name)  # type: ignore
+            # pyrefly: ignore[no-matching-overload]
+            UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name)
             + UFC_INTEGRAL_DECL
             + UFC_FORM_DECL
         )
@@ -281,7 +282,7 @@ def compile_forms(
 
 
 def compile_expressions(
-    expressions: list[tuple[ufl.Expr, npt.NDArray[np.floating]]],  # type: ignore
+    expressions: list[tuple[ufl.Expr, npt.NDArray[np.floating]]],
     options: dict = {},
     cache_dir: Path | None = None,
     timeout: int = 10,
@@ -326,7 +327,8 @@ def compile_expressions(
 
     try:
         decl = (
-            UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name)  # type: ignore
+            # pyrefly: ignore[no-matching-overload]
+            UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name)
             + UFC_INTEGRAL_DECL
             + UFC_FORM_DECL
             + UFC_EXPRESSION_DECL

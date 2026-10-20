@@ -28,6 +28,7 @@ def compute_signature(
     Based on the UFL type of the objects and an additional optional 'tag'.
     """
     object_signature = ""
+    kind = ""
     for ufl_object in ufl_objects:
         # Get signature from ufl object
         if isinstance(ufl_object, ufl.Form):
