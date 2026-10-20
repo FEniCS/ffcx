@@ -23,6 +23,9 @@ set_target_properties(poisson PROPERTIES
 target_include_directories(poisson PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(poisson PRIVATE ufcx::ufcx)
 
+enable_testing()
+add_test(NAME poisson COMMAND poisson)
+
 # The generated code calls into the C maths library. It is part of the
 # C runtime on some platforms, so link it only where it is a separate
 # library.

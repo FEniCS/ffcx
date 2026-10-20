@@ -20,4 +20,5 @@ cmake --build build
 ./build/poisson
 ```
 
-prints the element matrix and exits non-zero if it is wrong.
+prints the element matrix and exits non-zero if it is wrong. The example
+is registered as a test, so `ctest --test-dir build` runs it too.

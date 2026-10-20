@@ -37,7 +37,19 @@ def test_c_demo(tmp_path):
         ["cmake", "-S", str(demo_dir), "-B", str(build), f"-DCMAKE_PREFIX_PATH={prefix}"],
         check=True,
     )
-    subprocess.run(["cmake", "--build", str(build)], check=True)
+    subprocess.run(["cmake", "--build", str(build), "--config", "Release"], check=True)
 
-    # The example returns non-zero if the element matrix is wrong
-    subprocess.run([str(build / "poisson")], check=True)
+    # Run it through CTest rather than by path: multi-config generators put the
+    # binary in a per-config subdirectory, and Windows adds a suffix. The
+    # example returns non-zero if the element matrix is wrong.
+    subprocess.run(
+        [
+            "ctest",
+            "--test-dir",
+            str(build),
+            "--build-config",
+            "Release",
+            "--output-on-failure",
+        ],
+        check=True,
+    )
