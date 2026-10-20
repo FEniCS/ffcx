@@ -236,7 +236,7 @@ def compute_ir(
     object_names: dict[int, str],
     prefix: str,
     options: dict[str, npt.DTypeLike | int | float | bool],
-    visualise: bool,
+    visualise: str | None,
 ) -> DataIR:
     """Compute intermediate representation."""
     logger.info(79 * "*")
@@ -352,8 +352,8 @@ def _compute_integral_ir(
             'sum_factorization': If sum factorization should be used. Only has an effect on cell
             integrals. 'table_atol',`table_rtol': Absolute and relative tolerance for clamping table
             values at -1, 0 or 1.
-        visualise: If True, store the graph representation of the integrand in a pdf file
-            `S.pdf` and `F.pdf`
+        visualise: If set, the image format in which to store the graph
+            representation of each integrand, e.g. "pdf" or "png"
 
     Returns:
          A list of intermediate representations for each integral of the Form.
@@ -539,6 +539,7 @@ def _compute_integral_ir(
             tuple(expression_ir["tensor_shape"]),
             options,
             visualise,
+            integral_names[(form_index, itg_data_index)],
         )
 
         expression_ir.update(integral_ir)
@@ -776,6 +777,7 @@ def _compute_expression_ir(
         tensor_shape,
         options,
         visualise,
+        base_ir["name"],
     )
 
     base_ir.update(expression_ir)
