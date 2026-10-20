@@ -9,10 +9,11 @@ find_package(Python3 COMPONENTS Interpreter REQUIRED)
 # into the build directory.
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/poisson.c ${CMAKE_CURRENT_BINARY_DIR}/poisson.h
-  COMMAND ${Python3_EXECUTABLE} -m ffcx --dir ${CMAKE_CURRENT_BINARY_DIR}
+  COMMAND Python3::Interpreter -m ffcx --dir ${CMAKE_CURRENT_BINARY_DIR}
           ${CMAKE_CURRENT_SOURCE_DIR}/poisson.py
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/poisson.py
-  COMMENT "Compiling poisson.py with FFCx")
+  COMMENT "Compiling poisson.py with FFCx"
+  VERBATIM)
 
 add_executable(poisson main.c ${CMAKE_CURRENT_BINARY_DIR}/poisson.c)
 set_target_properties(poisson PROPERTIES
@@ -22,7 +23,10 @@ set_target_properties(poisson PROPERTIES
 target_include_directories(poisson PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(poisson PRIVATE ufcx::ufcx)
 
-# The generated code calls into the C maths library
-if(NOT WIN32)
-  target_link_libraries(poisson PRIVATE m)
+# The generated code calls into the C maths library. It is part of the
+# C runtime on some platforms, so link it only where it is a separate
+# library.
+find_library(MATH_LIBRARY m)
+if(MATH_LIBRARY)
+  target_link_libraries(poisson PRIVATE ${MATH_LIBRARY})
 endif()
