@@ -36,19 +36,19 @@ file_dir = os.path.dirname(os.path.abspath(__file__))
 with open(file_dir + "/ufcx.h") as f:
     ufcx_h = "".join(f.readlines())
 
-# Emulate C preprocessor on __STDC_NO_COMPLEX__
+# Emulate C preprocessor on UFCX_NO_COMPLEX
 if sys.platform.startswith("win32"):
     # Remove macro statements and content
     ufcx_h = re.sub(
-        r"\#ifndef __STDC_NO_COMPLEX__.*?\#endif // __STDC_NO_COMPLEX__",
+        r"\#ifndef UFCX_NO_COMPLEX.*?\#endif // UFCX_NO_COMPLEX",
         "",
         ufcx_h,
         flags=re.DOTALL,
     )
 else:
     # Remove only macros keeping content
-    ufcx_h = ufcx_h.replace("#ifndef __STDC_NO_COMPLEX__", "")
-    ufcx_h = ufcx_h.replace("#endif // __STDC_NO_COMPLEX__", "")
+    ufcx_h = ufcx_h.replace("#ifndef UFCX_NO_COMPLEX", "")
+    ufcx_h = ufcx_h.replace("#endif // UFCX_NO_COMPLEX", "")
 
 header = ufcx_h.split("<HEADER_DECL>")[1].split("</HEADER_DECL>")[0].strip(" /\n")
 header = header.replace("{", "{{").replace("}", "}}")
@@ -189,7 +189,7 @@ def compile_forms(
     cffi_verbose: bool = False,
     cffi_debug: bool = False,
     cffi_libraries: list[str] = [],
-    visualise: bool = False,
+    visualise: bool | str | None = False,
 ):
     """Compile a list of UFL forms into UFCx Python objects.
 
@@ -202,7 +202,8 @@ def compile_forms(
         cffi_verbose: Use verbose compile
         cffi_debug: Use compiler debug mode
         cffi_libraries: libraries to use with compiler
-        visualise: Toggle visualisation
+        visualise: If set, the image format in which to store the IR
+            graphs, e.g. "pdf" or "png". `True` means "pdf".
     """
     p = ffcx.options.get_options(options)
 
@@ -288,7 +289,7 @@ def compile_expressions(
     cffi_verbose: bool = False,
     cffi_debug: bool = False,
     cffi_libraries: list[str] = [],
-    visualise: bool = False,
+    visualise: bool | str | None = False,
 ):
     """Compile a list of UFL expressions into UFCx Python objects.
 
@@ -301,7 +302,8 @@ def compile_expressions(
         cffi_verbose: Use verbose compile
         cffi_debug: Use compiler debug mode
         cffi_libraries: libraries to use with compiler
-        visualise: Toggle visualisation
+        visualise: If set, the image format in which to store the IR
+            graphs, e.g. "pdf" or "png". `True` means "pdf".
     """
     p = ffcx.options.get_options(options)
 
@@ -371,7 +373,7 @@ def _compile_objects(
     cffi_verbose,
     cffi_debug,
     cffi_libraries,
-    visualise: bool = False,
+    visualise: bool | str | None = False,
 ):
     import ffcx.compiler
 
