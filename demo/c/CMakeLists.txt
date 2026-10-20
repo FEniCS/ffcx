@@ -15,6 +15,10 @@ add_custom_command(
   COMMENT "Compiling poisson.py with FFCx")
 
 add_executable(poisson main.c ${CMAKE_CURRENT_BINARY_DIR}/poisson.c)
+set_target_properties(poisson PROPERTIES
+  C_STANDARD 17
+  C_STANDARD_REQUIRED ON
+  C_EXTENSIONS OFF)
 target_include_directories(poisson PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(poisson PRIVATE ufcx::ufcx)
 

@@ -7,7 +7,6 @@
 
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -17,11 +16,6 @@ demo_dir = repo_dir / "demo" / "c"
 
 
 @pytest.mark.skipif(shutil.which("cmake") is None, reason="CMake not found.")
-@pytest.mark.skipif(
-    sys.platform.startswith("win32"),
-    reason="Generated code initialises the complex kernel members "
-    "unconditionally, which MSVC rejects. Remove this skip once #917 lands.",
-)
 def test_c_demo(tmp_path):
     """The example builds against an installed UFCx and gives the right matrix."""
     prefix = tmp_path / "ufcx"
