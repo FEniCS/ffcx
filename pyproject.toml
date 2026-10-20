@@ -84,6 +84,7 @@ replace-imports-with-any = ["cffi", "pygraphviz", "ufl", "ufl.*"]
 
 # mypy's check_untyped_defs
 check-unannotated-defs = true
+enabled-ignores = ["pyrefly"]
 
 [tool.pyrefly.errors]
 # mypy's disallow_untyped_defs

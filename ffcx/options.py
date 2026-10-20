@@ -136,7 +136,7 @@ def get_options(
     options: dict[str, npt.DTypeLike | int | float] = {}
 
     for opt, (_, value, _, _) in FFCX_DEFAULT_OPTIONS.items():
-        options[opt] = value  # type: ignore
+        options[opt] = value
 
     # NOTE: _load_options uses functools.lru_cache
     user_options, pwd_options = _load_options()
@@ -155,7 +155,8 @@ def get_options(
     if priority_options is not None:
         options.update(priority_options)
 
-    logger.setLevel(int(options["verbosity"]))  # type: ignore
+    # pyrefly: ignore[bad-argument-type]
+    logger.setLevel(int(options["verbosity"]))
     # pformat dominates this function and runs on every JIT cache hit.
     if logger.isEnabledFor(logging.INFO):
         logger.info("Final option values")

@@ -48,7 +48,8 @@ def generator(
         kernel_name = ir.kernel_name
     else:
         kernel_name = f"tabulate_tensor_{ir.kernel_name}_{domain.name}"
-    np_scalar_type = np.dtype(options["scalar_type"]).name  # type: ignore
+    # pyrefly: ignore[no-matching-overload]
+    np_scalar_type = np.dtype(options["scalar_type"]).name
 
     # Format declaration
     kernel_declaration = (
@@ -70,7 +71,8 @@ def generator(
     parts = ig.generate(domain)
 
     # Format code as string
-    format = Formatter(options["scalar_type"])  # type: ignore
+    # pyrefly: ignore[bad-argument-type]
+    format = Formatter(options["scalar_type"])
     body = format(parts)
 
     # Generate generic FFCx code snippets and add specific parts
@@ -104,8 +106,10 @@ def generator(
     if kernel_name == hashed_kernel_name:
         kernel_alias = ""
     else:
-        scalar_type = dtype_to_c_type(options["scalar_type"])  # type: ignore
-        geom_type = dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"]))  # type: ignore
+        # pyrefly: ignore[bad-argument-type]
+        scalar_type = dtype_to_c_type(options["scalar_type"])
+        # pyrefly: ignore[bad-argument-type]
+        geom_type = dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"]))
         kernel_alias = f"""void {hashed_kernel_name}({scalar_type}* restrict A,
                                     const {scalar_type}* restrict w,
                                     const {scalar_type}* restrict c,
@@ -125,8 +129,10 @@ def generator(
         enabled_coefficients_init=code["enabled_coefficients_init"],
         tabulate_tensor=code["tabulate_tensor"],
         needs_facet_permutations="true" if ir.expression.needs_facet_permutations else "false",
-        scalar_type=dtype_to_c_type(options["scalar_type"]),  # type: ignore
-        geom_type=dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"])),  # type: ignore
+        # pyrefly: ignore[bad-argument-type]
+        scalar_type=dtype_to_c_type(options["scalar_type"]),
+        # pyrefly: ignore[bad-argument-type]
+        geom_type=dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"])),
         coordinate_element_hash=f"UINT64_C({ir.expression.coordinate_element_hash})",
         tabulate_tensor_float32=code["tabulate_tensor_float32"],
         tabulate_tensor_float64=code["tabulate_tensor_float64"],
