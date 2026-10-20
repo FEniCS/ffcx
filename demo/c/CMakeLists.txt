@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21...4.0)
+cmake_minimum_required(VERSION 3.21...4.4)
 
 project(ffcx-c-demo LANGUAGES C)
 
