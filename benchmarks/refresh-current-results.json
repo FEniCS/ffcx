@@ -7,7 +7,7 @@
     "GCC 16 hot-cache elasticity/hyperelasticity": "elasticity",
     "Clang 22 hot-cache elasticity/hyperelasticity": "elasticity",
     "hot-cache Poisson versus main and release": "poisson",
-    "DRAM streaming before/current": "streaming"
+    "DRAM streaming release/before/current": "streaming_release"
   },
   "runs": {
     "elasticity": {
@@ -6920,6 +6920,1763 @@
           }
         }
       }
+    },
+    "streaming_release": {
+      "environment": {
+        "cpu_model": "Intel(R) Xeon(R) w7-3445",
+        "cpu_affinity": 2,
+        "flags": "-O3 -march=native -ffp-contract=fast -ffast-math",
+        "allocation_bytes": 1073741824,
+        "repetitions": 7,
+        "compilers": {
+          "gcc-16": "gcc-16 (Ubuntu 16-20260322-1ubuntu1) 16.0.1 20260322 (experimental) [trunk r16-8246-g569ace1fa50]",
+          "clang-22": "Ubuntu clang version 22.1.2 (1ubuntu1)"
+        }
+      },
+      "source_commits": {
+        "before": "30757e95278714cec85d65885f2dc70ea19a68b2",
+        "pr": "9e736b9fe791656de567f0b03be19729fa7aa515",
+        "release": "27fbb3b2f99f1d56e27f0e00a5b0576042ffc39a"
+      },
+      "source_manifests": {
+        "before": {
+          "poisson": {
+            "ffcx": "0.12.0.dev0",
+            "basix": "0.12.0.dev0",
+            "ufl": "2026.2.0.dev0",
+            "cases": {
+              "triangle_p1": {
+                "cell": "triangle",
+                "dimension": 2,
+                "degree": 1,
+                "dofs": 3,
+                "quadrature_degree": 0,
+                "quadrature_points": 1,
+                "source_sha256": "ab5bab4775175887cff23128c6863027b2da9097b6da722440f488168ffb36c1"
+              },
+              "triangle_p2": {
+                "cell": "triangle",
+                "dimension": 2,
+                "degree": 2,
+                "dofs": 6,
+                "quadrature_degree": 2,
+                "quadrature_points": 3,
+                "source_sha256": "fdc257022ebaae21a3226d52829c10f09e01f8ce31453b537431c131a2b1515b"
+              },
+              "triangle_p3": {
+                "cell": "triangle",
+                "dimension": 2,
+                "degree": 3,
+                "dofs": 10,
+                "quadrature_degree": 4,
+                "quadrature_points": 6,
+                "source_sha256": "3fe5e3103608a8421190422283c9de1bf5e8cd556bc409d8da2d3f891e7a89a0"
+              },
+              "quadrilateral_p1": {
+                "cell": "quadrilateral",
+                "dimension": 2,
+                "degree": 1,
+                "dofs": 4,
+                "quadrature_degree": 2,
+                "quadrature_points": 4,
+                "source_sha256": "329dc10894cbd8a9e8ef259f08f86eae7211aba6627a6444083e59f3579c94ff"
+              },
+              "quadrilateral_p2": {
+                "cell": "quadrilateral",
+                "dimension": 2,
+                "degree": 2,
+                "dofs": 9,
+                "quadrature_degree": 4,
+                "quadrature_points": 9,
+                "source_sha256": "29378711cbd0de6addf35c3f910eafc1e282806334bec4b99cc16bcd7a0ec5a9"
+              },
+              "quadrilateral_p3": {
+                "cell": "quadrilateral",
+                "dimension": 2,
+                "degree": 3,
+                "dofs": 16,
+                "quadrature_degree": 6,
+                "quadrature_points": 16,
+                "source_sha256": "9d5498486193e8914ffa36aab818ba9df951708d348690e04c0f0ea8e87538a4"
+              },
+              "tetrahedron_p1": {
+                "cell": "tetrahedron",
+                "dimension": 3,
+                "degree": 1,
+                "dofs": 4,
+                "quadrature_degree": 0,
+                "quadrature_points": 1,
+                "source_sha256": "3fbddd7443050c7a38428769a40197596930fe54d744d66b020828689936655c"
+              },
+              "tetrahedron_p2": {
+                "cell": "tetrahedron",
+                "dimension": 3,
+                "degree": 2,
+                "dofs": 10,
+                "quadrature_degree": 2,
+                "quadrature_points": 4,
+                "source_sha256": "1c5ef5feb0906204580871421bc9f0be46ef5c506ebd4f05ce5fae80bd6a9169"
+              },
+              "tetrahedron_p3": {
+                "cell": "tetrahedron",
+                "dimension": 3,
+                "degree": 3,
+                "dofs": 20,
+                "quadrature_degree": 4,
+                "quadrature_points": 11,
+                "source_sha256": "41678570a127ab8226a6a08bb739434b679a18a8cd54e21e37f4e60db85ee114"
+              },
+              "hexahedron_p1": {
+                "cell": "hexahedron",
+                "dimension": 3,
+                "degree": 1,
+                "dofs": 8,
+                "quadrature_degree": 2,
+                "quadrature_points": 8,
+                "source_sha256": "8c0e95cc0c88c713d8556ea61dc1d755f7a4c515f0fefe5f808513808d1c05bd"
+              },
+              "hexahedron_p2": {
+                "cell": "hexahedron",
+                "dimension": 3,
+                "degree": 2,
+                "dofs": 27,
+                "quadrature_degree": 4,
+                "quadrature_points": 27,
+                "source_sha256": "b7c4b24ed2e7ee2475631779ca112581ab604e6605939de126c45caedb2e3b6e"
+              },
+              "hexahedron_p3": {
+                "cell": "hexahedron",
+                "dimension": 3,
+                "degree": 3,
+                "dofs": 64,
+                "quadrature_degree": 6,
+                "quadrature_points": 64,
+                "source_sha256": "30b2bcab170b07561ff572c67598f021b13ce52e1969704b4ce2d4c65433316b"
+              }
+            },
+            "header_sha256": "b5f7875640491f4347718a5952fb1f145efc6dfc9536e0a29cc492de51e808d4"
+          },
+          "elasticity": {
+            "ffcx": "0.12.0.dev0",
+            "basix": "0.12.0.dev0",
+            "ufl": "2026.2.0.dev0",
+            "mu": 1.0,
+            "lambda": 1.25,
+            "cases": {
+              "triangle_p1": {
+                "cell": "triangle",
+                "dimension": 2,
+                "degree": 1,
+                "dofs": 6,
+                "scalar_dofs": 3,
+                "quadrature_degree": 0,
+                "quadrature_points": 1,
+                "source_sha256": "f86b261d58ebc1e2e24c596e787ae3610b4bcf6c52f76580b63e78b7d23eccb2"
+              },
+              "triangle_p2": {
+                "cell": "triangle",
+                "dimension": 2,
+                "degree": 2,
+                "dofs": 12,
+                "scalar_dofs": 6,
+                "quadrature_degree": 2,
+                "quadrature_points": 3,
+                "source_sha256": "b00190c9c9f6a1839e89b32c2e5f328af787997ca9f90d7b0a47d0d6d677cd8e"
+              },
+              "triangle_p3": {
+                "cell": "triangle",
+                "dimension": 2,
+                "degree": 3,
+                "dofs": 20,
+                "scalar_dofs": 10,
+                "quadrature_degree": 4,
+                "quadrature_points": 6,
+                "source_sha256": "ca503ca334ddef2df78bb2007c462478b075f434e759b5d67e7494462d27da74"
+              },
+              "tetrahedron_p1": {
+                "cell": "tetrahedron",
+                "dimension": 3,
+                "degree": 1,
+                "dofs": 12,
+                "scalar_dofs": 4,
+                "quadrature_degree": 0,
+                "quadrature_points": 1,
+                "source_sha256": "f6da3fc383437e409e5b1872aa795aef6988b2a27840507f1c68c7ac22a44bf8"
+              },
+              "tetrahedron_p2": {
+                "cell": "tetrahedron",
+                "dimension": 3,
+                "degree": 2,
+                "dofs": 30,
+                "scalar_dofs": 10,
+                "quadrature_degree": 2,
+                "quadrature_points": 4,
+                "source_sha256": "98c9a4300b2c253e5dd5cfb26bfac251e7b10dead43cd3ffedae9e99d5e67014"
+              },
+              "tetrahedron_p3": {
+                "cell": "tetrahedron",
+                "dimension": 3,
+                "degree": 3,
+                "dofs": 60,
+                "scalar_dofs": 20,
+                "quadrature_degree": 4,
+                "quadrature_points": 11,
+                "source_sha256": "a58e0c8b930277b7d7d281b12f1c670adb72cb6757ea5241d512240a7ec49f74"
+              }
+            },
+            "header_sha256": "b5f7875640491f4347718a5952fb1f145efc6dfc9536e0a29cc492de51e808d4"
+          },
+          "hyper": {
+            "revision": "baseline",
+            "ffcx": "0.12.0.dev0",
+            "basix": "0.12.0.dev0",
+            "ufl": "2026.2.0.dev0",
+            "numpy": "2.5.3",
+            "python": "3.14.4",
+            "source_sha256": {
+              "linear1.c": "2bde4c319e35fe6d669ff7ef8acdc81d02076dcf1ec31f83c2e1b3d71d3da6f9",
+              "linear2.c": "b74bb4c3ea8da5ee13a00a96bf6d799c6e3686993e50860c10257e8dbb893e80",
+              "linear3.c": "a4a04ee93a9de5572b864bac25e6bf49ffbc85b2ac21bd44eda3364cf6d329d3",
+              "residual1.c": "ba05ed1ff4e04db2caa43e7ad95509e43a0aec6f2d391e5e7f422b93a321805a",
+              "residual2.c": "1543a7a76dc39c096a9d86a2a9287b6b41384240b5d927a921170a1251af1c6f",
+              "residual3.c": "c929c199c93550602d102b477066ce272e6fa1b8ff21c4996f07eb3be33ee06b",
+              "tangent1.c": "04f9f04c864883e0e387c68d11d6e336aa26f06616b4b3cb671fead47d505aeb",
+              "tangent2.c": "dd839c89918fb6e93cc9333e6712b8f4c7ff85da6d6ab020e7be6effab86a0e6",
+              "tangent3.c": "ea4e09cbfab3d007aad1c6c917e45193e2c6ed56e8e18d9115293eef5adac578"
+            },
+            "header_sha256": "b5f7875640491f4347718a5952fb1f145efc6dfc9536e0a29cc492de51e808d4"
+          }
+        },
+        "pr": {
+          "poisson": {
+            "ffcx": "0.12.0.dev0",
+            "basix": "0.12.0.dev0",
+            "ufl": "2026.2.0.dev0",
+            "cases": {
+              "triangle_p1": {
+                "cell": "triangle",
+                "dimension": 2,
+                "degree": 1,
+                "dofs": 3,
+                "quadrature_degree": 0,
+                "quadrature_points": 1,
+                "source_sha256": "9016e47d41e94a40494136f235d9f494e6f5d0213038bf57418bd4d04b294a30"
+              },
+              "triangle_p2": {
+                "cell": "triangle",
+                "dimension": 2,
+                "degree": 2,
+                "dofs": 6,
+                "quadrature_degree": 2,
+                "quadrature_points": 3,
+                "source_sha256": "dcff1f0635405e1e14bb8484461cc8e004678579a48a7a3dbba3e30ddeb2b09f"
+              },
+              "triangle_p3": {
+                "cell": "triangle",
+                "dimension": 2,
+                "degree": 3,
+                "dofs": 10,
+                "quadrature_degree": 4,
+                "quadrature_points": 6,
+                "source_sha256": "3edc5507a2c7dea2af2fa670fe38252eddccf0ae2c36259ccf78afa02cd52b95"
+              },
+              "quadrilateral_p1": {
+                "cell": "quadrilateral",
+                "dimension": 2,
+                "degree": 1,
+                "dofs": 4,
+                "quadrature_degree": 2,
+                "quadrature_points": 4,
+                "source_sha256": "3a0c2ec1d8c551048c5ff8461c1e998143d9c1fecfabce1e989336c6ec0df901"
+              },
+              "quadrilateral_p2": {
+                "cell": "quadrilateral",
+                "dimension": 2,
+                "degree": 2,
+                "dofs": 9,
+                "quadrature_degree": 4,
+                "quadrature_points": 9,
+                "source_sha256": "7dcd892a007da0b2b93bd1227547037376bccd23857e4a6f95cc4dc983da41f4"
+              },
+              "quadrilateral_p3": {
+                "cell": "quadrilateral",
+                "dimension": 2,
+                "degree": 3,
+                "dofs": 16,
+                "quadrature_degree": 6,
+                "quadrature_points": 16,
+                "source_sha256": "5682d17b4d56e9e579ff948c9dcb5d671f0fde2747aea6f98b5d3129cc2d51e5"
+              },
+              "tetrahedron_p1": {
+                "cell": "tetrahedron",
+                "dimension": 3,
+                "degree": 1,
+                "dofs": 4,
+                "quadrature_degree": 0,
+                "quadrature_points": 1,
+                "source_sha256": "ecc78629c4f58997286d3be9dd04ea1c1b8a17d2865ba9b4061ffdc58f62cbca"
+              },
+              "tetrahedron_p2": {
+                "cell": "tetrahedron",
+                "dimension": 3,
+                "degree": 2,
+                "dofs": 10,
+                "quadrature_degree": 2,
+                "quadrature_points": 4,
+                "source_sha256": "e3d5c90ecd7a1406fe3e1c01905b62464216b66f40493ce7f433eb5c08b93f12"
+              },
+              "tetrahedron_p3": {
+                "cell": "tetrahedron",
+                "dimension": 3,
+                "degree": 3,
+                "dofs": 20,
+                "quadrature_degree": 4,
+                "quadrature_points": 11,
+                "source_sha256": "a00f78bd2096a0a1b05a0f1441a0077e2a5569f53dd8bf658fe5d7245fd75b41"
+              },
+              "hexahedron_p1": {
+                "cell": "hexahedron",
+                "dimension": 3,
+                "degree": 1,
+                "dofs": 8,
+                "quadrature_degree": 2,
+                "quadrature_points": 8,
+                "source_sha256": "cc9b42b40cd0fb66806abcee6d0a4e10041238fb4b50934a95b74ae19918036e"
+              },
+              "hexahedron_p2": {
+                "cell": "hexahedron",
+                "dimension": 3,
+                "degree": 2,
+                "dofs": 27,
+                "quadrature_degree": 4,
+                "quadrature_points": 27,
+                "source_sha256": "6209d954532fbf9b89fad79a9008d139e5917667a61b5503a50a212425494785"
+              },
+              "hexahedron_p3": {
+                "cell": "hexahedron",
+                "dimension": 3,
+                "degree": 3,
+                "dofs": 64,
+                "quadrature_degree": 6,
+                "quadrature_points": 64,
+                "source_sha256": "cabe24ffe23c848a4030da25cd030a92c951a97e38f22284c0f4839696f0a920"
+              }
+            },
+            "header_sha256": "b5f7875640491f4347718a5952fb1f145efc6dfc9536e0a29cc492de51e808d4"
+          },
+          "elasticity": {
+            "ffcx": "0.12.0.dev0",
+            "basix": "0.12.0.dev0",
+            "ufl": "2026.2.0.dev0",
+            "mu": 1.0,
+            "lambda": 1.25,
+            "cases": {
+              "triangle_p1": {
+                "cell": "triangle",
+                "dimension": 2,
+                "degree": 1,
+                "dofs": 6,
+                "scalar_dofs": 3,
+                "quadrature_degree": 0,
+                "quadrature_points": 1,
+                "source_sha256": "2b34c39d7cdee6d7b20c10857ac3de8c02cefcdd0239449228a3ddda3457434d"
+              },
+              "triangle_p2": {
+                "cell": "triangle",
+                "dimension": 2,
+                "degree": 2,
+                "dofs": 12,
+                "scalar_dofs": 6,
+                "quadrature_degree": 2,
+                "quadrature_points": 3,
+                "source_sha256": "b40c168e4f6f605f2c2577241daca241babbff2ece3d0724858ae1b9ab11f0f3"
+              },
+              "triangle_p3": {
+                "cell": "triangle",
+                "dimension": 2,
+                "degree": 3,
+                "dofs": 20,
+                "scalar_dofs": 10,
+                "quadrature_degree": 4,
+                "quadrature_points": 6,
+                "source_sha256": "8cf2b2f5f5fe05830d6f25e9f18effff4f808ea0f00266318ac49e79b23766c4"
+              },
+              "tetrahedron_p1": {
+                "cell": "tetrahedron",
+                "dimension": 3,
+                "degree": 1,
+                "dofs": 12,
+                "scalar_dofs": 4,
+                "quadrature_degree": 0,
+                "quadrature_points": 1,
+                "source_sha256": "a47c55d5a8c9d3c94b0c17feef33203250eef2498c0e465cd9bca1bf67414f40"
+              },
+              "tetrahedron_p2": {
+                "cell": "tetrahedron",
+                "dimension": 3,
+                "degree": 2,
+                "dofs": 30,
+                "scalar_dofs": 10,
+                "quadrature_degree": 2,
+                "quadrature_points": 4,
+                "source_sha256": "dccf139983b24580beb2f885aceb65b99cf174f75ce709cfcf6afce7066ac2a9"
+              },
+              "tetrahedron_p3": {
+                "cell": "tetrahedron",
+                "dimension": 3,
+                "degree": 3,
+                "dofs": 60,
+                "scalar_dofs": 20,
+                "quadrature_degree": 4,
+                "quadrature_points": 11,
+                "source_sha256": "b0bfa1e8a3c4e142513161dc62408d19db691e1bf326a789b89fbecdb0c25999"
+              }
+            },
+            "header_sha256": "b5f7875640491f4347718a5952fb1f145efc6dfc9536e0a29cc492de51e808d4"
+          },
+          "hyper": {
+            "revision": "current",
+            "ffcx": "0.12.0.dev0",
+            "basix": "0.12.0.dev0",
+            "ufl": "2026.2.0.dev0",
+            "numpy": "2.5.3",
+            "python": "3.14.4",
+            "source_sha256": {
+              "linear1.c": "b54466ffcd49646ab599636ffe5bb41ab448353ecffd89525b857e57b4c72e5d",
+              "linear2.c": "f9c0dd78f93569f7b6f19a6bab137ea7541ae3ffccd503cb08bd67ee9aa2ff34",
+              "linear3.c": "8a7b2bb89f0e967271a1f445e7622acb19457f7f8bed214f9b0e12aac083d555",
+              "residual1.c": "533ed0ced796a7951eb8286d572803c7180ae6beb07304cd6fb68a4258615452",
+              "residual2.c": "5e8634bfbd50332908241ecf220496858a8b1bcef6c7372c7e984f9324131a11",
+              "residual3.c": "05d631221187f7cf85a8596e4b4f2ea65cb16d1aa9538070ffc5ad461727cf3f",
+              "tangent1.c": "39f1d07f9f2c495bda7bd9d1224e8e20aaecf5dd93d206262a6b3b650904fe3c",
+              "tangent2.c": "350b79e0555cb9e99d6c63b1aa690ba14ba76aef990f2dc7f5e108e7bab5a40d",
+              "tangent3.c": "4909bf26bbec43c66241d39482a8f970273f778b43c6d7a287850116bed20ecb"
+            },
+            "header_sha256": "b5f7875640491f4347718a5952fb1f145efc6dfc9536e0a29cc492de51e808d4"
+          }
+        },
+        "release": {
+          "elasticity": {
+            "ffcx": "0.11.0",
+            "basix": "0.11.0",
+            "ufl": "2026.1.0",
+            "mu": 1.0,
+            "lambda": 1.25,
+            "cases": {
+              "triangle_p1": {
+                "cell": "triangle",
+                "dimension": 2,
+                "degree": 1,
+                "dofs": 6,
+                "scalar_dofs": 3,
+                "quadrature_degree": 0,
+                "quadrature_points": 1,
+                "source_sha256": "f366d8294c0d0d24c1d1023197833e7311e02366ae8c9332260b2880fde0b595"
+              },
+              "triangle_p2": {
+                "cell": "triangle",
+                "dimension": 2,
+                "degree": 2,
+                "dofs": 12,
+                "scalar_dofs": 6,
+                "quadrature_degree": 2,
+                "quadrature_points": 3,
+                "source_sha256": "560b56b6dfd7e3b83e4bbb121ccac36fa7a8c345378282f67278f6c833072a7b"
+              },
+              "triangle_p3": {
+                "cell": "triangle",
+                "dimension": 2,
+                "degree": 3,
+                "dofs": 20,
+                "scalar_dofs": 10,
+                "quadrature_degree": 4,
+                "quadrature_points": 6,
+                "source_sha256": "bc9a7fb6aefb1f094b4fbdfab66bcada5ac9249c6d4af8a0e7559b95bf265d10"
+              },
+              "tetrahedron_p1": {
+                "cell": "tetrahedron",
+                "dimension": 3,
+                "degree": 1,
+                "dofs": 12,
+                "scalar_dofs": 4,
+                "quadrature_degree": 0,
+                "quadrature_points": 1,
+                "source_sha256": "ccf49900019610331d04406006fb93ca2a8cab71c242d5c61ffb6e47478159d5"
+              },
+              "tetrahedron_p2": {
+                "cell": "tetrahedron",
+                "dimension": 3,
+                "degree": 2,
+                "dofs": 30,
+                "scalar_dofs": 10,
+                "quadrature_degree": 2,
+                "quadrature_points": 4,
+                "source_sha256": "75abde63ce981ba91ab39bde4222f5cf0e7e556f88174a4ca75bbeab1c132a0e"
+              },
+              "tetrahedron_p3": {
+                "cell": "tetrahedron",
+                "dimension": 3,
+                "degree": 3,
+                "dofs": 60,
+                "scalar_dofs": 20,
+                "quadrature_degree": 4,
+                "quadrature_points": 11,
+                "source_sha256": "4b792636f0b89abcdbf1fcda573abbd8d74470dc48bb19ae5b927512526698e2"
+              }
+            },
+            "header_sha256": "9b3295adc9aee14b5839acf750d0b53a76880dc0479e9774a1141b3de39ed7a7",
+            "numpy": "2.5.4",
+            "python": "3.14.4",
+            "revision": "27fbb3b2f99f1d56e27f0e00a5b0576042ffc39a",
+            "source_sha256": {
+              "ffcx_tetrahedron_p1.c": "ccf49900019610331d04406006fb93ca2a8cab71c242d5c61ffb6e47478159d5",
+              "ffcx_tetrahedron_p2.c": "75abde63ce981ba91ab39bde4222f5cf0e7e556f88174a4ca75bbeab1c132a0e",
+              "ffcx_tetrahedron_p3.c": "4b792636f0b89abcdbf1fcda573abbd8d74470dc48bb19ae5b927512526698e2",
+              "ffcx_triangle_p1.c": "f366d8294c0d0d24c1d1023197833e7311e02366ae8c9332260b2880fde0b595",
+              "ffcx_triangle_p2.c": "560b56b6dfd7e3b83e4bbb121ccac36fa7a8c345378282f67278f6c833072a7b",
+              "ffcx_triangle_p3.c": "bc9a7fb6aefb1f094b4fbdfab66bcada5ac9249c6d4af8a0e7559b95bf265d10"
+            }
+          },
+          "hyper": {
+            "revision": "27fbb3b2f99f1d56e27f0e00a5b0576042ffc39a",
+            "ffcx": "0.11.0",
+            "basix": "0.11.0",
+            "ufl": "2026.1.0",
+            "numpy": "2.5.4",
+            "python": "3.14.4",
+            "source_sha256": {
+              "linear1.c": "1b70f9f6d3bdaa2fddf30bb3fe381b8134d98382b7365ddb94b1b4b410a2a0b7",
+              "linear2.c": "ffe4ecac6987beca09f226034df16ba1dd284a91bd7e962c853785bdc181f15a",
+              "linear3.c": "74e503199e7c4332da63d9262e6c29ba3b531bc9268a4a1bd3e59dd6d3941364",
+              "residual1.c": "34b8721059101979164e03c3635e8c741d768501d086d4798a9643417249f262",
+              "residual2.c": "863dfd2604bf6094d4e6e415a65a2db73f4bbfc90793aaea3df99f636d9e6c9f",
+              "residual3.c": "1ba56ffa072e1869f7c73cf6e5d154205e05a6a32f2713a152470fb9d88e06c9",
+              "tangent1.c": "862d24415cd7343168d498aa55ce5bc5d69df35a2bdbf024d76d24170854f0b4",
+              "tangent2.c": "ccbafbb107a853deae350dff1e648cdadff9731d6e541e3bd3ad828e75e8afdb",
+              "tangent3.c": "aeeff2cafd05b7c685e0fe34ab06688e6651d9369ab8204885dfeec7a5f84b87"
+            },
+            "header_sha256": "9b3295adc9aee14b5839acf750d0b53a76880dc0479e9774a1141b3de39ed7a7"
+          }
+        }
+      },
+      "validation": "Every tensor entry checked on 32 input patterns, with zero and nonzero initial output, and on every streamed record. Independent quadrature for elasticity; before kernel for hyperelasticity. Quadrature, coordinates, and coefficient arrays match exactly across all three compiler revisions. Release uses its own Basix/UFL dependencies and UFCx header.",
+      "cases": {
+        "elasticity-tetrahedron_p2": {
+          "gcc-16-null": {
+            "dram_ns": 678.5789915331094,
+            "dram_median_ns": 683.0540629596917,
+            "hot_ns": 81.26664557494223,
+            "dram_samples_ns": [
+              682.4838905768883,
+              683.0540629596917,
+              680.5513537821654,
+              678.5789915331094,
+              685.2639623229004,
+              683.1440620388273,
+              683.7235755446656
+            ],
+            "hot_samples_ns": [
+              83.43863999471068,
+              84.80355492793024,
+              84.81713477522135,
+              84.70088941976428,
+              83.14186008647084,
+              83.41491455212235,
+              81.26664557494223
+            ],
+            "cells": 145888,
+            "max_absolute_tensor_error": null
+          },
+          "gcc-16-before": {
+            "dram_ns": 1034.3941716111815,
+            "dram_median_ns": 1044.1986178596453,
+            "hot_ns": 429.6749900095165,
+            "dram_samples_ns": [
+              1042.031976849394,
+              1047.432132263552,
+              1051.1954238400906,
+              1040.5813353934925,
+              1034.3941716111815,
+              1103.6783552380905,
+              1044.1986178596453
+            ],
+            "hot_samples_ns": [
+              446.096605155617,
+              433.47928090952337,
+              462.8975153900683,
+              434.70900040119886,
+              433.5273592732847,
+              429.6749900095165,
+              431.9165798369795
+            ],
+            "cells": 145888,
+            "max_absolute_tensor_error": 5.190292640122607e-15
+          },
+          "gcc-16-pr": {
+            "dram_ns": 914.3120065399075,
+            "dram_median_ns": 920.0531360861809,
+            "hot_ns": 386.94438990205526,
+            "dram_samples_ns": [
+              920.0531360861809,
+              920.328451044748,
+              914.3120065399075,
+              919.7148144308271,
+              917.6956923041362,
+              932.9688673536431,
+              920.1519671787923
+            ],
+            "hot_samples_ns": [
+              389.2944601830095,
+              386.94438990205526,
+              388.99920997209847,
+              391.43430534750223,
+              388.6248345952481,
+              400.64530447125435,
+              388.24999472126365
+            ],
+            "cells": 145888,
+            "max_absolute_tensor_error": 5.190292640122607e-15
+          },
+          "gcc-16-release": {
+            "dram_ns": 2111.9153522973156,
+            "dram_median_ns": 2136.5386802935204,
+            "hot_ns": 1631.5806261263788,
+            "dram_samples_ns": [
+              2186.112593187141,
+              2132.404378716848,
+              2150.36187301643,
+              2143.578977636314,
+              2111.9153522973156,
+              2136.5386802935204,
+              2123.5437800957206
+            ],
+            "hot_samples_ns": [
+              1636.8855151813477,
+              1635.3675501886755,
+              1631.5806261263788,
+              1647.1848904620856,
+              1697.6551397237927,
+              1659.5513047650456,
+              1670.7373945973814
+            ],
+            "cells": 145888,
+            "max_absolute_tensor_error": 5.537237335317968e-15
+          },
+          "clang-22-null": {
+            "dram_ns": 693.1821260144769,
+            "dram_median_ns": 694.4091769028297,
+            "hot_ns": 62.38989,
+            "dram_samples_ns": [
+              695.1237661767932,
+              693.829259431893,
+              693.1821260144769,
+              694.6925175477079,
+              694.4091769028297,
+              695.6459887036631,
+              693.4235783614828
+            ],
+            "hot_samples_ns": [
+              66.24983,
+              64.589495,
+              65.84167,
+              64.801745,
+              65.71536,
+              66.35892500000001,
+              62.38989
+            ],
+            "cells": 145888,
+            "max_absolute_tensor_error": null
+          },
+          "clang-22-before": {
+            "dram_ns": 1316.9017876727353,
+            "dram_median_ns": 1321.6669636981794,
+            "hot_ns": 701.0211250000001,
+            "dram_samples_ns": [
+              1323.9221731739415,
+              1319.0572425422242,
+              1328.918197521386,
+              1321.6669636981794,
+              1316.9017876727353,
+              1327.2068504606273,
+              1319.9819039262998
+            ],
+            "hot_samples_ns": [
+              718.0840300000001,
+              703.3735150000001,
+              743.0304700000002,
+              704.0042199999998,
+              701.0211250000001,
+              710.91565,
+              719.4789750000001
+            ],
+            "cells": 145888,
+            "max_absolute_tensor_error": 5.224987109642143e-15
+          },
+          "clang-22-pr": {
+            "dram_ns": 900.3982232945822,
+            "dram_median_ns": 905.8664180741391,
+            "hot_ns": 344.789885,
+            "dram_samples_ns": [
+              907.8242967207722,
+              906.645145591138,
+              905.8664180741391,
+              901.5151828800175,
+              901.5788961395043,
+              900.3982232945822,
+              916.6818861044085
+            ],
+            "hot_samples_ns": [
+              344.789885,
+              360.799855,
+              346.5962650000001,
+              368.0829350000001,
+              347.12341,
+              348.811185,
+              363.0176
+            ],
+            "cells": 145888,
+            "max_absolute_tensor_error": 5.224987109642143e-15
+          },
+          "clang-22-release": {
+            "dram_ns": 3703.0513064816846,
+            "dram_median_ns": 3827.1475926738317,
+            "hot_ns": 3292.997205,
+            "dram_samples_ns": [
+              3737.089034053521,
+              3836.5760035095423,
+              3843.2066653871466,
+              3793.911678822111,
+              3904.633259760913,
+              3827.1475926738317,
+              3703.0513064816846
+            ],
+            "hot_samples_ns": [
+              3304.10624,
+              3319.6426800000004,
+              3332.7691000000004,
+              3406.1516399999996,
+              3311.4486649999994,
+              3292.997205,
+              3308.3517349999997
+            ],
+            "cells": 145888,
+            "max_absolute_tensor_error": 5.530298441414061e-15
+          }
+        },
+        "elasticity-tetrahedron_p3": {
+          "gcc-16-null": {
+            "dram_ns": 2370.733383797182,
+            "dram_median_ns": 2382.6978503324885,
+            "hot_ns": 329.7546994872391,
+            "dram_samples_ns": [
+              2439.803566220512,
+              2382.6978503324885,
+              2389.3758625086775,
+              2372.9093156030926,
+              2393.240749572607,
+              2373.1412053141134,
+              2370.733383797182
+            ],
+            "hot_samples_ns": [
+              347.71636012010276,
+              386.7413941770792,
+              330.5364353582263,
+              329.7546994872391,
+              353.1633655074984,
+              333.3954850677401,
+              337.30426453985274
+            ],
+            "cells": 37117,
+            "max_absolute_tensor_error": null
+          },
+          "gcc-16-before": {
+            "dram_ns": 3421.0082980799552,
+            "dram_median_ns": 3448.537220586704,
+            "hot_ns": 1375.7569796871394,
+            "dram_samples_ns": [
+              3565.9620627629606,
+              3421.960314899618,
+              3421.0082980799552,
+              3462.036724619883,
+              3508.916209009064,
+              3448.537220586704,
+              3425.570008487644
+            ],
+            "hot_samples_ns": [
+              1376.5252800658345,
+              1376.1825894471258,
+              1375.7569796871394,
+              1379.1166245937347,
+              1383.4328798111528,
+              1388.0045001860708,
+              1631.3507652375847
+            ],
+            "cells": 37117,
+            "max_absolute_tensor_error": 2.6645352591003757e-15
+          },
+          "gcc-16-pr": {
+            "dram_ns": 3208.5229702883826,
+            "dram_median_ns": 3210.786515468217,
+            "hot_ns": 1393.1821647565812,
+            "dram_samples_ns": [
+              3210.786515468217,
+              3224.7498741980485,
+              3216.06740577903,
+              3215.062157263863,
+              3210.2396203302396,
+              3210.1473211118023,
+              3208.5229702883826
+            ],
+            "hot_samples_ns": [
+              1396.12021506764,
+              1410.663794958964,
+              1398.0303844437003,
+              1398.3344298321754,
+              1410.9823945909739,
+              1393.1821647565812,
+              1494.513499783352
+            ],
+            "cells": 37117,
+            "max_absolute_tensor_error": 3.1086244689504383e-15
+          },
+          "gcc-16-release": {
+            "dram_ns": 15507.675485781969,
+            "dram_median_ns": 15747.974625390101,
+            "hot_ns": 13353.486109990627,
+            "dram_samples_ns": [
+              15719.78621574648,
+              15747.974625390101,
+              15907.637199545181,
+              16431.10119545258,
+              15628.79200814303,
+              15831.875097961343,
+              15507.675485781969
+            ],
+            "hot_samples_ns": [
+              13424.626030027866,
+              13450.180634390563,
+              13427.193245152012,
+              13432.780959410593,
+              13507.812760071829,
+              13430.715990252793,
+              13353.486109990627
+            ],
+            "cells": 37117,
+            "max_absolute_tensor_error": 3.552713678800501e-15
+          },
+          "clang-22-null": {
+            "dram_ns": 2335.4807231187865,
+            "dram_median_ns": 2342.4844410916835,
+            "hot_ns": 251.08603,
+            "dram_samples_ns": [
+              2345.708758789773,
+              2339.1627825524693,
+              2342.4844410916835,
+              2335.4807231187865,
+              2353.0649837001915,
+              2347.3558207829296,
+              2342.435272247218
+            ],
+            "hot_samples_ns": [
+              260.920475,
+              251.08603,
+              257.29776000000004,
+              256.665225,
+              269.04638000000006,
+              254.58728,
+              254.56445499999998
+            ],
+            "cells": 37117,
+            "max_absolute_tensor_error": null
+          },
+          "clang-22-before": {
+            "dram_ns": 3777.1294285637296,
+            "dram_median_ns": 3856.8863054664985,
+            "hot_ns": 1500.772525,
+            "dram_samples_ns": [
+              3902.3290944850073,
+              3781.0674623487876,
+              3857.309588598215,
+              3856.8863054664985,
+              3817.626936444217,
+              3886.414985047282,
+              3777.1294285637296
+            ],
+            "hot_samples_ns": [
+              1502.18673,
+              1512.58719,
+              1596.9310400000002,
+              1512.2041399999998,
+              1500.772525,
+              1557.5481350000002,
+              1524.6867
+            ],
+            "cells": 37117,
+            "max_absolute_tensor_error": 2.6645352591003757e-15
+          },
+          "clang-22-pr": {
+            "dram_ns": 3374.53665436323,
+            "dram_median_ns": 3388.4519222997556,
+            "hot_ns": 1671.0429749999998,
+            "dram_samples_ns": [
+              3395.1126976856967,
+              3386.6451491230437,
+              3388.4519222997556,
+              3390.7774604628607,
+              3419.2447126653556,
+              3378.3914378856052,
+              3374.53665436323
+            ],
+            "hot_samples_ns": [
+              1674.4049849999997,
+              1671.0429749999998,
+              1682.61108,
+              1699.2322649999996,
+              1689.5753099999997,
+              1672.3297499999999,
+              1692.0907449999997
+            ],
+            "cells": 37117,
+            "max_absolute_tensor_error": 2.6645352591003757e-15
+          },
+          "clang-22-release": {
+            "dram_ns": 29473.264191610313,
+            "dram_median_ns": 30265.328420939193,
+            "hot_ns": 27721.369375,
+            "dram_samples_ns": [
+              29847.48411778969,
+              30643.835600937575,
+              30036.70905514993,
+              30265.328420939193,
+              30505.927876714177,
+              30346.640353476843,
+              29473.264191610313
+            ],
+            "hot_samples_ns": [
+              28003.003679999998,
+              27818.545374999998,
+              27898.37475,
+              27942.507565,
+              27819.138085,
+              28150.556245,
+              27721.369375
+            ],
+            "cells": 37117,
+            "max_absolute_tensor_error": 4.440892098500626e-15
+          }
+        },
+        "hyper-residual2": {
+          "gcc-16-null": {
+            "dram_ns": 49.755863348860885,
+            "dram_median_ns": 49.87041717295449,
+            "hot_ns": 4.317124839872122,
+            "dram_samples_ns": [
+              49.928016119182544,
+              49.83837237800099,
+              50.19116349503409,
+              49.934297208190664,
+              49.83058207902905,
+              49.755863348860885,
+              49.87041717295449
+            ],
+            "hot_samples_ns": [
+              4.332365933805704,
+              4.337200662121177,
+              4.459174815565348,
+              4.43867058493197,
+              4.331085365265608,
+              4.35268972069025,
+              4.317124839872122
+            ],
+            "cells": 1677721,
+            "max_absolute_tensor_error": null
+          },
+          "gcc-16-before": {
+            "dram_ns": 161.66947650318295,
+            "dram_median_ns": 162.77965038113473,
+            "hot_ns": 156.79388539865613,
+            "dram_samples_ns": [
+              164.92552573769188,
+              161.77281082571093,
+              162.77965038113473,
+              161.66947650318295,
+              162.17365282876776,
+              165.22822274127157,
+              163.96974050020327
+            ],
+            "hot_samples_ns": [
+              157.32239582575858,
+              159.5083251595497,
+              161.04580601677299,
+              158.36639096960425,
+              158.38453080505133,
+              159.7694109659642,
+              156.79388539865613
+            ],
+            "cells": 1677721,
+            "max_absolute_tensor_error": 0.0
+          },
+          "gcc-16-pr": {
+            "dram_ns": 163.69141886818016,
+            "dram_median_ns": 166.01403221779046,
+            "hot_ns": 186.50642945431173,
+            "dram_samples_ns": [
+              163.73389379584648,
+              163.74652217093424,
+              166.01403221779046,
+              166.93676485501453,
+              163.69141886818016,
+              167.13464760824516,
+              170.68258665399136
+            ],
+            "hot_samples_ns": [
+              188.2422249764204,
+              186.50642945431173,
+              189.25404408946633,
+              195.99210587330163,
+              193.9022052101791,
+              198.61317472532392,
+              187.53453972749412
+            ],
+            "cells": 1677721,
+            "max_absolute_tensor_error": 0.0
+          },
+          "gcc-16-release": {
+            "dram_ns": 460.71365795292365,
+            "dram_median_ns": 464.999678247847,
+            "hot_ns": 448.93759535625577,
+            "dram_samples_ns": [
+              464.999678247847,
+              463.25393379624506,
+              463.99709251346326,
+              475.9387436221734,
+              476.09523571968685,
+              460.71365795292365,
+              476.687706726218
+            ],
+            "hot_samples_ns": [
+              470.3311901539564,
+              451.17882429622114,
+              520.2303896658123,
+              448.93759535625577,
+              453.6435450427234,
+              453.6701994948089,
+              462.36858586780727
+            ],
+            "cells": 1677721,
+            "max_absolute_tensor_error": 1.2836953722228372e-16
+          },
+          "clang-22-null": {
+            "dram_ns": 49.94475005081298,
+            "dram_median_ns": 50.03280521612354,
+            "hot_ns": 4.399855,
+            "dram_samples_ns": [
+              50.04418911130039,
+              50.12563650332803,
+              50.27840505066099,
+              49.94475005081298,
+              49.97999011754633,
+              50.028697858583165,
+              50.03280521612354
+            ],
+            "hot_samples_ns": [
+              4.5413250000000005,
+              4.581525,
+              5.609535000000001,
+              4.442005,
+              4.563095000000001,
+              4.399855,
+              4.45711
+            ],
+            "cells": 1677721,
+            "max_absolute_tensor_error": null
+          },
+          "clang-22-before": {
+            "dram_ns": 176.9631094800625,
+            "dram_median_ns": 185.772221960624,
+            "hot_ns": 168.77194500000002,
+            "dram_samples_ns": [
+              219.81293671593787,
+              176.9631094800625,
+              180.41035309208146,
+              186.57264050458926,
+              187.097342764381,
+              177.76828328428863,
+              185.772221960624
+            ],
+            "hot_samples_ns": [
+              228.10286500000004,
+              180.38696,
+              168.77194500000002,
+              177.56063000000003,
+              173.35911500000003,
+              171.651405,
+              178.79634000000001
+            ],
+            "cells": 1677721,
+            "max_absolute_tensor_error": 0.0
+          },
+          "clang-22-pr": {
+            "dram_ns": 176.74515071337848,
+            "dram_median_ns": 179.16750103265088,
+            "hot_ns": 168.70001000000002,
+            "dram_samples_ns": [
+              193.43161765275636,
+              176.74515071337848,
+              192.01988352056154,
+              178.24056562443937,
+              181.5783619564874,
+              179.022739180114,
+              179.16750103265088
+            ],
+            "hot_samples_ns": [
+              178.79709000000003,
+              169.546335,
+              184.30815,
+              170.10056500000005,
+              170.24304,
+              193.375715,
+              168.70001000000002
+            ],
+            "cells": 1677721,
+            "max_absolute_tensor_error": 0.0
+          },
+          "clang-22-release": {
+            "dram_ns": 293.7402899528587,
+            "dram_median_ns": 298.09437087572957,
+            "hot_ns": 274.13928000000004,
+            "dram_samples_ns": [
+              299.3163374601617,
+              294.8123496099769,
+              302.753661067603,
+              297.25893518648206,
+              293.7402899528587,
+              312.5732180738037,
+              298.09437087572957
+            ],
+            "hot_samples_ns": [
+              277.61319000000003,
+              277.24632,
+              278.467955,
+              284.9352,
+              275.75105,
+              274.13928000000004,
+              284.13134
+            ],
+            "cells": 1677721,
+            "max_absolute_tensor_error": 1.3530843112619095e-16
+          }
+        },
+        "hyper-tangent2": {
+          "gcc-16-null": {
+            "dram_ns": 705.6460403738012,
+            "dram_median_ns": 707.2601627364127,
+            "hot_ns": 80.55636077187955,
+            "dram_samples_ns": [
+              710.3774592877027,
+              705.8591261993855,
+              707.2601627364127,
+              707.512153582412,
+              710.6681982657163,
+              705.6460403738012,
+              707.0023554593962
+            ],
+            "hot_samples_ns": [
+              86.16607519797981,
+              80.55636077187955,
+              81.58116950653493,
+              84.41596990451217,
+              93.13472546637058,
+              81.81632496416569,
+              86.05160983279347
+            ],
+            "cells": 140985,
+            "max_absolute_tensor_error": null
+          },
+          "gcc-16-before": {
+            "dram_ns": 2415.9396465659147,
+            "dram_median_ns": 2423.893647359509,
+            "hot_ns": 1813.0341859068722,
+            "dram_samples_ns": [
+              2423.5222479261465,
+              2418.676703435337,
+              2443.1600383802493,
+              2415.9396465659147,
+              2534.047962683044,
+              2445.3345165658084,
+              2423.893647359509
+            ],
+            "hot_samples_ns": [
+              1813.0341859068722,
+              1872.7488303557038,
+              1844.8504945263267,
+              1877.822974929586,
+              1819.8133748956025,
+              1836.469629779458,
+              1814.760515699163
+            ],
+            "cells": 140985,
+            "max_absolute_tensor_error": 0.0
+          },
+          "gcc-16-pr": {
+            "dram_ns": 2310.904593145475,
+            "dram_median_ns": 2325.4136687574874,
+            "hot_ns": 1710.4269098490477,
+            "dram_samples_ns": [
+              2310.904593145475,
+              2315.623200057153,
+              2328.682915853322,
+              2339.589396153362,
+              2360.664360323231,
+              2325.4136687574874,
+              2322.1359150074313
+            ],
+            "hot_samples_ns": [
+              1739.9898159783334,
+              1739.41221088171,
+              1710.4269098490477,
+              1744.0715001430362,
+              1718.6523042619228,
+              1711.5652246866375,
+              1725.330640329048
+            ],
+            "cells": 140985,
+            "max_absolute_tensor_error": 8.881784197001252e-16
+          },
+          "gcc-16-release": {
+            "dram_ns": 6071.942825269736,
+            "dram_median_ns": 6366.762265800292,
+            "hot_ns": 5562.047739513218,
+            "dram_samples_ns": [
+              6535.947909442931,
+              6366.762265800292,
+              6375.281661011675,
+              6403.701834574309,
+              6071.942825269736,
+              6315.6293155567,
+              6208.717999073865
+            ],
+            "hot_samples_ns": [
+              5645.630054641515,
+              5562.047739513218,
+              5574.243875453249,
+              5823.659389279783,
+              5624.558320268989,
+              5622.812149813399,
+              5569.899779511616
+            ],
+            "cells": 140985,
+            "max_absolute_tensor_error": 1.1102230246251565e-15
+          },
+          "clang-22-null": {
+            "dram_ns": 706.7193318438133,
+            "dram_median_ns": 709.0161719331844,
+            "hot_ns": 66.759265,
+            "dram_samples_ns": [
+              712.2866546086465,
+              706.7193318438133,
+              709.0161719331844,
+              719.2799304890591,
+              710.5929496045679,
+              707.5503280490833,
+              708.6574600134767
+            ],
+            "hot_samples_ns": [
+              72.04778,
+              69.19258500000001,
+              68.082865,
+              86.74623000000001,
+              82.297045,
+              66.759265,
+              68.985595
+            ],
+            "cells": 140985,
+            "max_absolute_tensor_error": null
+          },
+          "clang-22-before": {
+            "dram_ns": 2225.768876121573,
+            "dram_median_ns": 2246.161690960031,
+            "hot_ns": 1545.2285949999998,
+            "dram_samples_ns": [
+              2246.127205021811,
+              2246.161690960031,
+              2225.768876121573,
+              2502.3688974004326,
+              2254.930382664823,
+              2292.96652835408,
+              2243.814597297584
+            ],
+            "hot_samples_ns": [
+              1546.3233849999997,
+              1564.9842350000001,
+              1551.598495,
+              1574.79125,
+              1545.2285949999998,
+              1638.9705500000002,
+              1586.4211500000001
+            ],
+            "cells": 140985,
+            "max_absolute_tensor_error": 0.0
+          },
+          "clang-22-pr": {
+            "dram_ns": 2259.046629074015,
+            "dram_median_ns": 2288.2404369259143,
+            "hot_ns": 1473.2683149999996,
+            "dram_samples_ns": [
+              2274.331964393375,
+              2259.046629074015,
+              2288.6049650672053,
+              2302.1987871050114,
+              2350.7545483562076,
+              2288.2404369259143,
+              2272.1325743873463
+            ],
+            "hot_samples_ns": [
+              1720.6380000000001,
+              1557.1402299999997,
+              1585.0331150000002,
+              1480.359945,
+              1502.9387150000002,
+              1473.2683149999996,
+              1476.7088099999999
+            ],
+            "cells": 140985,
+            "max_absolute_tensor_error": 0.0
+          },
+          "clang-22-release": {
+            "dram_ns": 10279.882540695819,
+            "dram_median_ns": 10341.167117069192,
+            "hot_ns": 9264.47839,
+            "dram_samples_ns": [
+              10352.806929815228,
+              10348.399042451327,
+              10315.114537007483,
+              10279.882540695819,
+              10341.167117069192,
+              10787.82921587403,
+              10336.454459694294
+            ],
+            "hot_samples_ns": [
+              9387.104725,
+              9264.47839,
+              9288.035335,
+              9513.64721,
+              9274.57228,
+              9338.217295,
+              9419.18948
+            ],
+            "cells": 140985,
+            "max_absolute_tensor_error": 2.220446049250313e-15
+          }
+        },
+        "hyper-residual3": {
+          "gcc-16-null": {
+            "dram_ns": 93.64397743319715,
+            "dram_median_ns": 93.81649378730937,
+            "hot_ns": 6.9936958607286215,
+            "dram_samples_ns": [
+              94.11390506033129,
+              93.74207951817284,
+              93.64397743319715,
+              93.87465080120604,
+              93.72197908486467,
+              93.83727242851195,
+              93.81649378730937
+            ],
+            "hot_samples_ns": [
+              7.372210966423154,
+              7.195204962044954,
+              7.15086585842073,
+              7.214009528979659,
+              6.9936958607286215,
+              7.191590266302228,
+              7.391360122710466
+            ],
+            "cells": 932067,
+            "max_absolute_tensor_error": null
+          },
+          "gcc-16-before": {
+            "dram_ns": 485.2582580439564,
+            "dram_median_ns": 492.70256540520705,
+            "hot_ns": 461.3804304972291,
+            "dram_samples_ns": [
+              489.49262642578344,
+              503.3417180605761,
+              485.2582580439564,
+              493.627546049059,
+              495.6481754182374,
+              492.70256540520705,
+              491.11064660880635
+            ],
+            "hot_samples_ns": [
+              467.48704509809613,
+              462.8704849164933,
+              478.8208950776607,
+              509.58214909769595,
+              477.7305060997605,
+              461.3804304972291,
+              468.7358648516238
+            ],
+            "cells": 932067,
+            "max_absolute_tensor_error": 0.0
+          },
+          "gcc-16-pr": {
+            "dram_ns": 489.3393466954402,
+            "dram_median_ns": 505.3808084235007,
+            "hot_ns": 459.5995554700494,
+            "dram_samples_ns": [
+              522.1217165695814,
+              516.8378143518435,
+              489.3393466954402,
+              505.3808084235007,
+              510.8752396110813,
+              494.7831323650303,
+              497.1977338241738
+            ],
+            "hot_samples_ns": [
+              461.4536603912711,
+              486.8983349297196,
+              511.5182953886688,
+              459.6953955478966,
+              499.3617057334631,
+              462.18675444833934,
+              459.5995554700494
+            ],
+            "cells": 932067,
+            "max_absolute_tensor_error": 0.0
+          },
+          "gcc-16-release": {
+            "dram_ns": 1207.8445046710192,
+            "dram_median_ns": 1255.3172507238278,
+            "hot_ns": 1168.501740321517,
+            "dram_samples_ns": [
+              1220.0117941050742,
+              1207.8445046710192,
+              1272.6055423349903,
+              1255.3172507238278,
+              1223.0969318407117,
+              1267.1142064232915,
+              1270.4047841964605
+            ],
+            "hot_samples_ns": [
+              1171.1085960268974,
+              1185.8083691913635,
+              1182.6576851308346,
+              1175.3860104363412,
+              1182.7085202094167,
+              1230.6300946511328,
+              1168.501740321517
+            ],
+            "cells": 932067,
+            "max_absolute_tensor_error": 2.463307335887066e-16
+          },
+          "clang-22-null": {
+            "dram_ns": 95.12182064164915,
+            "dram_median_ns": 95.4047273425623,
+            "hot_ns": 7.377255,
+            "dram_samples_ns": [
+              95.26635638854289,
+              95.5983625640646,
+              95.53978308426326,
+              95.4047273425623,
+              96.55843517687033,
+              95.25862518467021,
+              95.12182064164915
+            ],
+            "hot_samples_ns": [
+              7.580235000000001,
+              7.377255,
+              7.4051100000000005,
+              7.515585,
+              9.469735000000002,
+              7.5536200000000004,
+              7.426830000000001
+            ],
+            "cells": 932067,
+            "max_absolute_tensor_error": null
+          },
+          "clang-22-before": {
+            "dram_ns": 551.8145734158596,
+            "dram_median_ns": 555.4383021821393,
+            "hot_ns": 484.26135499999975,
+            "dram_samples_ns": [
+              574.6781615484724,
+              551.8145734158596,
+              560.1565026977673,
+              555.4383021821393,
+              563.9563239552522,
+              553.9848444371488,
+              553.0365960816122
+            ],
+            "hot_samples_ns": [
+              484.26135499999975,
+              491.4089600000001,
+              490.830965,
+              486.2643250000001,
+              488.07752999999974,
+              491.18797500000005,
+              512.603835
+            ],
+            "cells": 932067,
+            "max_absolute_tensor_error": 0.0
+          },
+          "clang-22-pr": {
+            "dram_ns": 547.182722915842,
+            "dram_median_ns": 552.0000976324665,
+            "hot_ns": 485.9112400000001,
+            "dram_samples_ns": [
+              547.182722915842,
+              551.054496082363,
+              553.7485524109317,
+              554.3836365840652,
+              552.0000976324665,
+              549.4090564304926,
+              554.8607138757192
+            ],
+            "hot_samples_ns": [
+              485.97467500000005,
+              487.34161000000006,
+              511.59187000000003,
+              486.32119,
+              507.916665,
+              485.9112400000001,
+              493.635485
+            ],
+            "cells": 932067,
+            "max_absolute_tensor_error": 0.0
+          },
+          "clang-22-release": {
+            "dram_ns": 1246.4968494754132,
+            "dram_median_ns": 1306.999947428672,
+            "hot_ns": 1183.03736,
+            "dram_samples_ns": [
+              1307.94869145673,
+              1327.4473691268977,
+              1259.372737153016,
+              1246.4968494754132,
+              1306.999947428672,
+              1324.6488482051184,
+              1306.4660673535273
+            ],
+            "hot_samples_ns": [
+              1184.9325149999997,
+              1268.8319050000002,
+              1183.03736,
+              1206.0051699999997,
+              1289.8833049999996,
+              1242.16289,
+              1185.1651799999997
+            ],
+            "cells": 932067,
+            "max_absolute_tensor_error": 2.0469737016526324e-16
+          }
+        },
+        "hyper-tangent3": {
+          "gcc-16-null": {
+            "dram_ns": 2412.986396457473,
+            "dram_median_ns": 2427.8409174702906,
+            "hot_ns": 332.0334595628083,
+            "dram_samples_ns": [
+              2428.7499732845126,
+              2423.559443332234,
+              2427.8409174702906,
+              2448.444341924871,
+              2412.986396457473,
+              2473.850434645602,
+              2415.8169817666453
+            ],
+            "hot_samples_ns": [
+              332.69925974309444,
+              343.063329346478,
+              332.36004994250834,
+              343.28028559684753,
+              332.0334595628083,
+              371.2067543528974,
+              334.56927980296314
+            ],
+            "cells": 36472,
+            "max_absolute_tensor_error": null
+          },
+          "gcc-16-before": {
+            "dram_ns": 11151.377797295507,
+            "dram_median_ns": 11356.770206303267,
+            "hot_ns": 9091.319319559261,
+            "dram_samples_ns": [
+              11356.770206303267,
+              11342.513485245585,
+              11466.324110181413,
+              11338.286605526933,
+              11446.872645850966,
+              11151.377797295507,
+              11487.519818971583
+            ],
+            "hot_samples_ns": [
+              9139.49463982135,
+              9135.683495551348,
+              9198.104036040604,
+              9091.319319559261,
+              9418.850094079971,
+              9191.942344186828,
+              9246.591634582728
+            ],
+            "cells": 36472,
+            "max_absolute_tensor_error": 0.0
+          },
+          "gcc-16-pr": {
+            "dram_ns": 9481.757244194896,
+            "dram_median_ns": 9741.46550828495,
+            "hot_ns": 7508.757865289226,
+            "dram_samples_ns": [
+              9661.504907795415,
+              9849.866743435065,
+              9481.757244194896,
+              9741.46550828495,
+              9558.521198430743,
+              10749.2119711024,
+              10436.17372423734
+            ],
+            "hot_samples_ns": [
+              7548.386064590886,
+              7518.168115057051,
+              7549.452064558864,
+              7578.086600406095,
+              7588.803929975256,
+              9661.590219475329,
+              7508.757865289226
+            ],
+            "cells": 36472,
+            "max_absolute_tensor_error": 6.661338147750939e-16
+          },
+          "gcc-16-release": {
+            "dram_ns": 33008.14652378501,
+            "dram_median_ns": 33307.501316531416,
+            "hot_ns": 30804.060294758532,
+            "dram_samples_ns": [
+              33605.53400122801,
+              33353.86671884389,
+              33294.2314381215,
+              33307.501316531416,
+              33224.176054058036,
+              41566.400362898166,
+              33008.14652378501
+            ],
+            "hot_samples_ns": [
+              31262.368989409882,
+              31033.15385524183,
+              30853.981834370647,
+              31043.628135230396,
+              31059.364479733627,
+              30853.40335499495,
+              30804.060294758532
+            ],
+            "cells": 36472,
+            "max_absolute_tensor_error": 5.329070518200751e-15
+          },
+          "clang-22-null": {
+            "dram_ns": 2378.1945053739855,
+            "dram_median_ns": 2382.913687212108,
+            "hot_ns": 254.50014,
+            "dram_samples_ns": [
+              2382.913687212108,
+              2385.3190392629967,
+              2391.8451963149814,
+              2382.526266725159,
+              2382.7121353366965,
+              2390.1218194779553,
+              2378.1945053739855
+            ],
+            "hot_samples_ns": [
+              271.53902,
+              260.4628249999997,
+              263.25007,
+              257.39232,
+              254.50014,
+              264.71032,
+              256.675715
+            ],
+            "cells": 36472,
+            "max_absolute_tensor_error": null
+          },
+          "clang-22-before": {
+            "dram_ns": 11946.447987497259,
+            "dram_median_ns": 12049.563226584778,
+            "hot_ns": 7926.977390000001,
+            "dram_samples_ns": [
+              11991.583269357316,
+              12032.4831651678,
+              12918.061033121297,
+              12098.402774731301,
+              12217.175394823424,
+              12049.563226584778,
+              11946.447987497259
+            ],
+            "hot_samples_ns": [
+              8019.10911,
+              8022.335644999999,
+              8586.902395,
+              7926.977390000001,
+              8174.697840000001,
+              7993.036824999998,
+              8273.903605
+            ],
+            "cells": 36472,
+            "max_absolute_tensor_error": 0.0
+          },
+          "clang-22-pr": {
+            "dram_ns": 10672.639065584559,
+            "dram_median_ns": 10928.007814213643,
+            "hot_ns": 7187.927439999999,
+            "dram_samples_ns": [
+              10747.98160232507,
+              11299.492734152229,
+              10672.639065584559,
+              10928.007814213643,
+              11300.564570081158,
+              11256.646495942092,
+              10709.697713314323
+            ],
+            "hot_samples_ns": [
+              7206.72894,
+              7565.427255,
+              7284.090429999999,
+              7187.927439999999,
+              7770.0966800000015,
+              7203.7885,
+              7228.2635199999995
+            ],
+            "cells": 36472,
+            "max_absolute_tensor_error": 1.1102230246251565e-15
+          },
+          "clang-22-release": {
+            "dram_ns": 65465.75658039043,
+            "dram_median_ns": 66275.18282518096,
+            "hot_ns": 65244.31531500001,
+            "dram_samples_ns": [
+              66275.18282518096,
+              66368.58102105725,
+              65906.7141917087,
+              67006.25024676464,
+              69962.08280324632,
+              65465.75658039043,
+              66075.39682496162
+            ],
+            "hot_samples_ns": [
+              66736.983345,
+              66203.14495999999,
+              65730.74522999999,
+              66300.85646000001,
+              65666.93403,
+              65244.31531500001,
+              65410.621
+            ],
+            "cells": 36472,
+            "max_absolute_tensor_error": 6.661338147750939e-15
+          }
+        }
+      },
+      "scope": "Six P2/P3 tetrahedral rows displayed in the DRAM-streaming improvement table. All four variants, including the memory-traffic-only reference, re-timed together in seven interleaved sweeps per compiler.",
+      "generation": "v0.11.0 generated using /tmp/elastic-pr/release-venv/bin/python. benchmarks/streaming/generate.py release shares hyperelastic quadrature from the earlier streaming baseline. generate_simplex_elasticity.py regenerated with points and weights loaded from the current variant NPZ files, replacing its default basix.make_quadrature call. No production compiler source changes.",
+      "command": "PYTHONPATH=/home/gnw20/code/ffcx /home/gnw20/code/venv/bin/python benchmarks/streaming/roofline.py --variant before=/tmp/pr919-refresh-20261020/matched-stream/baseline --variant pr=/tmp/pr919-refresh-20261020/matched-stream/current --variant release=/tmp/pr919-refresh-20261020/matched-stream/release --filter \"elasticity-tetrahedron_p[23]|hyper-(residual|tangent)[23]\" --mib 1024 --reps 7 --cpu 2 --work /tmp/pr919-release-stream-build --output /tmp/pr919-refresh-20261020/streaming-release.json"
     }
   },
   "streaming_baseline_verification": "Regenerated from the Git archive of 30757e95; all 18 measured kernel bodies agree with an isolated source import after removing comments, whitespace and equivalent FE table numbering.",

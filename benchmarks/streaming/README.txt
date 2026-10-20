@@ -68,3 +68,11 @@ Both streaming variants use matching dependencies, quadrature and input arrays.
 The results retain individual streaming/hot samples and numerical errors.
 benchmarks/refresh-current-results.json maps all four published tables to their
 current measurements; refresh-results.json retains the previous refresh.
+
+The release extension of that refresh re-times the six displayed P2/P3
+tetrahedral elasticity and hyperelastic rows with v0.11.0, the earlier PR
+revision and the current PR together. It uses identical quadrature and input
+arrays across revisions, with the release's own dependencies and UFCx header.
+The streaming_release run in refresh-current-results.json retains all seven
+samples per compiler and variant, source hashes, errors and the command.
+Other streaming cases retain their earlier measurements without release data.
