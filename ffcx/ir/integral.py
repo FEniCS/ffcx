@@ -421,7 +421,7 @@ def _graph_name(name, integral_domain, quadrature_rule) -> str:
     is. The quadrature rule identifier is the one used to name tables in
     the generated code, so the two can be matched up.
     """
-    parts = [name]
+    parts: list[str] = [name]
     if integral_domain != "":
         parts.append(integral_domain.name)
     parts.append(f"Q{quadrature_rule.id()}")
