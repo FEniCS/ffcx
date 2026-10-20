@@ -967,6 +967,63 @@ def test_invalid_function_name(compile_args):
     ufl.Coefficient.__str__ = old_str
 
 
+def _mass_matrix(compile_args, metadata):
+    """Assemble a P2 mass matrix on a reference triangle with given metadata."""
+    c_el = basix.ufl.element("Lagrange", "triangle", 1, shape=(2,))
+    mesh = ufl.Mesh(c_el)
+    space = ufl.FunctionSpace(mesh, basix.ufl.element("Lagrange", "triangle", 2))
+    u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
+    a = ufl.inner(u, v) * ufl.Measure("dx", metadata=metadata)
+
+    compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
+        [a], cffi_extra_compile_args=compile_args
+    )
+    form = compiled_forms[0]
+    offsets = form.form_integral_offsets
+    integral = form.form_integrals[offsets[module.lib.cell]]
+
+    ffi = module.ffi
+    A = np.zeros((6, 6), dtype=np.float64)
+    coords = np.array([0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0], dtype=np.float64)
+    integral.tabulate_tensor_float64(
+        ffi.cast("double *", A.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.cast("double *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.NULL,
+    )
+    return A
+
+
+def test_max_quadrature_degree(compile_args):
+    """Test that 'max_quadrature_degree' bounds the estimated degree.
+
+    A P2 mass matrix has estimated degree 4. Capping below that changes
+    the rule (and so the assembled matrix); capping above it does not.
+    """
+    A_estimated = _mass_matrix(compile_args, {})
+    A_capped = _mass_matrix(compile_args, {"max_quadrature_degree": 1})
+    A_not_binding = _mass_matrix(compile_args, {"max_quadrature_degree": 10})
+
+    # A bound above the estimated degree leaves the rule unchanged
+    assert np.allclose(A_not_binding, A_estimated)
+
+    # A bound below it does not: degree 1 cannot integrate a P2 mass
+    # matrix exactly
+    assert not np.allclose(A_capped, A_estimated)
+
+
+def test_max_quadrature_degree_invalid(compile_args):
+    """Test rejection of contradictory or invalid quadrature degree bounds."""
+    with pytest.raises(ValueError, match="Cannot set both"):
+        _mass_matrix(compile_args, {"quadrature_degree": 2, "max_quadrature_degree": 4})
+
+    with pytest.raises(ValueError, match="must be non-negative"):
+        _mass_matrix(compile_args, {"max_quadrature_degree": -1})
+
+
 def test_interval_vertex_quadrature(compile_args):
     c_el = basix.ufl.element("Lagrange", "interval", 1, shape=(1,))
     mesh = ufl.Mesh(c_el)
@@ -1411,7 +1468,7 @@ def test_ds_prism(compile_args, dtype):
 
     # Test integral over triangle (facet 0)
     A = np.zeros((6, 6), dtype=dtype)
-    entity_index = np.array([0], dtype=int)
+    entity_index = np.array([0], dtype=np.intc)
 
     xdtype = dtype_to_scalar_dtype(dtype)
     coords = np.array(
@@ -1456,7 +1513,7 @@ def test_ds_prism(compile_args, dtype):
 
     # Test integral over quadrilateral (facet 1)
     A = np.zeros((6, 6), dtype=dtype)
-    entity_index = np.array([1], dtype=np.int64)
+    entity_index = np.array([1], dtype=np.intc)
 
     xdtype = dtype_to_scalar_dtype(dtype)
     coords = np.array(
