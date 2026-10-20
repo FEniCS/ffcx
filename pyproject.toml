@@ -69,6 +69,11 @@ log_cli = true
 [tool.pyrefly]
 project-includes = ["ffcx"]
 
+# Everything in the strict preset except the four kinds opted out of
+# below, which is considerably more than the mypy configuration this
+# replaced enabled.
+preset = "strict"
+
 # Modules the mypy configuration this replaced exempted from checking.
 # They are replaced with Any unconditionally rather than only when they
 # cannot be imported, so the result does not depend on whether a given
@@ -92,6 +97,14 @@ no-any-return = true
 # unbound-name (possibly-undefined) is opt-in and was not enabled.
 unbound-name = true
 implicit-reexport = true
+
+# The four kinds of the strict preset that FFCx does not satisfy yet, with
+# what each currently costs. They are annotation debt rather than defects,
+# so they are best paid down a package at a time.
+implicit-any-lambda = false          # 43
+implicit-any-type-argument = false   # 38
+missing-override-decorator = false   # 18
+implicit-any-empty-container = false # 16
 
 # mypy turned check_untyped_defs and disallow_untyped_defs off for these
 # two packages. Goal would be to drop these long-term.
