@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21...4.4)
+cmake_minimum_required(VERSION 3.22)
 
 project(ffcx-c-demo LANGUAGES C)
 
@@ -16,10 +16,8 @@ add_custom_command(
   VERBATIM)
 
 add_executable(poisson main.c ${CMAKE_CURRENT_BINARY_DIR}/poisson.c)
-set_target_properties(poisson PROPERTIES
-  C_STANDARD 17
-  C_STANDARD_REQUIRED ON
-  C_EXTENSIONS OFF)
+target_compile_features(poisson PRIVATE c_std_17)
+set_target_properties(poisson PROPERTIES C_EXTENSIONS OFF)
 target_include_directories(poisson PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(poisson PRIVATE ufcx::ufcx)
 
