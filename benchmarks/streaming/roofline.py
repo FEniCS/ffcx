@@ -250,6 +250,10 @@ def main():
                     "dram_ns": min(dram[label]),
                     "dram_median_ns": float(np.median(dram[label])),
                     "hot_ns": min(hot[label]),
+                    "dram_samples_ns": dram[label],
+                    "hot_samples_ns": hot[label],
+                    "cells": int(cells),
+                    "max_absolute_tensor_error": err if label != "null" else None,
                 }
         report[name] = rows
         line = [f"{name:24s}"]

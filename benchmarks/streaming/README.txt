@@ -57,3 +57,14 @@ independent quadrature (Poisson, elasticity) or the first variant (hyper):
 The driver zeroes each output record before calling the kernel. Arithmetic
 performed before a kernel first touches A largely overlaps with that traffic,
 while arithmetic interleaved with or after updates of A adds to it.
+
+Refreshed performance tables
+
+The 20 October 2026 refresh is pinned to kernel source 9e736b9f. Its streaming
+baseline is 30757e95, which already includes local block accumulation and
+point-major evaluation. The comparison therefore measures the later row-blocked
+updates and symmetric-diagonal contraction, not the complete PR versus main.
+Both streaming variants use matching dependencies, quadrature and input arrays.
+The results retain individual streaming/hot samples and numerical errors.
+benchmarks/refresh-current-results.json maps all four published tables to their
+current measurements; refresh-results.json retains the previous refresh.

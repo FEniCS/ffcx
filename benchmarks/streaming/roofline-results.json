@@ -1,595 +1,3182 @@
 {
-  "description": "Streaming time per cell over DRAM-resident records (roofline.py). 'null' reads all inputs and updates all outputs without arithmetic: the per-core DRAM bound. 'hot' repeats one L1-resident record.",
+  "description": "Refreshed DRAM-streaming and hot-cache times on 20 October 2026. Null is a matching memory-traffic-only reference, not a measurement of socket peak bandwidth.",
   "baseline_commit": "30757e95278714cec85d65885f2dc70ea19a68b2",
+  "source_commit": "9e736b9fe791656de567f0b03be19729fa7aa515",
   "variants": {
-    "head": "baseline commit",
-    "new": "row-blocked and symmetric pre-integrated contractions, row-buffered updates of A"
+    "before": "30757e95278714cec85d65885f2dc70ea19a68b2",
+    "pr": "9e736b9fe791656de567f0b03be19729fa7aa515"
   },
-  "cpu": "Intel Xeon w7-3445, one pinned core",
-  "compilers": {
-    "gcc-16": "gcc-16 (Ubuntu 16-20260322-1ubuntu1) 16.0.1 20260322 (experimental) [trunk r16-8246-g569ace1fa50]",
-    "clang-22": "Ubuntu clang version 22.1.2 (1ubuntu1)"
+  "environment": {
+    "cpu_model": "Intel(R) Xeon(R) w7-3445",
+    "cpu_affinity": 2,
+    "flags": "-O3 -march=native -ffp-contract=fast -ffast-math",
+    "allocation_bytes": 1073741824,
+    "repetitions": 7,
+    "compilers": {
+      "gcc-16": "gcc-16 (Ubuntu 16-20260322-1ubuntu1) 16.0.1 20260322 (experimental) [trunk r16-8246-g569ace1fa50]",
+      "clang-22": "Ubuntu clang version 22.1.2 (1ubuntu1)"
+    }
   },
-  "flags": "-O3 -march=native -ffp-contract=fast -ffast-math",
-  "allocation_bytes": 1073741824,
-  "repetitions": 7,
-  "note": "Poisson and P1 kernels are unchanged by this work; their rows show run-to-run variation.",
+  "source_commits": {
+    "before": "30757e95278714cec85d65885f2dc70ea19a68b2",
+    "pr": "9e736b9fe791656de567f0b03be19729fa7aa515"
+  },
+  "source_manifests": {
+    "before": {
+      "poisson": {
+        "ffcx": "0.12.0.dev0",
+        "basix": "0.12.0.dev0",
+        "ufl": "2026.2.0.dev0",
+        "cases": {
+          "triangle_p1": {
+            "cell": "triangle",
+            "dimension": 2,
+            "degree": 1,
+            "dofs": 3,
+            "quadrature_degree": 0,
+            "quadrature_points": 1,
+            "source_sha256": "ab5bab4775175887cff23128c6863027b2da9097b6da722440f488168ffb36c1"
+          },
+          "triangle_p2": {
+            "cell": "triangle",
+            "dimension": 2,
+            "degree": 2,
+            "dofs": 6,
+            "quadrature_degree": 2,
+            "quadrature_points": 3,
+            "source_sha256": "fdc257022ebaae21a3226d52829c10f09e01f8ce31453b537431c131a2b1515b"
+          },
+          "triangle_p3": {
+            "cell": "triangle",
+            "dimension": 2,
+            "degree": 3,
+            "dofs": 10,
+            "quadrature_degree": 4,
+            "quadrature_points": 6,
+            "source_sha256": "3fe5e3103608a8421190422283c9de1bf5e8cd556bc409d8da2d3f891e7a89a0"
+          },
+          "quadrilateral_p1": {
+            "cell": "quadrilateral",
+            "dimension": 2,
+            "degree": 1,
+            "dofs": 4,
+            "quadrature_degree": 2,
+            "quadrature_points": 4,
+            "source_sha256": "329dc10894cbd8a9e8ef259f08f86eae7211aba6627a6444083e59f3579c94ff"
+          },
+          "quadrilateral_p2": {
+            "cell": "quadrilateral",
+            "dimension": 2,
+            "degree": 2,
+            "dofs": 9,
+            "quadrature_degree": 4,
+            "quadrature_points": 9,
+            "source_sha256": "29378711cbd0de6addf35c3f910eafc1e282806334bec4b99cc16bcd7a0ec5a9"
+          },
+          "quadrilateral_p3": {
+            "cell": "quadrilateral",
+            "dimension": 2,
+            "degree": 3,
+            "dofs": 16,
+            "quadrature_degree": 6,
+            "quadrature_points": 16,
+            "source_sha256": "9d5498486193e8914ffa36aab818ba9df951708d348690e04c0f0ea8e87538a4"
+          },
+          "tetrahedron_p1": {
+            "cell": "tetrahedron",
+            "dimension": 3,
+            "degree": 1,
+            "dofs": 4,
+            "quadrature_degree": 0,
+            "quadrature_points": 1,
+            "source_sha256": "3fbddd7443050c7a38428769a40197596930fe54d744d66b020828689936655c"
+          },
+          "tetrahedron_p2": {
+            "cell": "tetrahedron",
+            "dimension": 3,
+            "degree": 2,
+            "dofs": 10,
+            "quadrature_degree": 2,
+            "quadrature_points": 4,
+            "source_sha256": "1c5ef5feb0906204580871421bc9f0be46ef5c506ebd4f05ce5fae80bd6a9169"
+          },
+          "tetrahedron_p3": {
+            "cell": "tetrahedron",
+            "dimension": 3,
+            "degree": 3,
+            "dofs": 20,
+            "quadrature_degree": 4,
+            "quadrature_points": 11,
+            "source_sha256": "41678570a127ab8226a6a08bb739434b679a18a8cd54e21e37f4e60db85ee114"
+          },
+          "hexahedron_p1": {
+            "cell": "hexahedron",
+            "dimension": 3,
+            "degree": 1,
+            "dofs": 8,
+            "quadrature_degree": 2,
+            "quadrature_points": 8,
+            "source_sha256": "8c0e95cc0c88c713d8556ea61dc1d755f7a4c515f0fefe5f808513808d1c05bd"
+          },
+          "hexahedron_p2": {
+            "cell": "hexahedron",
+            "dimension": 3,
+            "degree": 2,
+            "dofs": 27,
+            "quadrature_degree": 4,
+            "quadrature_points": 27,
+            "source_sha256": "b7c4b24ed2e7ee2475631779ca112581ab604e6605939de126c45caedb2e3b6e"
+          },
+          "hexahedron_p3": {
+            "cell": "hexahedron",
+            "dimension": 3,
+            "degree": 3,
+            "dofs": 64,
+            "quadrature_degree": 6,
+            "quadrature_points": 64,
+            "source_sha256": "30b2bcab170b07561ff572c67598f021b13ce52e1969704b4ce2d4c65433316b"
+          }
+        },
+        "header_sha256": "b5f7875640491f4347718a5952fb1f145efc6dfc9536e0a29cc492de51e808d4"
+      },
+      "elasticity": {
+        "ffcx": "0.12.0.dev0",
+        "basix": "0.12.0.dev0",
+        "ufl": "2026.2.0.dev0",
+        "mu": 1.0,
+        "lambda": 1.25,
+        "cases": {
+          "triangle_p1": {
+            "cell": "triangle",
+            "dimension": 2,
+            "degree": 1,
+            "dofs": 6,
+            "scalar_dofs": 3,
+            "quadrature_degree": 0,
+            "quadrature_points": 1,
+            "source_sha256": "f86b261d58ebc1e2e24c596e787ae3610b4bcf6c52f76580b63e78b7d23eccb2"
+          },
+          "triangle_p2": {
+            "cell": "triangle",
+            "dimension": 2,
+            "degree": 2,
+            "dofs": 12,
+            "scalar_dofs": 6,
+            "quadrature_degree": 2,
+            "quadrature_points": 3,
+            "source_sha256": "b00190c9c9f6a1839e89b32c2e5f328af787997ca9f90d7b0a47d0d6d677cd8e"
+          },
+          "triangle_p3": {
+            "cell": "triangle",
+            "dimension": 2,
+            "degree": 3,
+            "dofs": 20,
+            "scalar_dofs": 10,
+            "quadrature_degree": 4,
+            "quadrature_points": 6,
+            "source_sha256": "ca503ca334ddef2df78bb2007c462478b075f434e759b5d67e7494462d27da74"
+          },
+          "tetrahedron_p1": {
+            "cell": "tetrahedron",
+            "dimension": 3,
+            "degree": 1,
+            "dofs": 12,
+            "scalar_dofs": 4,
+            "quadrature_degree": 0,
+            "quadrature_points": 1,
+            "source_sha256": "f6da3fc383437e409e5b1872aa795aef6988b2a27840507f1c68c7ac22a44bf8"
+          },
+          "tetrahedron_p2": {
+            "cell": "tetrahedron",
+            "dimension": 3,
+            "degree": 2,
+            "dofs": 30,
+            "scalar_dofs": 10,
+            "quadrature_degree": 2,
+            "quadrature_points": 4,
+            "source_sha256": "98c9a4300b2c253e5dd5cfb26bfac251e7b10dead43cd3ffedae9e99d5e67014"
+          },
+          "tetrahedron_p3": {
+            "cell": "tetrahedron",
+            "dimension": 3,
+            "degree": 3,
+            "dofs": 60,
+            "scalar_dofs": 20,
+            "quadrature_degree": 4,
+            "quadrature_points": 11,
+            "source_sha256": "a58e0c8b930277b7d7d281b12f1c670adb72cb6757ea5241d512240a7ec49f74"
+          }
+        },
+        "header_sha256": "b5f7875640491f4347718a5952fb1f145efc6dfc9536e0a29cc492de51e808d4"
+      },
+      "hyper": {
+        "revision": "baseline",
+        "ffcx": "0.12.0.dev0",
+        "basix": "0.12.0.dev0",
+        "ufl": "2026.2.0.dev0",
+        "numpy": "2.5.3",
+        "python": "3.14.4",
+        "source_sha256": {
+          "linear1.c": "2bde4c319e35fe6d669ff7ef8acdc81d02076dcf1ec31f83c2e1b3d71d3da6f9",
+          "linear2.c": "b74bb4c3ea8da5ee13a00a96bf6d799c6e3686993e50860c10257e8dbb893e80",
+          "linear3.c": "a4a04ee93a9de5572b864bac25e6bf49ffbc85b2ac21bd44eda3364cf6d329d3",
+          "residual1.c": "ba05ed1ff4e04db2caa43e7ad95509e43a0aec6f2d391e5e7f422b93a321805a",
+          "residual2.c": "1543a7a76dc39c096a9d86a2a9287b6b41384240b5d927a921170a1251af1c6f",
+          "residual3.c": "c929c199c93550602d102b477066ce272e6fa1b8ff21c4996f07eb3be33ee06b",
+          "tangent1.c": "04f9f04c864883e0e387c68d11d6e336aa26f06616b4b3cb671fead47d505aeb",
+          "tangent2.c": "dd839c89918fb6e93cc9333e6712b8f4c7ff85da6d6ab020e7be6effab86a0e6",
+          "tangent3.c": "ea4e09cbfab3d007aad1c6c917e45193e2c6ed56e8e18d9115293eef5adac578"
+        },
+        "header_sha256": "b5f7875640491f4347718a5952fb1f145efc6dfc9536e0a29cc492de51e808d4"
+      }
+    },
+    "pr": {
+      "poisson": {
+        "ffcx": "0.12.0.dev0",
+        "basix": "0.12.0.dev0",
+        "ufl": "2026.2.0.dev0",
+        "cases": {
+          "triangle_p1": {
+            "cell": "triangle",
+            "dimension": 2,
+            "degree": 1,
+            "dofs": 3,
+            "quadrature_degree": 0,
+            "quadrature_points": 1,
+            "source_sha256": "9016e47d41e94a40494136f235d9f494e6f5d0213038bf57418bd4d04b294a30"
+          },
+          "triangle_p2": {
+            "cell": "triangle",
+            "dimension": 2,
+            "degree": 2,
+            "dofs": 6,
+            "quadrature_degree": 2,
+            "quadrature_points": 3,
+            "source_sha256": "dcff1f0635405e1e14bb8484461cc8e004678579a48a7a3dbba3e30ddeb2b09f"
+          },
+          "triangle_p3": {
+            "cell": "triangle",
+            "dimension": 2,
+            "degree": 3,
+            "dofs": 10,
+            "quadrature_degree": 4,
+            "quadrature_points": 6,
+            "source_sha256": "3edc5507a2c7dea2af2fa670fe38252eddccf0ae2c36259ccf78afa02cd52b95"
+          },
+          "quadrilateral_p1": {
+            "cell": "quadrilateral",
+            "dimension": 2,
+            "degree": 1,
+            "dofs": 4,
+            "quadrature_degree": 2,
+            "quadrature_points": 4,
+            "source_sha256": "3a0c2ec1d8c551048c5ff8461c1e998143d9c1fecfabce1e989336c6ec0df901"
+          },
+          "quadrilateral_p2": {
+            "cell": "quadrilateral",
+            "dimension": 2,
+            "degree": 2,
+            "dofs": 9,
+            "quadrature_degree": 4,
+            "quadrature_points": 9,
+            "source_sha256": "7dcd892a007da0b2b93bd1227547037376bccd23857e4a6f95cc4dc983da41f4"
+          },
+          "quadrilateral_p3": {
+            "cell": "quadrilateral",
+            "dimension": 2,
+            "degree": 3,
+            "dofs": 16,
+            "quadrature_degree": 6,
+            "quadrature_points": 16,
+            "source_sha256": "5682d17b4d56e9e579ff948c9dcb5d671f0fde2747aea6f98b5d3129cc2d51e5"
+          },
+          "tetrahedron_p1": {
+            "cell": "tetrahedron",
+            "dimension": 3,
+            "degree": 1,
+            "dofs": 4,
+            "quadrature_degree": 0,
+            "quadrature_points": 1,
+            "source_sha256": "ecc78629c4f58997286d3be9dd04ea1c1b8a17d2865ba9b4061ffdc58f62cbca"
+          },
+          "tetrahedron_p2": {
+            "cell": "tetrahedron",
+            "dimension": 3,
+            "degree": 2,
+            "dofs": 10,
+            "quadrature_degree": 2,
+            "quadrature_points": 4,
+            "source_sha256": "e3d5c90ecd7a1406fe3e1c01905b62464216b66f40493ce7f433eb5c08b93f12"
+          },
+          "tetrahedron_p3": {
+            "cell": "tetrahedron",
+            "dimension": 3,
+            "degree": 3,
+            "dofs": 20,
+            "quadrature_degree": 4,
+            "quadrature_points": 11,
+            "source_sha256": "a00f78bd2096a0a1b05a0f1441a0077e2a5569f53dd8bf658fe5d7245fd75b41"
+          },
+          "hexahedron_p1": {
+            "cell": "hexahedron",
+            "dimension": 3,
+            "degree": 1,
+            "dofs": 8,
+            "quadrature_degree": 2,
+            "quadrature_points": 8,
+            "source_sha256": "cc9b42b40cd0fb66806abcee6d0a4e10041238fb4b50934a95b74ae19918036e"
+          },
+          "hexahedron_p2": {
+            "cell": "hexahedron",
+            "dimension": 3,
+            "degree": 2,
+            "dofs": 27,
+            "quadrature_degree": 4,
+            "quadrature_points": 27,
+            "source_sha256": "6209d954532fbf9b89fad79a9008d139e5917667a61b5503a50a212425494785"
+          },
+          "hexahedron_p3": {
+            "cell": "hexahedron",
+            "dimension": 3,
+            "degree": 3,
+            "dofs": 64,
+            "quadrature_degree": 6,
+            "quadrature_points": 64,
+            "source_sha256": "cabe24ffe23c848a4030da25cd030a92c951a97e38f22284c0f4839696f0a920"
+          }
+        },
+        "header_sha256": "b5f7875640491f4347718a5952fb1f145efc6dfc9536e0a29cc492de51e808d4"
+      },
+      "elasticity": {
+        "ffcx": "0.12.0.dev0",
+        "basix": "0.12.0.dev0",
+        "ufl": "2026.2.0.dev0",
+        "mu": 1.0,
+        "lambda": 1.25,
+        "cases": {
+          "triangle_p1": {
+            "cell": "triangle",
+            "dimension": 2,
+            "degree": 1,
+            "dofs": 6,
+            "scalar_dofs": 3,
+            "quadrature_degree": 0,
+            "quadrature_points": 1,
+            "source_sha256": "2b34c39d7cdee6d7b20c10857ac3de8c02cefcdd0239449228a3ddda3457434d"
+          },
+          "triangle_p2": {
+            "cell": "triangle",
+            "dimension": 2,
+            "degree": 2,
+            "dofs": 12,
+            "scalar_dofs": 6,
+            "quadrature_degree": 2,
+            "quadrature_points": 3,
+            "source_sha256": "b40c168e4f6f605f2c2577241daca241babbff2ece3d0724858ae1b9ab11f0f3"
+          },
+          "triangle_p3": {
+            "cell": "triangle",
+            "dimension": 2,
+            "degree": 3,
+            "dofs": 20,
+            "scalar_dofs": 10,
+            "quadrature_degree": 4,
+            "quadrature_points": 6,
+            "source_sha256": "8cf2b2f5f5fe05830d6f25e9f18effff4f808ea0f00266318ac49e79b23766c4"
+          },
+          "tetrahedron_p1": {
+            "cell": "tetrahedron",
+            "dimension": 3,
+            "degree": 1,
+            "dofs": 12,
+            "scalar_dofs": 4,
+            "quadrature_degree": 0,
+            "quadrature_points": 1,
+            "source_sha256": "a47c55d5a8c9d3c94b0c17feef33203250eef2498c0e465cd9bca1bf67414f40"
+          },
+          "tetrahedron_p2": {
+            "cell": "tetrahedron",
+            "dimension": 3,
+            "degree": 2,
+            "dofs": 30,
+            "scalar_dofs": 10,
+            "quadrature_degree": 2,
+            "quadrature_points": 4,
+            "source_sha256": "dccf139983b24580beb2f885aceb65b99cf174f75ce709cfcf6afce7066ac2a9"
+          },
+          "tetrahedron_p3": {
+            "cell": "tetrahedron",
+            "dimension": 3,
+            "degree": 3,
+            "dofs": 60,
+            "scalar_dofs": 20,
+            "quadrature_degree": 4,
+            "quadrature_points": 11,
+            "source_sha256": "b0bfa1e8a3c4e142513161dc62408d19db691e1bf326a789b89fbecdb0c25999"
+          }
+        },
+        "header_sha256": "b5f7875640491f4347718a5952fb1f145efc6dfc9536e0a29cc492de51e808d4"
+      },
+      "hyper": {
+        "revision": "current",
+        "ffcx": "0.12.0.dev0",
+        "basix": "0.12.0.dev0",
+        "ufl": "2026.2.0.dev0",
+        "numpy": "2.5.3",
+        "python": "3.14.4",
+        "source_sha256": {
+          "linear1.c": "b54466ffcd49646ab599636ffe5bb41ab448353ecffd89525b857e57b4c72e5d",
+          "linear2.c": "f9c0dd78f93569f7b6f19a6bab137ea7541ae3ffccd503cb08bd67ee9aa2ff34",
+          "linear3.c": "8a7b2bb89f0e967271a1f445e7622acb19457f7f8bed214f9b0e12aac083d555",
+          "residual1.c": "533ed0ced796a7951eb8286d572803c7180ae6beb07304cd6fb68a4258615452",
+          "residual2.c": "5e8634bfbd50332908241ecf220496858a8b1bcef6c7372c7e984f9324131a11",
+          "residual3.c": "05d631221187f7cf85a8596e4b4f2ea65cb16d1aa9538070ffc5ad461727cf3f",
+          "tangent1.c": "39f1d07f9f2c495bda7bd9d1224e8e20aaecf5dd93d206262a6b3b650904fe3c",
+          "tangent2.c": "350b79e0555cb9e99d6c63b1aa690ba14ba76aef990f2dc7f5e108e7bab5a40d",
+          "tangent3.c": "4909bf26bbec43c66241d39482a8f970273f778b43c6d7a287850116bed20ecb"
+        },
+        "header_sha256": "b5f7875640491f4347718a5952fb1f145efc6dfc9536e0a29cc492de51e808d4"
+      }
+    }
+  },
+  "validation": "Every output entry checked on 32 input patterns and every streamed cell, with zero and nonzero initial output; independent quadrature for Poisson/elasticity and the before kernel for hyperelasticity. Quadrature, input arrays and dependency versions match exactly between streaming variants.",
   "cases": {
     "poisson-triangle_p1": {
       "gcc-16-null": {
-        "dram_ns": 22.030222923685727,
-        "dram_median_ns": 22.109497566091818,
-        "hot_ns": 2.2990850266069174
+        "dram_ns": 22.30328655095093,
+        "dram_median_ns": 22.49953934274629,
+        "hot_ns": 2.4624005891382694,
+        "dram_samples_ns": [
+          22.515041164794525,
+          22.375779618055702,
+          22.30328655095093,
+          22.656152509625826,
+          22.537309185555188,
+          22.460007687019612,
+          22.49953934274629
+        ],
+        "hot_samples_ns": [
+          2.949375193566084,
+          2.890054602175951,
+          2.866300055757165,
+          2.98228464089334,
+          2.8912245761603117,
+          2.4624005891382694,
+          2.950270427390933
+        ],
+        "cells": 4194304,
+        "max_absolute_tensor_error": null
       },
-      "gcc-16-head": {
-        "dram_ns": 22.273009991913284,
-        "dram_median_ns": 22.376663466605606,
-        "hot_ns": 4.4601550325751305
+      "gcc-16-before": {
+        "dram_ns": 22.58662679111012,
+        "dram_median_ns": 22.76330635098134,
+        "hot_ns": 4.55291592516005,
+        "dram_samples_ns": [
+          22.69574356228432,
+          22.743709582329075,
+          22.835896507089615,
+          22.58662679111012,
+          22.81498956424599,
+          22.76330635098134,
+          22.830818624530735
+        ],
+        "hot_samples_ns": [
+          4.55291592516005,
+          5.260789766907692,
+          5.597559502348304,
+          4.556479398161173,
+          4.585499409586191,
+          4.556584171950817,
+          5.5974547285586596
+        ],
+        "cells": 4194304,
+        "max_absolute_tensor_error": 5.551115123125783e-16
       },
-      "gcc-16-new": {
-        "dram_ns": 22.164120427881073,
-        "dram_median_ns": 22.39744689713774,
-        "hot_ns": 4.555045161396265
+      "gcc-16-pr": {
+        "dram_ns": 22.63040921324233,
+        "dram_median_ns": 22.801541321726404,
+        "hot_ns": 5.152025260031223,
+        "dram_samples_ns": [
+          22.696248769271676,
+          22.85951306024714,
+          22.899632690087657,
+          22.79639838009828,
+          22.63040921324233,
+          22.8922519829311,
+          22.801541321726404
+        ],
+        "hot_samples_ns": [
+          5.5998400785028934,
+          5.594970425590873,
+          5.762164946645498,
+          5.761905340477824,
+          5.152025260031223,
+          5.900325486436486,
+          5.598950665444136
+        ],
+        "cells": 4194304,
+        "max_absolute_tensor_error": 5.551115123125783e-16
       },
       "clang-22-null": {
-        "dram_ns": 21.913434743881226,
-        "dram_median_ns": 22.035712957382202,
-        "hot_ns": 2.2802200000000004
+        "dram_ns": 22.01518940925598,
+        "dram_median_ns": 22.087647438049316,
+        "hot_ns": 2.29571,
+        "dram_samples_ns": [
+          22.090667247772217,
+          22.136157274246216,
+          22.197180986404422,
+          22.087647438049316,
+          22.01518940925598,
+          22.07525086402893,
+          22.03935217857361
+        ],
+        "hot_samples_ns": [
+          2.47379,
+          2.63855,
+          2.3647400000000003,
+          2.29668,
+          2.29714,
+          2.29571,
+          2.3547700000000003
+        ],
+        "cells": 4194304,
+        "max_absolute_tensor_error": null
       },
-      "clang-22-head": {
-        "dram_ns": 26.677946090698246,
-        "dram_median_ns": 26.739319562911987,
-        "hot_ns": 7.61652
+      "clang-22-before": {
+        "dram_ns": 26.57011485099791,
+        "dram_median_ns": 26.75287365913391,
+        "hot_ns": 7.60357,
+        "dram_samples_ns": [
+          26.768866062164292,
+          26.75287365913391,
+          26.807012557983402,
+          26.840072870254506,
+          26.617427587509155,
+          26.58608317375183,
+          26.57011485099791
+        ],
+        "hot_samples_ns": [
+          7.7858100000000015,
+          8.79669,
+          7.76312,
+          7.7731400000000015,
+          7.765815000000001,
+          7.60357,
+          7.786820000000001
+        ],
+        "cells": 4194304,
+        "max_absolute_tensor_error": 4.440892098500626e-16
       },
-      "clang-22-new": {
-        "dram_ns": 26.563028812408447,
-        "dram_median_ns": 26.76566624641417,
-        "hot_ns": 7.643674999999999
+      "clang-22-pr": {
+        "dram_ns": 26.577047348022464,
+        "dram_median_ns": 26.683927536010742,
+        "hot_ns": 7.5837200000000005,
+        "dram_samples_ns": [
+          26.66115379333496,
+          26.7418155670166,
+          26.725024938583374,
+          26.732200145721436,
+          26.683927536010742,
+          26.577047348022464,
+          26.674677371978763
+        ],
+        "hot_samples_ns": [
+          7.781175,
+          7.775355000000001,
+          7.776970000000001,
+          7.587739999999999,
+          7.602475000000002,
+          7.593425000000001,
+          7.5837200000000005
+        ],
+        "cells": 4194304,
+        "max_absolute_tensor_error": 4.440892098500626e-16
       }
     },
     "poisson-triangle_p2": {
       "gcc-16-null": {
-        "dram_ns": 40.09464133210535,
-        "dram_median_ns": 40.51120490447952,
-        "hot_ns": 3.4710101317614317
+        "dram_ns": 40.343119043667286,
+        "dram_median_ns": 40.4255250889039,
+        "hot_ns": 3.452814416959882,
+        "dram_samples_ns": [
+          40.39406609883657,
+          40.52377666830386,
+          40.4255250889039,
+          40.459297964303715,
+          40.35890677684096,
+          40.343119043667286,
+          40.543478839928866
+        ],
+        "hot_samples_ns": [
+          3.5894743632525206,
+          3.5904860123991966,
+          3.452814416959882,
+          3.615529276430607,
+          3.5255099646747112,
+          3.477875143289566,
+          3.5782449413090944
+        ],
+        "cells": 2396745,
+        "max_absolute_tensor_error": null
       },
-      "gcc-16-head": {
-        "dram_ns": 38.16511558060625,
-        "dram_median_ns": 38.21738729845631,
-        "hot_ns": 7.78382527641952
+      "gcc-16-before": {
+        "dram_ns": 38.236104424644004,
+        "dram_median_ns": 38.39165077361268,
+        "hot_ns": 7.5655500404536715,
+        "dram_samples_ns": [
+          38.40773878049905,
+          38.39165077361268,
+          38.49001912072622,
+          38.63000728902302,
+          38.29383634455473,
+          38.26003189718577,
+          38.236104424644004
+        ],
+        "hot_samples_ns": [
+          7.934529567137361,
+          7.74101004935801,
+          7.5655500404536715,
+          7.820035098120571,
+          7.656225934624672,
+          8.132910588756204,
+          7.923800731077791
+        ],
+        "cells": 2396745,
+        "max_absolute_tensor_error": 1.7763568394002505e-15
       },
-      "gcc-16-new": {
-        "dram_ns": 38.44006478541136,
-        "dram_median_ns": 38.498154780024436,
-        "hot_ns": 7.756788982078432
+      "gcc-16-pr": {
+        "dram_ns": 38.33278799433946,
+        "dram_median_ns": 38.42342140330161,
+        "hot_ns": 7.561930688098073,
+        "dram_samples_ns": [
+          38.42342140330161,
+          38.442281429078875,
+          38.33278799433946,
+          38.48873156725223,
+          38.42348474152893,
+          38.35849700024166,
+          38.37273518116972
+        ],
+        "hot_samples_ns": [
+          7.561930688098073,
+          7.795409765094518,
+          7.741099689155818,
+          7.640470284968615,
+          7.624669233337046,
+          7.819809252396226,
+          7.78060988523066
+        ],
+        "cells": 2396745,
+        "max_absolute_tensor_error": 1.7763568394002505e-15
       },
       "clang-22-null": {
-        "dram_ns": 40.8716142101058,
-        "dram_median_ns": 40.98858493498474,
-        "hot_ns": 3.4596350000000005
+        "dram_ns": 40.66582093631151,
+        "dram_median_ns": 40.708244306340475,
+        "hot_ns": 3.4577850000000003,
+        "dram_samples_ns": [
+          40.76063703063947,
+          40.706360084197534,
+          40.72614316500086,
+          40.66582093631151,
+          40.708244306340475,
+          40.680975656567554,
+          40.714637977757334
+        ],
+        "hot_samples_ns": [
+          3.48051,
+          3.605595,
+          3.5857550000000002,
+          3.4849850000000004,
+          3.4945900000000005,
+          3.4906600000000005,
+          3.4577850000000003
+        ],
+        "cells": 2396745,
+        "max_absolute_tensor_error": null
       },
-      "clang-22-head": {
-        "dram_ns": 38.2490665465037,
-        "dram_median_ns": 38.68494520693691,
-        "hot_ns": 6.945205000000001
+      "clang-22-before": {
+        "dram_ns": 38.28814371157547,
+        "dram_median_ns": 38.36861409953917,
+        "hot_ns": 6.941455,
+        "dram_samples_ns": [
+          38.45147731610998,
+          38.39510210723294,
+          38.37423088396972,
+          38.36468376902842,
+          38.36861409953917,
+          38.348954519567165,
+          38.28814371157547
+        ],
+        "hot_samples_ns": [
+          7.093085,
+          6.941455,
+          7.305105,
+          7.115445,
+          8.18511,
+          7.075665,
+          6.94573
+        ],
+        "cells": 2396745,
+        "max_absolute_tensor_error": 1.7763568394002505e-15
       },
-      "clang-22-new": {
-        "dram_ns": 38.60684177916299,
-        "dram_median_ns": 38.729289932804676,
-        "hot_ns": 7.020755000000001
+      "clang-22-pr": {
+        "dram_ns": 38.48583182608079,
+        "dram_median_ns": 38.542874189786566,
+        "hot_ns": 6.950935000000001,
+        "dram_samples_ns": [
+          38.722210331094885,
+          38.542874189786566,
+          38.542405637646056,
+          38.544986220895424,
+          38.60410515094431,
+          38.48583182608079,
+          38.516111643082596
+        ],
+        "hot_samples_ns": [
+          7.29625,
+          7.320035,
+          7.138810000000001,
+          7.087440000000001,
+          6.950935000000001,
+          6.958615,
+          7.2276050000000005
+        ],
+        "cells": 2396745,
+        "max_absolute_tensor_error": 1.7763568394002505e-15
       }
     },
     "poisson-triangle_p3": {
       "gcc-16-null": {
-        "dram_ns": 91.51363691906164,
-        "dram_median_ns": 91.91398149210251,
-        "hot_ns": 10.284039890393615
+        "dram_ns": 91.49993787634426,
+        "dram_median_ns": 91.68268566248273,
+        "hot_ns": 10.292669758200645,
+        "dram_samples_ns": [
+          91.97309212868075,
+          91.85866198982359,
+          92.26861700088313,
+          91.61543549470323,
+          91.6319391691148,
+          91.68268566248273,
+          91.49993787634426
+        ],
+        "hot_samples_ns": [
+          10.338039137423038,
+          10.310109937563539,
+          10.726575274020433,
+          10.378540027886629,
+          10.292669758200645,
+          12.066835770383477,
+          10.52188454195857
+        ],
+        "cells": 1118481,
+        "max_absolute_tensor_error": null
       },
-      "gcc-16-head": {
-        "dram_ns": 94.17008151681756,
-        "dram_median_ns": 94.74305509458053,
-        "hot_ns": 28.552025323733687
+      "gcc-16-before": {
+        "dram_ns": 94.48828449976205,
+        "dram_median_ns": 94.70534775508038,
+        "hot_ns": 27.82439929433167,
+        "dram_samples_ns": [
+          94.76158568941116,
+          94.70534775508038,
+          94.79953075543062,
+          94.48828449976205,
+          94.59191889867323,
+          95.02526186936356,
+          94.51918540843721
+        ],
+        "hot_samples_ns": [
+          28.597089694812894,
+          28.368020430207253,
+          28.906200313940644,
+          28.283895226195455,
+          28.570499271154404,
+          28.629264561459422,
+          27.82439929433167
+        ],
+        "cells": 1118481,
+        "max_absolute_tensor_error": 7.494005416219807e-15
       },
-      "gcc-16-new": {
-        "dram_ns": 95.55595384971438,
-        "dram_median_ns": 95.68081793456784,
-        "hot_ns": 28.944009682163596
+      "gcc-16-pr": {
+        "dram_ns": 94.2904741781728,
+        "dram_median_ns": 94.4236907488941,
+        "hot_ns": 27.07932493649423,
+        "dram_samples_ns": [
+          94.5649448490702,
+          94.38526273583015,
+          94.81258427280964,
+          94.4236907488941,
+          94.46031791071586,
+          94.34209601305888,
+          94.2904741781728
+        ],
+        "hot_samples_ns": [
+          28.95013545639813,
+          27.07932493649423,
+          30.056780669838194,
+          27.730835136026144,
+          28.73537945561111,
+          28.38273416273296,
+          32.81086450442672
+        ],
+        "cells": 1118481,
+        "max_absolute_tensor_error": 7.494005416219807e-15
       },
       "clang-22-null": {
-        "dram_ns": 88.8072922114904,
-        "dram_median_ns": 89.61053875747554,
-        "hot_ns": 9.001195
+        "dram_ns": 89.40813835907808,
+        "dram_median_ns": 89.54760697767776,
+        "hot_ns": 8.87865,
+        "dram_samples_ns": [
+          89.68032000543596,
+          89.6480342535993,
+          89.40913435275158,
+          89.54760697767776,
+          89.51015618504024,
+          89.40813835907808,
+          89.9634352304599
+        ],
+        "hot_samples_ns": [
+          8.87865,
+          8.994785,
+          9.08764,
+          8.902485,
+          9.078160000000002,
+          9.113515000000001,
+          9.13858
+        ],
+        "cells": 1118481,
+        "max_absolute_tensor_error": null
       },
-      "clang-22-head": {
-        "dram_ns": 87.52585694347961,
-        "dram_median_ns": 87.88534896882467,
-        "hot_ns": 24.985365
+      "clang-22-before": {
+        "dram_ns": 87.77756081685787,
+        "dram_median_ns": 88.03149628826955,
+        "hot_ns": 24.513835000000004,
+        "dram_samples_ns": [
+          88.724864347271,
+          88.02622217096223,
+          88.03149628826955,
+          87.79786961065946,
+          87.77756081685787,
+          88.77015613139602,
+          88.12003958940743
+        ],
+        "hot_samples_ns": [
+          25.359685000000002,
+          24.975825,
+          25.363530000000004,
+          26.584195,
+          24.983255,
+          28.70201,
+          24.513835000000004
+        ],
+        "cells": 1118481,
+        "max_absolute_tensor_error": 7.494005416219807e-15
       },
-      "clang-22-new": {
-        "dram_ns": 88.07451802936305,
-        "dram_median_ns": 88.10700137060888,
-        "hot_ns": 24.937920000000002
+      "clang-22-pr": {
+        "dram_ns": 88.13912350768588,
+        "dram_median_ns": 88.36202939522443,
+        "hot_ns": 24.08921,
+        "dram_samples_ns": [
+          88.49177321742614,
+          88.30075879697554,
+          88.36202939522443,
+          88.59582952236114,
+          88.26439340498409,
+          88.13912350768588,
+          88.92051809552422
+        ],
+        "hot_samples_ns": [
+          24.767895000000003,
+          24.278245,
+          25.182395,
+          24.08921,
+          24.787865000000004,
+          25.35442,
+          26.582829999999998
+        ],
+        "cells": 1118481,
+        "max_absolute_tensor_error": 7.494005416219807e-15
       }
     },
     "poisson-tetrahedron_p1": {
       "gcc-16-null": {
-        "dram_ns": 22.538945210204275,
-        "dram_median_ns": 22.553195200281095,
-        "hot_ns": 2.741230418905616
+        "dram_ns": 22.687278999899974,
+        "dram_median_ns": 22.720045345092643,
+        "hot_ns": 2.749270061030984,
+        "dram_samples_ns": [
+          22.786166398169883,
+          22.76923605215586,
+          22.785594022689537,
+          22.720045345092643,
+          22.700914148465756,
+          22.687278999899974,
+          22.692251466782665
+        ],
+        "hot_samples_ns": [
+          2.7524703182280064,
+          2.749270061030984,
+          2.793429885059595,
+          2.7731398586183786,
+          2.7637253515422344,
+          2.7845450676977634,
+          2.754945307970047
+        ],
+        "cells": 4194304,
+        "max_absolute_tensor_error": null
       },
-      "gcc-16-head": {
-        "dram_ns": 23.638530466385532,
-        "dram_median_ns": 23.655575276393392,
-        "hot_ns": 13.058909680694342
+      "gcc-16-before": {
+        "dram_ns": 23.850144359460757,
+        "dram_median_ns": 23.89487457898909,
+        "hot_ns": 12.829399202018976,
+        "dram_samples_ns": [
+          23.936208237707035,
+          23.91192532869013,
+          23.906003010498722,
+          23.86079173133382,
+          23.850144359460757,
+          23.89487457898909,
+          23.86635156170769
+        ],
+        "hot_samples_ns": [
+          13.113950844854116,
+          13.0660948343575,
+          13.070210115984082,
+          12.829399202018976,
+          14.582774601876736,
+          13.07592960074544,
+          13.31861480139196
+        ],
+        "cells": 4194304,
+        "max_absolute_tensor_error": 5.551115123125783e-16
       },
-      "gcc-16-new": {
-        "dram_ns": 23.706458129879593,
-        "dram_median_ns": 23.733175036344534,
-        "hot_ns": 13.062714133411646
+      "gcc-16-pr": {
+        "dram_ns": 23.712080743365505,
+        "dram_median_ns": 23.73606705630138,
+        "hot_ns": 13.078440679237247,
+        "dram_samples_ns": [
+          23.78281116488523,
+          23.76489116606706,
+          23.73606705630138,
+          23.725861553192118,
+          23.73089269536166,
+          23.712080743365505,
+          23.74604346488951
+        ],
+        "hot_samples_ns": [
+          13.405330246314406,
+          13.570659793913364,
+          13.369324151426554,
+          13.08138482272625,
+          13.078440679237247,
+          13.285945169627666,
+          15.245559625327587
+        ],
+        "cells": 4194304,
+        "max_absolute_tensor_error": 5.551115123125783e-16
       },
       "clang-22-null": {
-        "dram_ns": 22.55317211151123,
-        "dram_median_ns": 22.605194091796875,
-        "hot_ns": 2.192155
+        "dram_ns": 22.414291858673096,
+        "dram_median_ns": 22.556002378463745,
+        "hot_ns": 2.2255300000000005,
+        "dram_samples_ns": [
+          22.605693817138672,
+          22.556002378463745,
+          22.489313602447513,
+          22.747231245040894,
+          22.600018501281742,
+          22.456235885620117,
+          22.414291858673096
+        ],
+        "hot_samples_ns": [
+          2.2628800000000004,
+          2.235395,
+          2.260885,
+          2.3822400000000004,
+          2.3636450000000004,
+          2.2255300000000005,
+          2.262015
+        ],
+        "cells": 4194304,
+        "max_absolute_tensor_error": null
       },
-      "clang-22-head": {
-        "dram_ns": 24.522913455963135,
-        "dram_median_ns": 24.720604419708252,
-        "hot_ns": 11.001750000000001
+      "clang-22-before": {
+        "dram_ns": 24.872722625732422,
+        "dram_median_ns": 24.904049158096317,
+        "hot_ns": 11.575235000000001,
+        "dram_samples_ns": [
+          24.946022987365712,
+          24.918797492980957,
+          24.884468078613285,
+          24.904049158096317,
+          24.920341014862064,
+          24.900228261947632,
+          24.872722625732422
+        ],
+        "hot_samples_ns": [
+          11.730150000000002,
+          11.98339,
+          13.822215,
+          11.68584499999969,
+          11.972650000000002,
+          11.575235000000001,
+          11.971900000000002
+        ],
+        "cells": 4194304,
+        "max_absolute_tensor_error": 6.661338147750939e-16
       },
-      "clang-22-new": {
-        "dram_ns": 24.675218105316162,
-        "dram_median_ns": 24.718195915222168,
-        "hot_ns": 11.94107
+      "clang-22-pr": {
+        "dram_ns": 24.84378266334534,
+        "dram_median_ns": 24.886975049972538,
+        "hot_ns": 11.1881,
+        "dram_samples_ns": [
+          24.89333033561707,
+          24.84378266334534,
+          24.860595226287842,
+          24.906034708023075,
+          24.933623313903812,
+          24.886975049972538,
+          24.879017591476426
+        ],
+        "hot_samples_ns": [
+          11.987500000000002,
+          12.560385,
+          11.191845,
+          11.96428,
+          11.1881,
+          11.317895,
+          11.965775
+        ],
+        "cells": 4194304,
+        "max_absolute_tensor_error": 6.661338147750939e-16
       }
     },
     "poisson-tetrahedron_p2": {
       "gcc-16-null": {
-        "dram_ns": 91.94872245428192,
-        "dram_median_ns": 92.10774005452187,
-        "hot_ns": 10.376244317740202
+        "dram_ns": 91.99739373252632,
+        "dram_median_ns": 92.188155317101,
+        "hot_ns": 10.360089363530278,
+        "dram_samples_ns": [
+          92.188155317101,
+          92.125633867021,
+          92.38793427239705,
+          91.99739373252632,
+          92.05302361154807,
+          92.67891985871482,
+          92.53692905612903
+        ],
+        "hot_samples_ns": [
+          10.503364028409123,
+          10.770200751721859,
+          12.1414999011904,
+          10.360089363530278,
+          10.442680213600397,
+          10.391315445303917,
+          12.654769234359264
+        ],
+        "cells": 1118481,
+        "max_absolute_tensor_error": null
       },
-      "gcc-16-head": {
-        "dram_ns": 99.12920471639569,
-        "dram_median_ns": 99.9393723227262,
-        "hot_ns": 52.89318040013313
+      "gcc-16-before": {
+        "dram_ns": 99.4863713256565,
+        "dram_median_ns": 99.65278259534753,
+        "hot_ns": 55.72460009716451,
+        "dram_samples_ns": [
+          99.80301035121077,
+          99.65278259534753,
+          100.46914795269346,
+          99.52960299647859,
+          99.5067416989265,
+          99.4863713256565,
+          100.02880682952816
+        ],
+        "hot_samples_ns": [
+          58.219905477017164,
+          57.146664476022124,
+          57.686399668455124,
+          55.72460009716451,
+          59.9807349499315,
+          57.91547009721398,
+          57.87554429844022
+        ],
+        "cells": 1118481,
+        "max_absolute_tensor_error": 2.1788126858268697e-15
       },
-      "gcc-16-new": {
-        "dram_ns": 100.38594575260065,
-        "dram_median_ns": 100.48799308760353,
-        "hot_ns": 57.81454499810934
+      "gcc-16-pr": {
+        "dram_ns": 99.31600717603965,
+        "dram_median_ns": 99.68165471010214,
+        "hot_ns": 57.130930945277214,
+        "dram_samples_ns": [
+          99.57683584193097,
+          100.32298090717376,
+          99.69371152470138,
+          99.68165471010214,
+          99.3875847158713,
+          99.31600717603965,
+          99.84316573262613
+        ],
+        "hot_samples_ns": [
+          57.619260624051094,
+          57.87734058685601,
+          57.65150999650359,
+          57.130930945277214,
+          57.80579522252083,
+          57.67114576883614,
+          57.8675651922822
+        ],
+        "cells": 1118481,
+        "max_absolute_tensor_error": 2.1788126858268697e-15
       },
       "clang-22-null": {
-        "dram_ns": 88.89699512106152,
-        "dram_median_ns": 89.379718564732,
-        "hot_ns": 8.749270000000001
+        "dram_ns": 89.32092722183033,
+        "dram_median_ns": 89.37102373665714,
+        "hot_ns": 8.655005000000001,
+        "dram_samples_ns": [
+          90.04725694938045,
+          89.45382800423069,
+          89.40056380036853,
+          89.35600604748763,
+          89.32179357539378,
+          89.32092722183033,
+          89.37102373665714
+        ],
+        "hot_samples_ns": [
+          9.086010000000002,
+          8.655005000000001,
+          8.751975,
+          8.855645,
+          8.658629999999999,
+          8.666495,
+          8.877405000000001
+        ],
+        "cells": 1118481,
+        "max_absolute_tensor_error": null
       },
-      "clang-22-head": {
-        "dram_ns": 99.77843164076994,
-        "dram_median_ns": 99.97348278602855,
-        "hot_ns": 53.214765
+      "clang-22-before": {
+        "dram_ns": 99.11826217879428,
+        "dram_median_ns": 99.26672424475694,
+        "hot_ns": 53.3635,
+        "dram_samples_ns": [
+          101.61130944557843,
+          99.26672424475694,
+          100.02166956792293,
+          99.11826217879428,
+          99.21883339994153,
+          99.86609964764713,
+          99.24652005711317
+        ],
+        "hot_samples_ns": [
+          69.69760500000001,
+          55.684245000000004,
+          58.741440000000004,
+          53.3635,
+          56.668475,
+          53.52076000000001,
+          56.617760000000004
+        ],
+        "cells": 1118481,
+        "max_absolute_tensor_error": 2.1788126858268697e-15
       },
-      "clang-22-new": {
-        "dram_ns": 99.55749360069595,
-        "dram_median_ns": 100.03171175907325,
-        "hot_ns": 55.83634000000001
+      "clang-22-pr": {
+        "dram_ns": 99.42563172731589,
+        "dram_median_ns": 99.60536477597742,
+        "hot_ns": 54.90478500000001,
+        "dram_samples_ns": [
+          100.39438935484824,
+          99.64714554829273,
+          99.72529975922704,
+          99.42563172731589,
+          99.48009577274887,
+          99.58813605237819,
+          99.60536477597742
+        ],
+        "hot_samples_ns": [
+          54.90478500000001,
+          55.28396000000001,
+          56.027105,
+          56.24768,
+          56.65311500000001,
+          57.01524,
+          56.83166000000001
+        ],
+        "cells": 1118481,
+        "max_absolute_tensor_error": 2.1788126858268697e-15
       }
     },
     "poisson-tetrahedron_p3": {
       "gcc-16-null": {
-        "dram_ns": 412.72941212440577,
-        "dram_median_ns": 414.01675259700863,
-        "hot_ns": 39.385855197906494
+        "dram_ns": 409.34041856328133,
+        "dram_median_ns": 410.85948339516756,
+        "hot_ns": 38.26403524726629,
+        "dram_samples_ns": [
+          410.85948339516756,
+          410.8805071280867,
+          415.09675892504,
+          410.352869380045,
+          412.24599977190246,
+          409.34041856328133,
+          410.5372428919907
+        ],
+        "hot_samples_ns": [
+          48.92620490863919,
+          39.8828845936805,
+          39.76137493737042,
+          39.00809562765062,
+          40.04437476396561,
+          40.12024495750666,
+          38.26403524726629
+        ],
+        "cells": 322638,
+        "max_absolute_tensor_error": null
       },
-      "gcc-16-head": {
-        "dram_ns": 388.55308699559185,
-        "dram_median_ns": 390.04829563131426,
-        "hot_ns": 140.5488548334688
+      "gcc-16-before": {
+        "dram_ns": 387.26958063183463,
+        "dram_median_ns": 388.1290214232967,
+        "hot_ns": 140.28833946213126,
+        "dram_samples_ns": [
+          389.0487233213187,
+          390.45683714008845,
+          388.11395416212827,
+          388.1290214232967,
+          387.26958063183463,
+          387.8138126454335,
+          388.37478830545354
+        ],
+        "hot_samples_ns": [
+          140.28833946213126,
+          140.57923457585275,
+          142.02420483343303,
+          143.58211075887084,
+          142.6475599873811,
+          142.46453996747732,
+          143.73241923749447
+        ],
+        "cells": 322638,
+        "max_absolute_tensor_error": 1.3322676295501878e-15
       },
-      "gcc-16-new": {
-        "dram_ns": 392.7448316710701,
-        "dram_median_ns": 393.56579137461864,
-        "hot_ns": 143.9372799359262
+      "gcc-16-pr": {
+        "dram_ns": 386.69860944355923,
+        "dram_median_ns": 387.213966929936,
+        "hot_ns": 140.31135942786932,
+        "dram_samples_ns": [
+          389.57063985442943,
+          387.59095660228104,
+          387.06996955010254,
+          387.60314665811023,
+          387.213966929936,
+          386.7604899252839,
+          386.69860944355923
+        ],
+        "hot_samples_ns": [
+          164.89044995978475,
+          142.7343802060932,
+          146.79000014439225,
+          140.31135942786932,
+          141.70791604556143,
+          150.17201541922987,
+          161.84714972041547
+        ],
+        "cells": 322638,
+        "max_absolute_tensor_error": 1.3322676295501878e-15
       },
       "clang-22-null": {
-        "dram_ns": 406.37096994154444,
-        "dram_median_ns": 408.5038526150051,
-        "hot_ns": 32.577665
+        "dram_ns": 401.8525375188292,
+        "dram_median_ns": 403.1404794227587,
+        "hot_ns": 32.493455000000004,
+        "dram_samples_ns": [
+          402.71967964095967,
+          401.8525375188292,
+          403.48907134311503,
+          404.66692392092693,
+          403.1404794227587,
+          404.3787867517156,
+          402.26125874819456
+        ],
+        "hot_samples_ns": [
+          33.185175,
+          32.786445,
+          33.35976,
+          36.178905,
+          32.997625,
+          37.809985000000005,
+          32.493455000000004
+        ],
+        "cells": 322638,
+        "max_absolute_tensor_error": null
       },
-      "clang-22-head": {
-        "dram_ns": 392.1269162342936,
-        "dram_median_ns": 393.76953427680564,
-        "hot_ns": 149.68026500000002
+      "clang-22-before": {
+        "dram_ns": 391.3127281969266,
+        "dram_median_ns": 391.781426862304,
+        "hot_ns": 144.37298500000003,
+        "dram_samples_ns": [
+          391.3964040193654,
+          391.57640141582823,
+          395.1921565345682,
+          394.46130028081006,
+          391.781426862304,
+          393.1626807753582,
+          391.3127281969266
+        ],
+        "hot_samples_ns": [
+          150.773805,
+          144.37298500000003,
+          171.089655,
+          149.93978500000003,
+          150.996685,
+          150.17980500000002,
+          149.02956500000002
+        ],
+        "cells": 322638,
+        "max_absolute_tensor_error": 8.881784197001252e-16
       },
-      "clang-22-new": {
-        "dram_ns": 393.6648844835389,
-        "dram_median_ns": 395.7832710344101,
-        "hot_ns": 148.8644
+      "clang-22-pr": {
+        "dram_ns": 390.1713902268177,
+        "dram_median_ns": 391.3323972997601,
+        "hot_ns": 142.79661000000002,
+        "dram_samples_ns": [
+          392.1310168052121,
+          390.1713902268177,
+          390.3217909855628,
+          392.55269373105466,
+          391.52590829350544,
+          391.3323972997601,
+          390.80698181863244
+        ],
+        "hot_samples_ns": [
+          148.67171,
+          142.79661000000002,
+          147.33954,
+          147.82826,
+          146.0090449999997,
+          146.32747500000002,
+          147.07738
+        ],
+        "cells": 322638,
+        "max_absolute_tensor_error": 8.881784197001252e-16
       }
     },
     "elasticity-triangle_p1": {
       "gcc-16-null": {
-        "dram_ns": 40.23977359419328,
-        "dram_median_ns": 40.456922197911716,
-        "hot_ns": 3.4712557680904865
+        "dram_ns": 40.36618251284421,
+        "dram_median_ns": 40.433389812134614,
+        "hot_ns": 3.490694798529148,
+        "dram_samples_ns": [
+          40.42754987214354,
+          40.433389812134614,
+          40.45447017307117,
+          40.5635184916179,
+          40.735950209696746,
+          40.411654891419296,
+          40.36618251284421
+        ],
+        "hot_samples_ns": [
+          3.566340310499072,
+          3.490694798529148,
+          3.66140971891582,
+          3.5989354364573956,
+          3.710850141942501,
+          3.5716057755053043,
+          3.9630243554711337
+        ],
+        "cells": 2396745,
+        "max_absolute_tensor_error": null
       },
-      "gcc-16-head": {
-        "dram_ns": 39.687558773493045,
-        "dram_median_ns": 39.7722005998677,
-        "hot_ns": 17.174044623970985
+      "gcc-16-before": {
+        "dram_ns": 39.85977560789267,
+        "dram_median_ns": 40.00868261461154,
+        "hot_ns": 16.47180994041264,
+        "dram_samples_ns": [
+          40.14543344176452,
+          40.00868261461154,
+          39.98972933009464,
+          39.94915400679519,
+          39.85977560789267,
+          40.045580143511465,
+          40.06392005752627
+        ],
+        "hot_samples_ns": [
+          17.2157003544271,
+          17.23073422908783,
+          21.490760846063495,
+          17.507474403828382,
+          17.442560056224465,
+          17.486860742792487,
+          16.47180994041264
+        ],
+        "cells": 2396745,
+        "max_absolute_tensor_error": 1.3322676295501878e-15
       },
-      "gcc-16-new": {
-        "dram_ns": 40.02263237345839,
-        "dram_median_ns": 40.06303128230872,
-        "hot_ns": 17.16388505883515
+      "gcc-16-pr": {
+        "dram_ns": 39.85587991833379,
+        "dram_median_ns": 39.91297612450272,
+        "hot_ns": 16.79198001511395,
+        "dram_samples_ns": [
+          39.97018579547153,
+          39.922647638669176,
+          39.871726909664936,
+          39.90406991486832,
+          39.85587991833379,
+          39.992619962445005,
+          39.91297612450272
+        ],
+        "hot_samples_ns": [
+          17.63095031492412,
+          17.10129901766777,
+          17.79180485755205,
+          17.490119207650423,
+          17.318959580734372,
+          17.234354745596647,
+          16.79198001511395
+        ],
+        "cells": 2396745,
+        "max_absolute_tensor_error": 1.3322676295501878e-15
       },
       "clang-22-null": {
-        "dram_ns": 40.84916835124305,
-        "dram_median_ns": 41.04211628688075,
-        "hot_ns": 3.47995
+        "dram_ns": 40.647484400718476,
+        "dram_median_ns": 40.70393304252226,
+        "hot_ns": 3.465855,
+        "dram_samples_ns": [
+          40.75366090259916,
+          40.76874552778873,
+          40.67891494506088,
+          40.70393304252226,
+          40.647484400718476,
+          40.775350318869975,
+          40.655246177628406
+        ],
+        "hot_samples_ns": [
+          3.465855,
+          3.5767700000000002,
+          3.57854,
+          3.5635700000000003,
+          3.4936600000000007,
+          4.310110000000001,
+          3.4993100000000004
+        ],
+        "cells": 2396745,
+        "max_absolute_tensor_error": null
       },
-      "clang-22-head": {
-        "dram_ns": 41.86285608189441,
-        "dram_median_ns": 41.91599189734408,
-        "hot_ns": 16.350255000000004
+      "clang-22-before": {
+        "dram_ns": 42.011083782379856,
+        "dram_median_ns": 42.08099776989208,
+        "hot_ns": 16.02355,
+        "dram_samples_ns": [
+          42.17269171313595,
+          42.11404884541326,
+          42.08099776989208,
+          42.05715585095619,
+          42.069532636972234,
+          42.29877688281396,
+          42.011083782379856
+        ],
+        "hot_samples_ns": [
+          19.565929999999998,
+          16.295155,
+          16.386405000000003,
+          16.44803,
+          16.02355,
+          16.351925,
+          16.081915000000002
+        ],
+        "cells": 2396745,
+        "max_absolute_tensor_error": 1.3322676295501878e-15
       },
-      "clang-22-new": {
-        "dram_ns": 41.6331537147256,
-        "dram_median_ns": 42.04193145286629,
-        "hot_ns": 16.025260000000003
+      "clang-22-pr": {
+        "dram_ns": 41.96012508631498,
+        "dram_median_ns": 42.102568274889485,
+        "hot_ns": 15.991915,
+        "dram_samples_ns": [
+          42.196565341744744,
+          42.102591222679095,
+          42.102568274889485,
+          42.154236683502006,
+          42.051320436675574,
+          41.96012508631498,
+          42.083990578889285
+        ],
+        "hot_samples_ns": [
+          16.421165000000002,
+          16.396175,
+          16.203245000000003,
+          18.524960000000004,
+          15.991915,
+          16.440215,
+          16.357195
+        ],
+        "cells": 2396745,
+        "max_absolute_tensor_error": 1.3322676295501878e-15
       }
     },
     "elasticity-triangle_p2": {
       "gcc-16-null": {
-        "dram_ns": 124.75502815662365,
-        "dram_median_ns": 124.89824040203996,
-        "hot_ns": 13.809149386361241
+        "dram_ns": 124.07667652320328,
+        "dram_median_ns": 124.31496419578316,
+        "hot_ns": 16.076769679784775,
+        "dram_samples_ns": [
+          124.50669600920506,
+          125.17451661208216,
+          125.01642209038364,
+          124.24485021424312,
+          124.10342598471311,
+          124.07667652320328,
+          124.31496419578316
+        ],
+        "hot_samples_ns": [
+          16.076769679784775,
+          16.7667749337852,
+          17.391034634783864,
+          16.518884804099798,
+          17.201530281454325,
+          16.605239361524582,
+          18.13347451388836
+        ],
+        "cells": 838860,
+        "max_absolute_tensor_error": null
       },
-      "gcc-16-head": {
-        "dram_ns": 140.18442286712045,
-        "dram_median_ns": 140.8152194397077,
-        "hot_ns": 44.61030941456556
+      "gcc-16-before": {
+        "dram_ns": 139.7977218268494,
+        "dram_median_ns": 140.0121963030641,
+        "hot_ns": 44.80547970160842,
+        "dram_samples_ns": [
+          140.08791108754895,
+          139.98180391878054,
+          140.77324936112626,
+          140.0121963030641,
+          140.150212144658,
+          139.7977218268494,
+          139.94721738546588
+        ],
+        "hot_samples_ns": [
+          46.864140313118696,
+          44.80547970160842,
+          47.18195996247232,
+          45.35047570243478,
+          47.44016914628446,
+          46.81920516304672,
+          46.4972504414618
+        ],
+        "cells": 838860,
+        "max_absolute_tensor_error": 4.440892098500626e-15
       },
-      "gcc-16-new": {
-        "dram_ns": 128.63202446985207,
-        "dram_median_ns": 129.16323227682068,
-        "hot_ns": 48.26351418159902
+      "gcc-16-pr": {
+        "dram_ns": 127.91346690391882,
+        "dram_median_ns": 128.29205803481648,
+        "hot_ns": 47.639914555475116,
+        "dram_samples_ns": [
+          128.46499181161397,
+          127.95596378382785,
+          128.29205803481648,
+          128.30692004950916,
+          128.7877167441901,
+          127.91346690391882,
+          128.2085797308723
+        ],
+        "hot_samples_ns": [
+          48.09046513400972,
+          47.639914555475116,
+          48.98688988760114,
+          50.77822017483413,
+          54.40226988866925,
+          48.649085219949484,
+          48.30029443837702
+        ],
+        "cells": 838860,
+        "max_absolute_tensor_error": 4.440892098500626e-15
       },
       "clang-22-null": {
-        "dram_ns": 120.61508833416781,
-        "dram_median_ns": 121.61588465298144,
-        "hot_ns": 11.682845000000002
+        "dram_ns": 120.59489068497723,
+        "dram_median_ns": 120.79602913477818,
+        "hot_ns": 11.682615,
+        "dram_samples_ns": [
+          120.80210166177908,
+          121.41624228119116,
+          120.59489068497723,
+          120.76150251531841,
+          120.86546503588204,
+          120.79602913477818,
+          120.725110268698
+        ],
+        "hot_samples_ns": [
+          11.97673,
+          11.685735000000001,
+          11.684505000000001,
+          11.68405,
+          11.692305,
+          11.682615,
+          11.682945
+        ],
+        "cells": 838860,
+        "max_absolute_tensor_error": null
       },
-      "clang-22-head": {
-        "dram_ns": 139.27460720501634,
-        "dram_median_ns": 141.44158023984934,
-        "hot_ns": 105.053665
+      "clang-22-before": {
+        "dram_ns": 136.1827396705052,
+        "dram_median_ns": 139.4323069403715,
+        "hot_ns": 96.15764999999999,
+        "dram_samples_ns": [
+          139.94733328564956,
+          137.3868857735498,
+          139.42116801373294,
+          141.22407672317186,
+          136.1827396705052,
+          139.52851727344245,
+          139.4323069403715
+        ],
+        "hot_samples_ns": [
+          105.10889,
+          101.08002500000002,
+          102.155325,
+          96.15764999999999,
+          97.65820500000001,
+          105.30384000000001,
+          104.211365
+        ],
+        "cells": 838860,
+        "max_absolute_tensor_error": 4.440892098500626e-15
       },
-      "clang-22-new": {
-        "dram_ns": 145.68828648403786,
-        "dram_median_ns": 149.89906897456075,
-        "hot_ns": 117.956225
+      "clang-22-pr": {
+        "dram_ns": 141.06817585771168,
+        "dram_median_ns": 143.8318515604511,
+        "hot_ns": 109.49437,
+        "dram_samples_ns": [
+          146.18809217271053,
+          141.06817585771168,
+          145.38780964642493,
+          142.45195026583696,
+          150.75295639320032,
+          141.9064134658942,
+          143.8318515604511
+        ],
+        "hot_samples_ns": [
+          110.59017500000002,
+          109.49437,
+          119.35431000000001,
+          113.98,
+          123.89494499999999,
+          112.69320000000002,
+          117.76604500000002
+        ],
+        "cells": 838860,
+        "max_absolute_tensor_error": 4.440892098500626e-15
       }
     },
     "elasticity-triangle_p3": {
       "gcc-16-null": {
-        "dram_ns": 409.6721003700583,
-        "dram_median_ns": 410.6041012925591,
-        "hot_ns": 39.433540077880025
+        "dram_ns": 406.7936234893372,
+        "dram_median_ns": 407.32318226085846,
+        "hot_ns": 39.64285016991198,
+        "dram_samples_ns": [
+          408.06062218513966,
+          407.27216616999976,
+          406.91808156348566,
+          407.32318226085846,
+          406.7936234893372,
+          412.6755029519808,
+          408.60106988351424
+        ],
+        "hot_samples_ns": [
+          41.194785153493285,
+          39.64285016991198,
+          39.963420713320374,
+          39.826390566304326,
+          39.91596517153084,
+          42.30233491398394,
+          40.25654983706772
+        ],
+        "cells": 322638,
+        "max_absolute_tensor_error": null
       },
-      "gcc-16-head": {
-        "dram_ns": 409.23120960526626,
-        "dram_median_ns": 410.2938220832117,
-        "hot_ns": 101.70822963118553
+      "gcc-16-before": {
+        "dram_ns": 407.58600381915846,
+        "dram_median_ns": 408.7848364905965,
+        "hot_ns": 100.5036209244281,
+        "dram_samples_ns": [
+          408.3290870205285,
+          409.35881694555485,
+          407.86869158909246,
+          410.54788645897054,
+          407.58600381915846,
+          412.2986135885251,
+          408.7848364905965
+        ],
+        "hot_samples_ns": [
+          102.85886004567146,
+          104.62673497386277,
+          103.67834474891424,
+          101.10470466315746,
+          100.5036209244281,
+          101.2874545995146,
+          104.27640983834863
+        ],
+        "cells": 322638,
+        "max_absolute_tensor_error": 2.475797344914099e-14
       },
-      "gcc-16-new": {
-        "dram_ns": 379.4663861443439,
-        "dram_median_ns": 397.4969653078121,
-        "hot_ns": 101.83201520703733
+      "gcc-16-pr": {
+        "dram_ns": 390.23700263161265,
+        "dram_median_ns": 391.02176092913066,
+        "hot_ns": 100.89167044498026,
+        "dram_samples_ns": [
+          392.19353257146986,
+          391.02176092913066,
+          390.9430076262279,
+          391.02420298151793,
+          390.23700263161265,
+          391.0483608259968,
+          390.74398540819203
+        ],
+        "hot_samples_ns": [
+          111.12296022474766,
+          102.44400938972831,
+          101.04506509378552,
+          101.8116355407983,
+          100.89167044498026,
+          112.36535501666367,
+          102.05322527326643
+        ],
+        "cells": 322638,
+        "max_absolute_tensor_error": 2.481348460037225e-14
       },
       "clang-22-null": {
-        "dram_ns": 401.70028638908,
-        "dram_median_ns": 402.87602824217856,
-        "hot_ns": 33.58156
+        "dram_ns": 396.01522139363624,
+        "dram_median_ns": 396.51455191266996,
+        "hot_ns": 33.430895,
+        "dram_samples_ns": [
+          396.2883076389018,
+          398.2074523149784,
+          396.01522139363624,
+          396.45811094787354,
+          397.6056881086541,
+          396.8630136561719,
+          396.51455191266996
+        ],
+        "hot_samples_ns": [
+          34.17521500000001,
+          33.900925,
+          35.79902500000001,
+          34.513515,
+          34.558395000000004,
+          33.430895,
+          34.40470500000001
+        ],
+        "cells": 322638,
+        "max_absolute_tensor_error": null
       },
-      "clang-22-head": {
-        "dram_ns": 501.39899515866074,
-        "dram_median_ns": 510.26453796514977,
-        "hot_ns": 233.83066
+      "clang-22-before": {
+        "dram_ns": 500.157160656835,
+        "dram_median_ns": 503.64290319181254,
+        "hot_ns": 228.800985,
+        "dram_samples_ns": [
+          505.4139097068542,
+          501.70329285453045,
+          500.157160656835,
+          506.2084193430409,
+          503.64290319181254,
+          517.7264209423565,
+          502.2895257223266
+        ],
+        "hot_samples_ns": [
+          235.542855,
+          234.49614000000003,
+          236.40878,
+          230.86976500000003,
+          231.39734500000003,
+          228.800985,
+          233.11779
+        ],
+        "cells": 322638,
+        "max_absolute_tensor_error": 2.481348460037225e-14
       },
-      "clang-22-new": {
-        "dram_ns": 451.30035209739714,
-        "dram_median_ns": 453.0840849496958,
-        "hot_ns": 156.123705
+      "clang-22-pr": {
+        "dram_ns": 439.3187473267254,
+        "dram_median_ns": 440.29181931452587,
+        "hot_ns": 153.033935,
+        "dram_samples_ns": [
+          439.9678463169247,
+          441.4067809743428,
+          440.29181931452587,
+          445.5829815458811,
+          439.3187473267254,
+          448.1826567236345,
+          439.35162628084714
+        ],
+        "hot_samples_ns": [
+          155.09811000000002,
+          154.22183,
+          153.033935,
+          155.56009999999998,
+          155.90672,
+          165.95815499999998,
+          154.17653500000003
+        ],
+        "cells": 322638,
+        "max_absolute_tensor_error": 2.481348460037225e-14
       }
     },
     "elasticity-tetrahedron_p1": {
       "gcc-16-null": {
-        "dram_ns": 124.2291252778816,
-        "dram_median_ns": 124.55838776497295,
-        "hot_ns": 15.433235093951225
+        "dram_ns": 123.99882205935366,
+        "dram_median_ns": 124.35870119599338,
+        "hot_ns": 14.416995691135526,
+        "dram_samples_ns": [
+          124.2321195522346,
+          124.85924822200627,
+          124.35870119599338,
+          124.11639007133519,
+          124.6776982736534,
+          123.99882205935366,
+          124.39177810211062
+        ],
+        "hot_samples_ns": [
+          15.273855533450844,
+          15.909360954537988,
+          18.56672577559948,
+          16.001580515876412,
+          16.948404954746366,
+          14.416995691135526,
+          16.30587037652731
+        ],
+        "cells": 838860,
+        "max_absolute_tensor_error": null
       },
-      "gcc-16-head": {
-        "dram_ns": 130.53443118440654,
-        "dram_median_ns": 131.15867743490168,
-        "hot_ns": 72.71618582308292
+      "gcc-16-before": {
+        "dram_ns": 131.0036715566032,
+        "dram_median_ns": 131.61983537577103,
+        "hot_ns": 71.90510048530996,
+        "dram_samples_ns": [
+          131.54596966949708,
+          131.67160318188863,
+          132.2578389679958,
+          131.1951746638639,
+          131.61983537577103,
+          131.0036715566032,
+          131.8314055057835
+        ],
+        "hot_samples_ns": [
+          71.90510048530996,
+          73.83174612186849,
+          74.32686048559844,
+          72.19702005386353,
+          85.24704957380891,
+          73.84126423858106,
+          73.084004689008
+        ],
+        "cells": 838860,
+        "max_absolute_tensor_error": 1.2212453270876722e-15
       },
-      "gcc-16-new": {
-        "dram_ns": 130.73179211148738,
-        "dram_median_ns": 131.31818776986256,
-        "hot_ns": 73.27462546527386
+      "gcc-16-pr": {
+        "dram_ns": 130.9531175029648,
+        "dram_median_ns": 131.6002193815532,
+        "hot_ns": 69.45451605133712,
+        "dram_samples_ns": [
+          131.97822764480705,
+          131.6002193815532,
+          132.18692618022774,
+          131.4682187340432,
+          132.4247692080622,
+          130.9531175029648,
+          131.35500807403307
+        ],
+        "hot_samples_ns": [
+          72.8628400247544,
+          73.5469302162528,
+          73.35099508054554,
+          73.36738053709269,
+          72.59199977852404,
+          69.45451605133712,
+          73.96774948574603
+        ],
+        "cells": 838860,
+        "max_absolute_tensor_error": 1.2212453270876722e-15
       },
       "clang-22-null": {
-        "dram_ns": 121.02130033617053,
-        "dram_median_ns": 121.30536084686362,
-        "hot_ns": 11.44815
+        "dram_ns": 120.56824499916553,
+        "dram_median_ns": 120.65315904918582,
+        "hot_ns": 11.388265,
+        "dram_samples_ns": [
+          120.83286364828452,
+          120.73901842977376,
+          120.56824499916553,
+          120.59858975275971,
+          120.84272226593234,
+          120.59198912810244,
+          120.65315904918582
+        ],
+        "hot_samples_ns": [
+          11.52823,
+          11.672165000000001,
+          11.672845000000002,
+          11.388265,
+          11.600270000000002,
+          11.499895000000002,
+          11.668765
+        ],
+        "cells": 838860,
+        "max_absolute_tensor_error": null
       },
-      "clang-22-head": {
-        "dram_ns": 141.70580788212575,
-        "dram_median_ns": 143.49978065469804,
-        "hot_ns": 68.34088
+      "clang-22-before": {
+        "dram_ns": 141.6619757766492,
+        "dram_median_ns": 142.03556850964407,
+        "hot_ns": 65.06154500000001,
+        "dram_samples_ns": [
+          141.96095415206355,
+          142.01642705576617,
+          142.27026440645633,
+          142.03556850964407,
+          143.3364792694848,
+          141.6619757766492,
+          142.11802565386358
+        ],
+        "hot_samples_ns": [
+          67.29242500000001,
+          68.42720500000001,
+          65.06154500000001,
+          68.434725,
+          68.65071499999999,
+          66.97841,
+          66.742425
+        ],
+        "cells": 838860,
+        "max_absolute_tensor_error": 1.2212453270876722e-15
       },
-      "clang-22-new": {
-        "dram_ns": 142.74894022840516,
-        "dram_median_ns": 143.02769592065422,
-        "hot_ns": 67.69763
+      "clang-22-pr": {
+        "dram_ns": 140.53320458717786,
+        "dram_median_ns": 142.08523353122095,
+        "hot_ns": 66.40552,
+        "dram_samples_ns": [
+          142.08523353122095,
+          142.4920391960518,
+          142.2299418258112,
+          141.89674200700952,
+          140.6234604105572,
+          140.53320458717786,
+          142.22964857067927
+        ],
+        "hot_samples_ns": [
+          70.87654,
+          66.99466,
+          66.40552,
+          66.606435,
+          66.91764500000001,
+          68.02930500000001,
+          71.784355
+        ],
+        "cells": 838860,
+        "max_absolute_tensor_error": 1.2212453270876722e-15
       }
     },
     "elasticity-tetrahedron_p2": {
       "gcc-16-null": {
-        "dram_ns": 682.7427751815098,
-        "dram_median_ns": 686.3993468612064,
-        "hot_ns": 84.45858024060726
+        "dram_ns": 681.3408981223844,
+        "dram_median_ns": 683.6339515148916,
+        "hot_ns": 83.81523541174829,
+        "dram_samples_ns": [
+          681.3408981223844,
+          681.8240574573521,
+          688.7317804366769,
+          683.6339515148916,
+          682.4510793435937,
+          684.8663014747295,
+          692.1242184166448
+        ],
+        "hot_samples_ns": [
+          84.50206485576928,
+          84.9624047987163,
+          84.39397090114653,
+          84.95209040120244,
+          83.81523541174829,
+          84.57232499495149,
+          86.34906494989991
+        ],
+        "cells": 145888,
+        "max_absolute_tensor_error": null
       },
-      "gcc-16-head": {
-        "dram_ns": 1022.2632494862543,
-        "dram_median_ns": 1034.9881620223757,
-        "hot_ns": 468.3989053592086
+      "gcc-16-before": {
+        "dram_ns": 1038.4651457041666,
+        "dram_median_ns": 1043.0510737422512,
+        "hot_ns": 439.3110307864845,
+        "dram_samples_ns": [
+          1043.0510737422512,
+          1059.8140980675123,
+          1042.7237274675758,
+          1048.3700588988404,
+          1060.6844088887535,
+          1038.4651457041666,
+          1039.1482909344445
+        ],
+        "hot_samples_ns": [
+          439.5293351262808,
+          443.3435504324734,
+          439.3110307864845,
+          440.5543452594429,
+          441.0003300290555,
+          481.1750410590321,
+          441.5330395568162
+        ],
+        "cells": 145888,
+        "max_absolute_tensor_error": 5.190292640122607e-15
       },
-      "gcc-16-new": {
-        "dram_ns": 921.7837654560989,
-        "dram_median_ns": 933.3878246217314,
-        "hot_ns": 392.1371849719435
+      "gcc-16-pr": {
+        "dram_ns": 917.3360933803217,
+        "dram_median_ns": 921.4729165654677,
+        "hot_ns": 387.0546701364219,
+        "dram_samples_ns": [
+          945.4388915557871,
+          917.3360933803217,
+          933.9290080828187,
+          931.0982743498566,
+          919.9667486525993,
+          921.4729165654677,
+          920.9388287191102
+        ],
+        "hot_samples_ns": [
+          466.5260703768581,
+          389.3297351896763,
+          389.5129298325628,
+          387.0546701364219,
+          406.7029000725597,
+          389.5029204431921,
+          387.7240652218461
+        ],
+        "cells": 145888,
+        "max_absolute_tensor_error": 5.190292640122607e-15
       },
       "clang-22-null": {
-        "dram_ns": 695.4433263873657,
-        "dram_median_ns": 696.7868844593113,
-        "hot_ns": 65.15727000000001
+        "dram_ns": 691.101427122176,
+        "dram_median_ns": 693.5646454814653,
+        "hot_ns": 63.77014500000001,
+        "dram_samples_ns": [
+          694.0499081487169,
+          699.7929781750385,
+          691.101427122176,
+          693.5646454814653,
+          691.9682084887037,
+          692.0419979710464,
+          696.3205061416978
+        ],
+        "hot_samples_ns": [
+          63.77014500000001,
+          65.33428500000001,
+          65.95642,
+          66.063205,
+          65.52604,
+          65.53318000000002,
+          66.1574
+        ],
+        "cells": 145888,
+        "max_absolute_tensor_error": null
       },
-      "clang-22-head": {
-        "dram_ns": 1228.1408683373547,
-        "dram_median_ns": 1237.3481369269577,
-        "hot_ns": 697.2064349999997
+      "clang-22-before": {
+        "dram_ns": 1275.1837848212326,
+        "dram_median_ns": 1280.1995160671202,
+        "hot_ns": 647.1650850000001,
+        "dram_samples_ns": [
+          1280.8288550120642,
+          1281.8519206514588,
+          1277.2109289317834,
+          1277.2614197192365,
+          1312.1104957227462,
+          1280.1995160671202,
+          1275.1837848212326
+        ],
+        "hot_samples_ns": [
+          653.0294499999998,
+          667.5714250000001,
+          678.5392650000001,
+          654.6199149999997,
+          670.6228,
+          647.1650850000001,
+          663.3744300000001
+        ],
+        "cells": 145888,
+        "max_absolute_tensor_error": 5.224987109642143e-15
       },
-      "clang-22-new": {
-        "dram_ns": 854.6250068545735,
-        "dram_median_ns": 858.5833310484757,
-        "hot_ns": 364.168
+      "clang-22-pr": {
+        "dram_ns": 872.7746490458434,
+        "dram_median_ns": 875.0299681947796,
+        "hot_ns": 348.7427100000001,
+        "dram_samples_ns": [
+          880.3571232726476,
+          875.0299681947796,
+          874.1731122504932,
+          880.5816722417197,
+          872.7746490458434,
+          874.5005209475763,
+          876.462039372669
+        ],
+        "hot_samples_ns": [
+          360.834045,
+          404.9059200000001,
+          359.43084,
+          349.28105999999997,
+          356.36648,
+          377.7535199999997,
+          348.7427100000001
+        ],
+        "cells": 145888,
+        "max_absolute_tensor_error": 5.224987109642143e-15
       }
     },
     "elasticity-tetrahedron_p3": {
       "gcc-16-null": {
-        "dram_ns": 2372.8002489651317,
-        "dram_median_ns": 2382.1363770115795,
-        "hot_ns": 332.6229949016124
+        "dram_ns": 2369.123824434756,
+        "dram_median_ns": 2372.224348010513,
+        "hot_ns": 327.8942557517439,
+        "dram_samples_ns": [
+          2370.117035285102,
+          2369.123824434756,
+          2378.4804271753032,
+          2397.988626638225,
+          2372.224348010513,
+          2378.6900105100317,
+          2371.866473692786
+        ],
+        "hot_samples_ns": [
+          328.45283509232104,
+          363.1896246224642,
+          327.8942557517439,
+          330.5327449925244,
+          329.1677904780954,
+          329.3435904197395,
+          354.6518902294338
+        ],
+        "cells": 37117,
+        "max_absolute_tensor_error": null
       },
-      "gcc-16-head": {
-        "dram_ns": 3455.555517913263,
-        "dram_median_ns": 3471.480746274943,
-        "hot_ns": 1424.1060591302812
+      "gcc-16-before": {
+        "dram_ns": 3412.9569445424745,
+        "dram_median_ns": 3416.98078649258,
+        "hot_ns": 1382.9109899234027,
+        "dram_samples_ns": [
+          3416.4000115069216,
+          3412.9569445424745,
+          3416.98078649258,
+          3465.6774250746166,
+          3571.912978656138,
+          3415.6036563092184,
+          3419.596008380531
+        ],
+        "hot_samples_ns": [
+          1408.643574686721,
+          1387.2925646137446,
+          1413.454080466181,
+          1472.4395156372339,
+          1471.391849918291,
+          1398.351404350251,
+          1382.9109899234027
+        ],
+        "cells": 37117,
+        "max_absolute_tensor_error": 2.6645352591003757e-15
       },
-      "gcc-16-new": {
-        "dram_ns": 3265.510868864956,
-        "dram_median_ns": 3321.143197161237,
-        "hot_ns": 1414.8590597324073
+      "gcc-16-pr": {
+        "dram_ns": 3195.4179742167853,
+        "dram_median_ns": 3223.3161061430496,
+        "hot_ns": 1338.7500494718552,
+        "dram_samples_ns": [
+          3223.3161061430496,
+          3244.9241598720428,
+          3206.28676861087,
+          3208.8374299744123,
+          3257.791306992609,
+          3269.957139384314,
+          3195.4179742167853
+        ],
+        "hot_samples_ns": [
+          1377.9661955777556,
+          1389.497434720397,
+          1366.7269400320947,
+          1362.3084803111851,
+          1393.5189798939973,
+          1338.7500494718552,
+          1345.4176508821547
+        ],
+        "cells": 37117,
+        "max_absolute_tensor_error": 3.1086244689504383e-15
       },
       "clang-22-null": {
-        "dram_ns": 2338.819112536035,
-        "dram_median_ns": 2347.9597489021203,
-        "hot_ns": 254.59210500000003
+        "dram_ns": 2333.613357760595,
+        "dram_median_ns": 2340.6956381173045,
+        "hot_ns": 250.68137000000002,
+        "dram_samples_ns": [
+          2333.613357760595,
+          2336.009968478056,
+          2340.7598405043514,
+          2349.5028693051686,
+          2340.6956381173045,
+          2358.4692189562734,
+          2338.913678368403
+        ],
+        "hot_samples_ns": [
+          254.02690000000004,
+          253.53778499999999,
+          253.20636000000002,
+          258.05318500000004,
+          252.41241999999968,
+          254.83905000000001,
+          250.68137000000002
+        ],
+        "cells": 37117,
+        "max_absolute_tensor_error": null
       },
-      "clang-22-head": {
-        "dram_ns": 3580.4284559635744,
-        "dram_median_ns": 3613.839211143142,
-        "hot_ns": 1746.05931
+      "clang-22-before": {
+        "dram_ns": 3719.042675862811,
+        "dram_median_ns": 3746.2207613761875,
+        "hot_ns": 1498.266115,
+        "dram_samples_ns": [
+          3719.042675862811,
+          3772.6423471724534,
+          3832.5626532316733,
+          3719.7964544548317,
+          3746.2207613761875,
+          3735.5912115742117,
+          3790.4274591157696
+        ],
+        "hot_samples_ns": [
+          1500.39372,
+          1500.3940200000002,
+          1514.233535,
+          1521.47285,
+          1525.1531249999998,
+          1498.266115,
+          1589.46212
+        ],
+        "cells": 37117,
+        "max_absolute_tensor_error": 2.6645352591003757e-15
       },
-      "clang-22-new": {
-        "dram_ns": 3449.0407629926985,
-        "dram_median_ns": 3482.172185252041,
-        "hot_ns": 1584.839505
+      "clang-22-pr": {
+        "dram_ns": 3362.502061050193,
+        "dram_median_ns": 3414.8610070857007,
+        "hot_ns": 1633.516505,
+        "dram_samples_ns": [
+          3429.207452110893,
+          3371.567098634049,
+          3414.8610070857007,
+          3466.4747689737856,
+          3440.0977449686134,
+          3362.502061050193,
+          3379.7016192041388
+        ],
+        "hot_samples_ns": [
+          1723.02222,
+          1674.1618900000003,
+          1634.7215150000002,
+          1677.584745,
+          1687.8310500000002,
+          1633.516505,
+          1678.3257699999997
+        ],
+        "cells": 37117,
+        "max_absolute_tensor_error": 2.6645352591003757e-15
       }
     },
     "hyper-residual1": {
       "gcc-16-null": {
-        "dram_ns": 31.731894933187455,
-        "dram_median_ns": 31.84179762968806,
-        "hot_ns": 2.6436499319970608
+        "dram_ns": 31.710768744015162,
+        "dram_median_ns": 31.785654609392367,
+        "hot_ns": 2.6431900914758444,
+        "dram_samples_ns": [
+          31.785654609392367,
+          31.786499017470646,
+          31.802389143810245,
+          31.822543943115537,
+          31.752676647828647,
+          31.778458031008647,
+          31.710768744015162
+        ],
+        "hot_samples_ns": [
+          2.718885662034154,
+          2.6431900914758444,
+          2.669090172275901,
+          2.6852404698729515,
+          2.676075091585517,
+          2.6530702598392963,
+          2.7498393319547176
+        ],
+        "cells": 2796202,
+        "max_absolute_tensor_error": null
       },
-      "gcc-16-head": {
-        "dram_ns": 42.86042776714047,
-        "dram_median_ns": 43.25764811853228,
-        "hot_ns": 35.43783095665276
+      "gcc-16-before": {
+        "dram_ns": 41.32291911321729,
+        "dram_median_ns": 41.46154567319275,
+        "hot_ns": 33.61723502166569,
+        "dram_samples_ns": [
+          41.64116428603475,
+          41.40640726619599,
+          41.46154567319275,
+          42.16522412327276,
+          41.37517107843972,
+          41.32291911321729,
+          41.66363223556335
+        ],
+        "hot_samples_ns": [
+          34.24491034820676,
+          35.15414544381201,
+          35.515979398041964,
+          41.75087087787688,
+          33.61723502166569,
+          35.697214771062136,
+          35.79782438464463
+        ],
+        "cells": 2796202,
+        "max_absolute_tensor_error": 0.0
       },
-      "gcc-16-new": {
-        "dram_ns": 41.76535996940651,
-        "dram_median_ns": 44.20789772427297,
-        "hot_ns": 35.82336939871311
+      "gcc-16-pr": {
+        "dram_ns": 41.31930175594044,
+        "dram_median_ns": 41.859131066002085,
+        "hot_ns": 33.99887005798519,
+        "dram_samples_ns": [
+          41.31930175594044,
+          41.859131066002085,
+          43.76254045028061,
+          42.066310972001524,
+          41.85524758820278,
+          43.33892762105478,
+          41.537101003213415
+        ],
+        "hot_samples_ns": [
+          35.78395000658929,
+          34.910079557448626,
+          35.66481056623161,
+          35.16210941597819,
+          35.023425007238984,
+          33.99887005798519,
+          34.80885992757976
+        ],
+        "cells": 2796202,
+        "max_absolute_tensor_error": 0.0
       },
       "clang-22-null": {
-        "dram_ns": 30.564646974717853,
-        "dram_median_ns": 30.60564437047109,
-        "hot_ns": 2.403325
+        "dram_ns": 30.68272606914665,
+        "dram_median_ns": 30.71252398789501,
+        "hot_ns": 2.3918100000000004,
+        "dram_samples_ns": [
+          30.694538878092498,
+          30.88809463693968,
+          30.90574858325686,
+          30.781711407115793,
+          30.68272606914665,
+          30.69957678307934,
+          30.71252398789501
+        ],
+        "hot_samples_ns": [
+          2.4803100000000002,
+          2.4793450000000004,
+          2.523635,
+          2.4579850000000008,
+          2.4811249999999996,
+          2.3918100000000004,
+          2.4122350000000004
+        ],
+        "cells": 2796202,
+        "max_absolute_tensor_error": null
       },
-      "clang-22-head": {
-        "dram_ns": 37.319525198823264,
-        "dram_median_ns": 37.448028790480784,
-        "hot_ns": 28.089065
+      "clang-22-before": {
+        "dram_ns": 37.45674811762527,
+        "dram_median_ns": 37.60497095703386,
+        "hot_ns": 27.71725,
+        "dram_samples_ns": [
+          37.45674811762527,
+          37.468230835969656,
+          37.83923622113138,
+          37.60497095703386,
+          37.48454761136711,
+          38.52393997286319,
+          38.00922644358312
+        ],
+        "hot_samples_ns": [
+          28.727680000000003,
+          28.722939999999998,
+          28.444095,
+          28.375485000000005,
+          27.71725,
+          28.712770000000003,
+          28.058300000000003
+        ],
+        "cells": 2796202,
+        "max_absolute_tensor_error": 0.0
       },
-      "clang-22-new": {
-        "dram_ns": 37.43591771982139,
-        "dram_median_ns": 37.9814312413767,
-        "hot_ns": 28.710100000000004
+      "clang-22-pr": {
+        "dram_ns": 37.19962613573698,
+        "dram_median_ns": 37.48043524752504,
+        "hot_ns": 26.810280000000002,
+        "dram_samples_ns": [
+          38.400192475364776,
+          37.97701882768126,
+          37.48043524752504,
+          37.452717292956656,
+          37.19962613573698,
+          37.73932391150568,
+          37.38355419243674
+        ],
+        "hot_samples_ns": [
+          28.72471,
+          28.769000000000005,
+          28.038575,
+          28.708225,
+          26.810280000000002,
+          27.71703,
+          28.645365
+        ],
+        "cells": 2796202,
+        "max_absolute_tensor_error": 0.0
       }
     },
     "hyper-tangent1": {
       "gcc-16-null": {
-        "dram_ns": 130.74899542223835,
-        "dram_median_ns": 131.4038867162628,
-        "hot_ns": 14.06671479344368
+        "dram_ns": 130.6795043596759,
+        "dram_median_ns": 131.01246408725424,
+        "hot_ns": 14.18347586877644,
+        "dram_samples_ns": [
+          131.6535525481172,
+          131.0202281618256,
+          131.24617097526595,
+          130.6795043596759,
+          130.93027419835886,
+          131.01246408725424,
+          130.71405189636965
+        ],
+        "hot_samples_ns": [
+          15.091095119714737,
+          14.472469920292497,
+          17.654865514487028,
+          14.498530654236674,
+          14.528229366987944,
+          14.18347586877644,
+          14.392520533874631
+        ],
+        "cells": 762600,
+        "max_absolute_tensor_error": null
       },
-      "gcc-16-head": {
-        "dram_ns": 167.7286258803174,
-        "dram_median_ns": 168.23829264777433,
-        "hot_ns": 106.00393521599472
+      "gcc-16-before": {
+        "dram_ns": 167.58112769809384,
+        "dram_median_ns": 168.95684782672578,
+        "hot_ns": 105.3963101003319,
+        "dram_samples_ns": [
+          169.68255431982138,
+          169.0122371560479,
+          169.29970636774306,
+          168.95684782672578,
+          167.73690532090828,
+          167.95714155480425,
+          167.58112769809384
+        ],
+        "hot_samples_ns": [
+          113.07907523587346,
+          133.50241002626717,
+          105.3963101003319,
+          114.24472439102829,
+          109.96092460118234,
+          109.53461052849889,
+          109.4887894578278
+        ],
+        "cells": 762600,
+        "max_absolute_tensor_error": 0.0
       },
-      "gcc-16-new": {
-        "dram_ns": 167.79403767428573,
-        "dram_median_ns": 169.47658804587,
-        "hot_ns": 109.8217407707125
+      "gcc-16-pr": {
+        "dram_ns": 167.24688169264806,
+        "dram_median_ns": 168.60298707606424,
+        "hot_ns": 105.9151894878596,
+        "dram_samples_ns": [
+          167.7635587202793,
+          169.9270313806439,
+          167.74057852504387,
+          170.5904851391337,
+          168.60298707606424,
+          171.27517026788274,
+          167.24688169264806
+        ],
+        "hot_samples_ns": [
+          106.18347441777587,
+          109.59309409372509,
+          110.33167480491102,
+          105.9151894878596,
+          107.01723513193429,
+          110.01304490491748,
+          109.90365990437567
+        ],
+        "cells": 762600,
+        "max_absolute_tensor_error": 0.0
       },
       "clang-22-null": {
-        "dram_ns": 130.08722134801994,
-        "dram_median_ns": 130.2005520587464,
-        "hot_ns": 12.033855
+        "dram_ns": 129.30256753212694,
+        "dram_median_ns": 129.895051140834,
+        "hot_ns": 11.789650000000002,
+        "dram_samples_ns": [
+          129.8125517964857,
+          129.895051140834,
+          129.80052583267772,
+          130.35216496197222,
+          130.516140833989,
+          129.94464070285866,
+          129.30256753212694
+        ],
+        "hot_samples_ns": [
+          11.860885000000001,
+          11.971200000000001,
+          11.819709999999999,
+          12.38423,
+          12.048245000000001,
+          11.789650000000002,
+          13.375035
+        ],
+        "cells": 762600,
+        "max_absolute_tensor_error": null
       },
-      "clang-22-head": {
-        "dram_ns": 170.3731038552321,
-        "dram_median_ns": 171.61373852609495,
-        "hot_ns": 115.01631500000002
+      "clang-22-before": {
+        "dram_ns": 169.25266587988452,
+        "dram_median_ns": 170.4315499606609,
+        "hot_ns": 109.96483,
+        "dram_samples_ns": [
+          174.78132835038028,
+          170.2768987673748,
+          174.3331917125623,
+          170.83784028324155,
+          170.4315499606609,
+          169.51119197482296,
+          169.25266587988452
+        ],
+        "hot_samples_ns": [
+          125.27700000000002,
+          115.90081500000001,
+          116.050005,
+          109.96483,
+          111.441565,
+          116.48826500000001,
+          113.632665
+        ],
+        "cells": 762600,
+        "max_absolute_tensor_error": 0.0
       },
-      "clang-22-new": {
-        "dram_ns": 170.30118672960924,
-        "dram_median_ns": 173.86059926567012,
-        "hot_ns": 115.11292500000002
+      "clang-22-pr": {
+        "dram_ns": 169.93674272226585,
+        "dram_median_ns": 170.07337136113296,
+        "hot_ns": 111.81304000000002,
+        "dram_samples_ns": [
+          170.07337136113296,
+          169.93674272226585,
+          170.49765670076056,
+          172.58330710726452,
+          170.0300878573302,
+          173.7686913191713,
+          169.96279963283504
+        ],
+        "hot_samples_ns": [
+          115.25876000000001,
+          115.480215,
+          115.45861500000001,
+          121.083555,
+          119.842795,
+          111.81304000000002,
+          115.54709000000001
+        ],
+        "cells": 762600,
+        "max_absolute_tensor_error": 0.0
       }
     },
     "hyper-residual2": {
       "gcc-16-null": {
-        "dram_ns": 49.45212398426617,
-        "dram_median_ns": 49.4902185254223,
-        "hot_ns": 4.437739262357354
+        "dram_ns": 49.78934574436752,
+        "dram_median_ns": 49.86813899449322,
+        "hot_ns": 4.344639601185918,
+        "dram_samples_ns": [
+          49.86813899449322,
+          50.226206864671596,
+          49.8830759404084,
+          49.97049562652049,
+          49.84673374814546,
+          49.78934574436752,
+          49.85659239335198
+        ],
+        "hot_samples_ns": [
+          4.444640362635255,
+          4.440024495124817,
+          4.439315525814891,
+          5.365934921428561,
+          4.436074523255229,
+          4.344639601185918,
+          4.447390092536807
+        ],
+        "cells": 1677721,
+        "max_absolute_tensor_error": null
       },
-      "gcc-16-head": {
-        "dram_ns": 330.31892918497493,
-        "dram_median_ns": 338.97109057460364,
-        "hot_ns": 319.5300349034369
+      "gcc-16-before": {
+        "dram_ns": 163.0517739133505,
+        "dram_median_ns": 165.08946174446973,
+        "hot_ns": 159.80152529664338,
+        "dram_samples_ns": [
+          186.88860009667064,
+          164.46316347928163,
+          164.46674159059174,
+          165.84011100033598,
+          165.08946174446973,
+          168.2811331473158,
+          163.0517739133505
+        ],
+        "hot_samples_ns": [
+          184.36977989040315,
+          161.12321405671537,
+          159.80152529664338,
+          166.262979619205,
+          164.1337899491191,
+          179.0898945182562,
+          160.97086016088724
+        ],
+        "cells": 1677721,
+        "max_absolute_tensor_error": 0.0
       },
-      "gcc-16-new": {
-        "dram_ns": 164.65576934058905,
-        "dram_median_ns": 166.5880798993065,
-        "hot_ns": 160.40788032114506
+      "gcc-16-pr": {
+        "dram_ns": 161.5458338350478,
+        "dram_median_ns": 164.71961606912257,
+        "hot_ns": 159.29296030662954,
+        "dram_samples_ns": [
+          173.7680722642288,
+          174.73069300854672,
+          164.4317445727821,
+          162.01954257682755,
+          167.97446348677752,
+          164.71961606912257,
+          161.5458338350478
+        ],
+        "hot_samples_ns": [
+          159.29296030662954,
+          164.3989549484104,
+          167.43730986490846,
+          161.81257436983287,
+          159.843685105443,
+          160.5413551442325,
+          161.0623497981578
+        ],
+        "cells": 1677721,
+        "max_absolute_tensor_error": 0.0
       },
       "clang-22-null": {
-        "dram_ns": 49.57149847918694,
-        "dram_median_ns": 49.68137074042705,
-        "hot_ns": 4.417840000000001
+        "dram_ns": 49.9990117546362,
+        "dram_median_ns": 50.13360385904451,
+        "hot_ns": 4.337110000000001,
+        "dram_samples_ns": [
+          50.13882761198078,
+          50.13360385904451,
+          50.157439765014566,
+          50.30792306944957,
+          50.07290246709674,
+          49.9990117546362,
+          50.03320516343302
+        ],
+        "hot_samples_ns": [
+          4.43707,
+          4.42764,
+          4.533815000000001,
+          4.385175,
+          4.337110000000001,
+          4.431885,
+          4.536955
+        ],
+        "cells": 1677721,
+        "max_absolute_tensor_error": null
       },
-      "clang-22-head": {
-        "dram_ns": 270.489740546849,
-        "dram_median_ns": 273.02752364666117,
-        "hot_ns": 250.59306500000002
+      "clang-22-before": {
+        "dram_ns": 175.96610997895357,
+        "dram_median_ns": 179.1611775736252,
+        "hot_ns": 169.05315000000002,
+        "dram_samples_ns": [
+          179.2902473057201,
+          176.34918439955155,
+          179.73407139804533,
+          175.96610997895357,
+          179.1611775736252,
+          179.320144410185,
+          178.35682392960447
+        ],
+        "hot_samples_ns": [
+          169.05315000000002,
+          170.52859,
+          169.594595,
+          170.13060000000002,
+          169.268355,
+          173.01169000000002,
+          171.446975
+        ],
+        "cells": 1677721,
+        "max_absolute_tensor_error": 0.0
       },
-      "clang-22-new": {
-        "dram_ns": 174.73019530660935,
-        "dram_median_ns": 175.54330249189226,
-        "hot_ns": 170.38575
+      "clang-22-pr": {
+        "dram_ns": 175.91171416463166,
+        "dram_median_ns": 177.9549919205875,
+        "hot_ns": 167.84726,
+        "dram_samples_ns": [
+          178.37473930409166,
+          179.48315423124583,
+          177.9549919205875,
+          175.93003961922156,
+          177.26146004013773,
+          175.91171416463166,
+          182.38012995009302
+        ],
+        "hot_samples_ns": [
+          167.84726,
+          170.31950500000002,
+          172.60506,
+          174.05142,
+          184.79705500000003,
+          170.46480000000003,
+          207.48646000000005
+        ],
+        "cells": 1677721,
+        "max_absolute_tensor_error": 0.0
       }
     },
     "hyper-tangent2": {
       "gcc-16-null": {
-        "dram_ns": 709.0306549420926,
-        "dram_median_ns": 710.0035612001299,
-        "hot_ns": 86.04120928794146
+        "dram_ns": 705.9344326316344,
+        "dram_median_ns": 706.7106718480657,
+        "hot_ns": 80.49133466556668,
+        "dram_samples_ns": [
+          706.5161616091027,
+          705.9344326316344,
+          709.8673044500079,
+          709.4315708636916,
+          705.9655642446679,
+          713.9715231736003,
+          706.7106718480657
+        ],
+        "hot_samples_ns": [
+          84.73546477034688,
+          86.02900430560112,
+          90.41765006259084,
+          80.49133466556668,
+          82.041040295735,
+          80.64076537266374,
+          83.86827073991299
+        ],
+        "cells": 140985,
+        "max_absolute_tensor_error": null
       },
-      "gcc-16-head": {
-        "dram_ns": 4058.1166294639565,
-        "dram_median_ns": 4087.945994457531,
-        "hot_ns": 3489.152565598488
+      "gcc-16-before": {
+        "dram_ns": 2397.831811976187,
+        "dram_median_ns": 2406.4279454329057,
+        "hot_ns": 1794.341285713017,
+        "dram_samples_ns": [
+          2411.356214700123,
+          2467.1142102191516,
+          2404.5186086442236,
+          2521.0692260733954,
+          2398.6966914874542,
+          2406.4279454329057,
+          2397.831811976187
+        ],
+        "hot_samples_ns": [
+          1858.9817499741912,
+          1909.6403149887917,
+          1794.341285713017,
+          1814.9594555143267,
+          1834.0606056153774,
+          1850.595735013485,
+          1823.1375457253307
+        ],
+        "cells": 140985,
+        "max_absolute_tensor_error": 0.0
       },
-      "gcc-16-new": {
-        "dram_ns": 2332.258133313675,
-        "dram_median_ns": 2376.6096121710734,
-        "hot_ns": 1748.608680209145
+      "gcc-16-pr": {
+        "dram_ns": 2306.7537686581873,
+        "dram_median_ns": 2339.268793881174,
+        "hot_ns": 1704.4721997808665,
+        "dram_samples_ns": [
+          2306.7537686581873,
+          2309.4596724456374,
+          2455.148066027044,
+          2339.268793881174,
+          2453.6784907279293,
+          2408.7730967292896,
+          2322.7195084796804
+        ],
+        "hot_samples_ns": [
+          1704.4721997808665,
+          1748.143050353974,
+          1718.6898144427687,
+          1744.992044987157,
+          1731.8428051657975,
+          1709.3638598453254,
+          1718.0325905792415
+        ],
+        "cells": 140985,
+        "max_absolute_tensor_error": 8.881784197001252e-16
       },
       "clang-22-null": {
-        "dram_ns": 705.6650494733483,
-        "dram_median_ns": 707.3455615845658,
-        "hot_ns": 69.886995
+        "dram_ns": 705.2914494449765,
+        "dram_median_ns": 708.7483633010604,
+        "hot_ns": 68.908045,
+        "dram_samples_ns": [
+          708.7483633010604,
+          712.5705571514701,
+          706.2066531900557,
+          709.2640422740008,
+          710.0646451750187,
+          705.2914494449765,
+          705.4841933539029
+        ],
+        "hot_samples_ns": [
+          68.908045,
+          74.94218500000001,
+          69.45976499999999,
+          70.695705,
+          70.70695500000001,
+          70.80405999999999,
+          71.17795000000001
+        ],
+        "cells": 140985,
+        "max_absolute_tensor_error": null
       },
-      "clang-22-head": {
-        "dram_ns": 6623.6938255842815,
-        "dram_median_ns": 6789.004383445047,
-        "hot_ns": 6198.097674999999
+      "clang-22-before": {
+        "dram_ns": 2250.9369152746744,
+        "dram_median_ns": 2275.9088413661025,
+        "hot_ns": 1654.73569,
+        "dram_samples_ns": [
+          2277.5258218959466,
+          2275.9088413661025,
+          2250.9369152746744,
+          2268.2655743518817,
+          2378.7182891796997,
+          2271.390835904529,
+          2330.919622654892
+        ],
+        "hot_samples_ns": [
+          1654.73569,
+          1671.97608,
+          1666.18293,
+          1655.1907299999998,
+          1727.969265,
+          1686.1614700000002,
+          1666.01654
+        ],
+        "cells": 140985,
+        "max_absolute_tensor_error": 0.0
       },
-      "clang-22-new": {
-        "dram_ns": 2087.996098875767,
-        "dram_median_ns": 2113.3303472000566,
-        "hot_ns": 1637.71155
+      "clang-22-pr": {
+        "dram_ns": 2189.293314891655,
+        "dram_median_ns": 2224.9395042025744,
+        "hot_ns": 1599.8285449999996,
+        "dram_samples_ns": [
+          2189.293314891655,
+          2218.306401390219,
+          2311.153051743094,
+          2231.5620172358763,
+          2198.700351101181,
+          2224.9395042025744,
+          2233.136823066284
+        ],
+        "hot_samples_ns": [
+          1654.4737250000003,
+          1599.8285449999996,
+          1631.608105,
+          1670.78325,
+          1613.4924549999998,
+          1603.3924749999996,
+          1627.772125
+        ],
+        "cells": 140985,
+        "max_absolute_tensor_error": 0.0
       }
     },
     "hyper-residual3": {
       "gcc-16-null": {
-        "dram_ns": 92.88955945508103,
-        "dram_median_ns": 93.06051505673494,
-        "hot_ns": 7.004655199125409
+        "dram_ns": 93.51743807871878,
+        "dram_median_ns": 93.80007116425142,
+        "hot_ns": 6.976824952289462,
+        "dram_samples_ns": [
+          94.4006675951098,
+          93.56625955470388,
+          94.04681518665407,
+          93.80007116425142,
+          93.84474845277123,
+          93.51743807871878,
+          93.71546803927798
+        ],
+        "hot_samples_ns": [
+          6.998300086706877,
+          7.178544765338302,
+          7.160960230976343,
+          6.976824952289462,
+          7.156869396567345,
+          6.996834417805076,
+          7.156725041568279
+        ],
+        "cells": 932067,
+        "max_absolute_tensor_error": null
       },
-      "gcc-16-head": {
-        "dram_ns": 968.5103848800542,
-        "dram_median_ns": 996.1142417966433,
-        "hot_ns": 927.4577395990491
+      "gcc-16-before": {
+        "dram_ns": 479.83212151704174,
+        "dram_median_ns": 492.19778413730853,
+        "hot_ns": 456.0676799155772,
+        "dram_samples_ns": [
+          528.8186695566314,
+          491.9747624031905,
+          482.68704951408165,
+          510.54892519094244,
+          492.19778413730853,
+          502.188462881279,
+          479.83212151704174
+        ],
+        "hot_samples_ns": [
+          460.32276935875416,
+          465.33229062333703,
+          457.7533307019621,
+          468.7526309862733,
+          457.45674055069685,
+          456.0676799155772,
+          461.4360409323126
+        ],
+        "cells": 932067,
+        "max_absolute_tensor_error": 0.0
       },
-      "gcc-16-new": {
-        "dram_ns": 492.33593071389436,
-        "dram_median_ns": 499.85279158162757,
-        "hot_ns": 464.9341094773263
+      "gcc-16-pr": {
+        "dram_ns": 482.2187503352951,
+        "dram_median_ns": 490.577365121722,
+        "hot_ns": 457.8053252771497,
+        "dram_samples_ns": [
+          502.9127037305979,
+          493.4328926395527,
+          482.2187503352951,
+          487.2333113430296,
+          490.577365121722,
+          489.207782357535,
+          567.1037714833004
+        ],
+        "hot_samples_ns": [
+          475.45102541334927,
+          460.8408350031823,
+          458.50862050428987,
+          478.89959998428816,
+          459.35528934933245,
+          457.8053252771497,
+          489.19100081548095
+        ],
+        "cells": 932067,
+        "max_absolute_tensor_error": 0.0
       },
       "clang-22-null": {
-        "dram_ns": 94.4239491367037,
-        "dram_median_ns": 94.60354352208587,
-        "hot_ns": 7.4040550000000005
+        "dram_ns": 95.10767251710446,
+        "dram_median_ns": 95.16217181812038,
+        "hot_ns": 7.407845,
+        "dram_samples_ns": [
+          95.39356290910418,
+          95.80246699003399,
+          95.11475248024017,
+          95.22589899653137,
+          95.16217181812038,
+          95.12565727571086,
+          95.10767251710446
+        ],
+        "hot_samples_ns": [
+          7.407845,
+          8.403615,
+          7.5993200000000005,
+          7.621100000000001,
+          7.7987400000000004,
+          7.4114650000000015,
+          7.420355000000001
+        ],
+        "cells": 932067,
+        "max_absolute_tensor_error": null
       },
-      "clang-22-head": {
-        "dram_ns": 933.4125422314061,
-        "dram_median_ns": 943.6734623154773,
-        "hot_ns": 919.8728000000001
+      "clang-22-before": {
+        "dram_ns": 529.2605928543763,
+        "dram_median_ns": 536.600982547392,
+        "hot_ns": 483.8461900000001,
+        "dram_samples_ns": [
+          535.201960803247,
+          544.4743071045322,
+          554.1407345180122,
+          529.6625736132703,
+          540.5085621527207,
+          536.600982547392,
+          529.2605928543763
+        ],
+        "hot_samples_ns": [
+          506.6153449999997,
+          492.1016850000001,
+          486.40646999999996,
+          511.8053900000001,
+          488.15704999999997,
+          487.31547,
+          483.8461900000001
+        ],
+        "cells": 932067,
+        "max_absolute_tensor_error": 0.0
       },
-      "clang-22-new": {
-        "dram_ns": 512.5387477509664,
-        "dram_median_ns": 518.582576145277,
-        "hot_ns": 511.36508000000003
+      "clang-22-pr": {
+        "dram_ns": 529.1642381931771,
+        "dram_median_ns": 538.8083624889628,
+        "hot_ns": 483.28840500000007,
+        "dram_samples_ns": [
+          538.8083624889628,
+          529.1642381931771,
+          529.8805847648291,
+          532.5789251201899,
+          548.2184209933407,
+          545.7398395179746,
+          542.3322733236989
+        ],
+        "hot_samples_ns": [
+          492.82553,
+          484.144115,
+          485.65281500000003,
+          485.626455,
+          496.156275,
+          483.28840500000007,
+          485.9719150000001
+        ],
+        "cells": 932067,
+        "max_absolute_tensor_error": 0.0
       }
     },
     "hyper-tangent3": {
       "gcc-16-null": {
-        "dram_ns": 2405.656144463374,
-        "dram_median_ns": 2412.490756756516,
-        "hot_ns": 334.59152560681105
+        "dram_ns": 2406.4247945642674,
+        "dram_median_ns": 2416.915968961378,
+        "hot_ns": 333.3299502264708,
+        "dram_samples_ns": [
+          2416.915968961378,
+          2452.3142129542352,
+          2406.4247945642674,
+          2409.6540621326376,
+          2415.21344914212,
+          2446.777143775698,
+          2460.215969953337
+        ],
+        "hot_samples_ns": [
+          368.43470530584455,
+          346.71021974645555,
+          333.3299502264708,
+          333.4272955544293,
+          334.4340098556131,
+          342.7361394278705,
+          362.13526502251625
+        ],
+        "cells": 36472,
+        "max_absolute_tensor_error": null
       },
-      "gcc-16-head": {
-        "dram_ns": 21124.366830391344,
-        "dram_median_ns": 21352.83899828334,
-        "hot_ns": 18986.977599561214
+      "gcc-16-before": {
+        "dram_ns": 11152.717703432465,
+        "dram_median_ns": 11377.018837253725,
+        "hot_ns": 9098.200559383258,
+        "dram_samples_ns": [
+          11377.018837253725,
+          11195.674108138688,
+          11152.717703432465,
+          11388.31849039797,
+          11497.217593201845,
+          11308.738378283715,
+          11672.543651455195
+        ],
+        "hot_samples_ns": [
+          9293.46902994439,
+          9102.393800858408,
+          9138.160849688575,
+          9101.249205414206,
+          9140.15895454213,
+          9143.66161567159,
+          9098.200559383258
+        ],
+        "cells": 36472,
+        "max_absolute_tensor_error": 0.0
       },
-      "gcc-16-new": {
-        "dram_ns": 10714.86131817815,
-        "dram_median_ns": 10922.52804566584,
-        "hot_ns": 8699.639705009758
+      "gcc-16-pr": {
+        "dram_ns": 9452.540330769812,
+        "dram_median_ns": 9466.004500708565,
+        "hot_ns": 7496.411124011502,
+        "dram_samples_ns": [
+          9702.519878259296,
+          9455.587270086005,
+          9452.540330769812,
+          9469.895317047805,
+          9466.004500708565,
+          9459.486321551654,
+          10038.856134009835
+        ],
+        "hot_samples_ns": [
+          7515.128200175241,
+          7543.517955346033,
+          7496.411124011502,
+          7530.527864582837,
+          7553.71114006266,
+          7688.485835678875,
+          7876.707714749501
+        ],
+        "cells": 36472,
+        "max_absolute_tensor_error": 6.661338147750939e-16
       },
       "clang-22-null": {
-        "dram_ns": 2361.6416429041456,
-        "dram_median_ns": 2372.4402007019085,
-        "hot_ns": 259.07619
+        "dram_ns": 2376.7068161877605,
+        "dram_median_ns": 2382.4224062294365,
+        "hot_ns": 254.338355,
+        "dram_samples_ns": [
+          2376.7068161877605,
+          2378.420541785479,
+          2387.6991664838783,
+          2390.0729874972585,
+          2390.9740074577758,
+          2382.4224062294365,
+          2380.8070300504496
+        ],
+        "hot_samples_ns": [
+          257.35796000000005,
+          258.419095,
+          255.47053000000002,
+          257.83749000000006,
+          255.21178500000005,
+          254.338355,
+          257.0249699999997
+        ],
+        "cells": 36472,
+        "max_absolute_tensor_error": null
       },
-      "clang-22-head": {
-        "dram_ns": 20324.346484974776,
-        "dram_median_ns": 20765.039208159684,
-        "hot_ns": 18398.75216
+      "clang-22-before": {
+        "dram_ns": 12095.130072384294,
+        "dram_median_ns": 12245.637639833296,
+        "hot_ns": 8214.881990000002,
+        "dram_samples_ns": [
+          12345.64915551656,
+          12339.137173722309,
+          12332.577621188857,
+          12095.130072384294,
+          12104.95305988155,
+          12245.637639833296,
+          12143.46569971485
+        ],
+        "hot_samples_ns": [
+          8259.7107,
+          8294.448970000001,
+          8297.054085,
+          8214.881990000002,
+          8407.761584999998,
+          8233.426705,
+          8373.43218
+        ],
+        "cells": 36472,
+        "max_absolute_tensor_error": 0.0
       },
-      "clang-22-new": {
-        "dram_ns": 10410.624808071945,
-        "dram_median_ns": 10509.659218030269,
-        "hot_ns": 9863.077220000001
+      "clang-22-pr": {
+        "dram_ns": 10894.588232068434,
+        "dram_median_ns": 11024.9431892959,
+        "hot_ns": 7210.25541,
+        "dram_samples_ns": [
+          11024.9431892959,
+          11038.619461504717,
+          11505.13695437596,
+          11023.245585654748,
+          10894.588232068434,
+          11102.931618776047,
+          10932.856629743364
+        ],
+        "hot_samples_ns": [
+          7234.888555,
+          7270.966224999999,
+          8275.260995,
+          7425.3160450000005,
+          7360.6669,
+          7210.25541,
+          7263.18089
+        ],
+        "cells": 36472,
+        "max_absolute_tensor_error": 1.1102230246251565e-15
       }
     }
-  }
+  },
+  "equivalent_kernel_commit": "8f231a043d33547f666c1256a624d8245596db3d"
 }
