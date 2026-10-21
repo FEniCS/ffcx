@@ -29,6 +29,7 @@ from ffcx.ir.analysis.modified_terminals import (
 )
 from ffcx.ir.analysis.visualise import visualise_graph
 from ffcx.ir.elementtables import (
+    TensorProductTablePlaceholder,
     UniqueTableReferenceT,
     build_optimized_tables,
 )
@@ -208,7 +209,7 @@ def _compute_integral_ir(
     )
     # Fetch unique tables for this quadrature rule
     table_types: dict[str, _table_types] = {v.name: v.ttype for v in mt_table_reference.values()}
-    tables: dict[str, npt.NDArray[np.float64]] = {
+    tables: dict[str, npt.NDArray[np.float64] | TensorProductTablePlaceholder] = {
         v.name: v.values for v in mt_table_reference.values()
     }
 
@@ -390,7 +391,10 @@ def _compute_integral_ir(
     for name in active_table_names:
         # Drop tables not referenced from modified terminals
         if table_types[name] not in ("zeros", "ones"):
-            active_tables[name] = tables[name]
+            table = tables[name]
+            # A table with tensor factors is used through its factors
+            assert isinstance(table, np.ndarray)
+            active_tables[name] = table
             active_table_types[name] = table_types[name]
     return (
         active_tables,
