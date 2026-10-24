@@ -1584,20 +1584,29 @@ def test_vertex_integral(compile_args, geometry, rank, dtype, element_type):
     rdtype = np.real(dtype(0)).dtype
     domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(gdim,), dtype=rdtype))
     element = basix.ufl.element(element_type, cell, 1)
-    dP = ufl.Measure("dP")
     x = ufl.SpatialCoordinate(domain)
     V = ufl.FunctionSpace(domain, element)
     u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
     # With a Lagrange space for test and trial functions, all these forms should evaluate as the
     # x-coordinate times an indicator for alignment between the argument(s) and the vertices.
-    if rank == 0:
-        F = x[0] * dP
-    elif rank == 1:
-        F = x[0] * ufl.conj(v) * dP
-    else:
-        F = x[0] * u * ufl.conj(v) * dP
 
-    if element.discontinuous:
+    def dP(gdim: int):
+        match gdim:
+            case 3:
+                return ufl.dp
+            case 2:
+                return ufl.dr
+            case 1:
+                return ufl.ds
+
+    if rank == 0:
+        F = x[0] * dP(gdim)
+    elif rank == 1:
+        F = x[0] * ufl.conj(v) * dP(gdim)
+    else:
+        F = x[0] * u * ufl.conj(v) * dP(gdim)
+
+    if element.discontinuous and gdim > 1:
         if rank == 0:
             # No elements involved in assembly.
             return
