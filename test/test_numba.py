@@ -47,16 +47,22 @@ def test_external_module(tmp_path: Path):
     assert ffcx.main.main(args) == 0
 
 
-@pytest.fixture
-def generate_poisson(tmp_path: Path) -> ModuleType:
+@pytest.fixture(scope="module")
+def generate_poisson(tmp_path_factory: pytest.TempPathFactory) -> ModuleType:
     """Generate the numba Poisson module and load it.
 
-    The module is generated into the test's own ``tmp_path`` and loaded
+    The module is generated into a pytest temporary directory and loaded
     from that path, rather than written to and imported by name from the
     current working directory. A shared file in the working directory is
     racy when tests run in parallel (``pytest-xdist``): one worker can
     import the module while another is still writing it.
+
+    Module-scoped so the generation runs once rather than once per test.
+    The tests only read from the module, so sharing one instance is safe.
+    ``tmp_path_factory`` is used because the function-scoped ``tmp_path``
+    cannot be requested from a module-scoped fixture.
     """
+    tmp_path = tmp_path_factory.mktemp("numba")
     dir = Path(__file__).parent
     args = [str(dir / "poisson.py"), "--language", "numba", "--dir", str(tmp_path)]
     assert ffcx.main.main(args) == 0
