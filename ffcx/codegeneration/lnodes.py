@@ -30,6 +30,17 @@ from enum import Enum
 import numpy as np
 import ufl
 
+# Human-readable descriptions shared by the source backends.
+SECTION_DESCRIPTIONS = {
+    "Jacobian": "Differentiate the coordinate mapping to obtain Jacobian components.",
+    "SpatialCoordinate": "Evaluate physical coordinates from coordinate degrees of freedom.",
+    "Coefficient": "Evaluate coefficient values or derivatives from their degrees of freedom.",
+    "Intermediates": "Form assembly factors (fw*) from scalar expressions and quadrature weights.",
+    "Tensor Computation": (
+        "Contract argument basis values or derivatives and accumulate the element tensor."
+    ),
+}
+
 
 class PRECEDENCE:
     """An enum-like class for operator precedence levels."""

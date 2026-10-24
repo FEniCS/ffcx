@@ -7,6 +7,7 @@
 
 import logging
 
+import numpy as np
 import ufl
 
 import ffcx.codegeneration.lnodes as L
@@ -22,11 +23,42 @@ logger = logging.getLogger("ffcx")
 # Cap on unrolling, so a curved high-order simplex doesn't blow up compile
 # time. Tensor-product geometry always keeps the loop path regardless.
 _MAX_UNROLLED_COORDINATE_DOFS = 16
+_MAX_UNROLLED_DENSE_COEFFICIENT_DOFS = 8
+_MAX_UNROLLED_SPARSE_COEFFICIENT_DOFS = 20
 
 
 def _should_unroll_coordinate_dofs(num_dofs: int, has_tensor_factorisation: bool) -> bool:
     """Return whether a coordinate-dof linear combination should be unrolled."""
     return not has_tensor_factorisation and num_dofs <= _MAX_UNROLLED_COORDINATE_DOFS
+
+
+def _coordinate_basis_groups(values: np.ndarray) -> list[tuple[int, list[tuple[int, float]]]]:
+    """Group coordinate-basis columns equal up to sign and tabulation round-off.
+
+    Moving the sign into the coordinate combination lets the C compiler hoist
+    coordinate differences out of the quadrature loop. Compare all points,
+    entities and permutations, with a tolerance at the scale of tabulation
+    round-off rather than the looser table-reuse tolerance.
+    """
+    groups: list[tuple[int, list[tuple[int, float]]]] = []
+    roundoff = 16 * np.finfo(values.dtype).eps
+    for column in range(values.shape[-1]):
+        data = values[..., column]
+        scale = np.max(np.abs(data))
+        if scale == 0:
+            continue
+        for representative, members in groups:
+            other = values[..., representative]
+            tolerance = roundoff * max(scale, np.max(np.abs(other)))
+            if np.max(np.abs(data - other)) <= tolerance:
+                members.append((column, 1.0))
+                break
+            if np.max(np.abs(data + other)) <= tolerance:
+                members.append((column, -1.0))
+                break
+        else:
+            groups.append((column, [(column, 1.0)]))
+    return groups
 
 
 def create_quadrature_index(quadrature_rule, quadrature_index_symbol):
@@ -160,6 +192,65 @@ class FFCXBackendDefinitions:
 
         assert begin < end
 
+        if (
+            tabledata.is_piecewise
+            and tabledata.is_uniform
+            and not tabledata.is_permuted
+            and not tabledata.has_tensor_factorisation
+            and num_dofs <= 16
+        ):
+            terms = [
+                L.float_product(
+                    [self.symbols.coefficient_dof_access(mt.terminal, k * bs + begin), value]
+                )
+                for k, value in enumerate(tabledata.values[0, 0, 0])
+                if value != 0.0
+            ]
+            return L.Section(
+                type(mt.terminal).__name__,
+                [],
+                [L.VariableDecl(access, L.Sum(terms))],
+                [self.symbols.coefficient_dof_access(mt.terminal, begin).array],
+                [access],
+            )
+
+        # Expand small reductions to expose SIMD across quadrature points,
+        # including the evaluation/contraction split for varying geometry.
+        # Larger reductions are expanded only when some basis derivatives
+        # vanish at every point. Preserve tensor-product factorisations.
+        if (
+            not tabledata.has_tensor_factorisation
+            and num_dofs <= _MAX_UNROLLED_SPARSE_COEFFICIENT_DOFS
+        ):
+            active = np.flatnonzero(tabledata.values.any(axis=(0, 1, 2)))
+            domain = ufl.domain.extract_unique_domain(mt.terminal)
+            assert isinstance(domain, ufl.Mesh)
+            unroll_dense = (
+                num_dofs <= _MAX_UNROLLED_DENSE_COEFFICIENT_DOFS
+                and not domain.is_piecewise_linear_simplex_domain()
+            )
+            if len(active) < num_dofs or unroll_dense:
+                terms = []
+                tables = []
+                for k in active:
+                    ic_k = L.MultiIndex([L.LiteralInt(int(k))], [num_dofs])
+                    FE, term_tables = self.access.table_access(
+                        tabledata, self.entity_type, mt.restriction, iq, ic_k
+                    )
+                    terms.append(
+                        self.symbols.coefficient_dof_access(mt.terminal, int(k) * bs + begin) * FE
+                    )
+                    tables.extend(term_tables)
+                return L.Section(
+                    type(mt.terminal).__name__,
+                    [],
+                    [L.VariableDecl(access, L.Sum(terms))],
+                    [
+                        self.symbols.coefficient_dof_access(mt.terminal, begin).array,
+                        *dict.fromkeys(tables),
+                    ],
+                    [access],
+                )
         # Get access to element table
         FE, tables = self.access.table_access(tabledata, self.entity_type, mt.restriction, iq, ic)
         dof_access: L.ArrayAccess = self.symbols.coefficient_dof_access(
@@ -299,7 +390,24 @@ class FFCXBackendDefinitions:
             # exact 0.0/+-1.0 low-order values constant-fold away.
             terms = []
             coord_tables: list[L.Symbol] = []
-            for k in range(num_dofs):
+            # Keep four-coordinate reductions intact: they already fit a
+            # short SIMD reduction, and pairing can disrupt that lowering.
+            constant_table = (
+                tabledata.is_piecewise and tabledata.is_uniform and not tabledata.is_permuted
+            )
+            groups = (
+                [(k, [(k, 1.0)]) for k in range(num_dofs)]
+                if constant_table or num_dofs <= 4
+                else _coordinate_basis_groups(tabledata.values)
+            )
+            for k, members in groups:
+                if tabledata.is_piecewise and tabledata.is_uniform and not tabledata.is_permuted:
+                    value = tabledata.values[0, 0, 0, k]
+                    if value != 0.0:
+                        terms.append(
+                            L.float_product([dof_access[_dof(k) * dim + begin + offset], value])
+                        )
+                    continue
                 ic_k = L.MultiIndex([L.LiteralInt(k)], [num_dofs])
                 FE_k, tables_k = self.access.table_access(
                     tabledata, self.entity_type, mt.restriction, iq, ic_k
@@ -307,7 +415,17 @@ class FFCXBackendDefinitions:
                 for t in tables_k:
                     if t not in coord_tables:
                         coord_tables.append(t)
-                terms.append(dof_access[_dof(k) * dim + begin + offset] * FE_k)
+                coordinate = dof_access[_dof(k) * dim + begin + offset]
+                if len(members) > 1:
+                    coordinate = L.Sum(
+                        [
+                            L.float_product(
+                                [dof_access[_dof(j) * dim + begin + offset], L.LiteralFloat(sign)]
+                            )
+                            for j, sign in members
+                        ]
+                    )
+                terms.append(coordinate * FE_k)
             declaration = [L.VariableDecl(access, L.Sum(terms))]
             code = []
             input = [dof_access, *coord_tables]

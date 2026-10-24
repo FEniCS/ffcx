@@ -64,6 +64,8 @@ class Formatter(FormatterInterface):
         comments += self._format_comment_str(
             f"Outputs: {', '.join(w.name for w in section.output)}"
         )
+        if description := L.SECTION_DESCRIPTIONS.get(section.name):
+            comments += self._format_comment_str(description)
         declarations = "".join(self(s) for s in section.declarations)
 
         body = ""
@@ -97,7 +99,7 @@ class Formatter(FormatterInterface):
         if arr.values is None:
             return f"{symbol} = np.empty({arr.sizes}, dtype={typename})\n"
         elif arr.values.size == 1:
-            return f"{symbol} = np.full({arr.sizes}, {arr.values[0]}, dtype={typename})\n"
+            return f"{symbol} = np.full({arr.sizes}, {arr.values.flat[0]}, dtype={typename})\n"
         av = build_initializer_lists(arr.values)
         av = f"np.array({av}, dtype={typename})"
         return f"{symbol} = {av}\n"

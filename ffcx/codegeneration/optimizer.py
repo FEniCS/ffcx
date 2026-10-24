@@ -1,7 +1,7 @@
 """Optimizer."""
 
 import math
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 import ffcx.codegeneration.lnodes as L
 from ffcx.ir.representationutils import QuadratureRule
@@ -312,6 +312,23 @@ def scalar_declaration_names(code: list[L.LNode]) -> set[str]:
     return names
 
 
+def referenced_symbol_names(code: list[L.LNode]) -> set[str]:
+    """Return the symbols read in a code tree."""
+    referenced: set[str] = set()
+    _collect_referenced_names(code, referenced)
+    return referenced
+
+
+def prune_unused_tables(code: list[L.LNode]) -> list[L.LNode]:
+    """Remove top-level constant tables without any remaining accesses."""
+    referenced = referenced_symbol_names(code)
+    return [
+        node
+        for node in code
+        if not (isinstance(node, L.ArrayDecl) and node.const and node.symbol.name not in referenced)
+    ]
+
+
 def prune_dead_scalars(code: list[L.LNode], candidates: set[str]) -> list[L.LNode]:
     """Remove scalar declarations in `candidates` that end up with no reader.
 
@@ -476,6 +493,8 @@ def expr_key(expr) -> tuple:
         # PrefixUnaryOp (Neg, Not) has no __repr__ override, so it would
         # otherwise fall through to the identity-based default below.
         return (type(expr).__name__, expr_key(expr.arg))
+    elif isinstance(expr, L.MathFunction):
+        return ("math", expr.function, *(expr_key(arg) for arg in expr.args))
     args = getattr(expr, "args", None)
     if args is not None:
         return (type(expr).__name__, *(expr_key(a) for a in args))
@@ -585,3 +604,134 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
     section.statements = pre_loop + [new_outer] + section.statements[1:]
 
     return section
+
+
+def factor_scalar_sums(statements: list[L.LNode]) -> list[L.LNode]:
+    """Factor bounded scalar polynomials and reuse equivalent expressions.
+
+    Expand single-use arithmetic temporaries and short products, then extract
+    the most frequent factor from each sum. Shared sums stay as symbols, and
+    expansion stops at 32 terms to bound work on large differentiated forms.
+    Prefer factors used elsewhere when frequencies tie, exposing shared
+    subexpressions to the native compiler. Sorted monomials make this
+    independent of Python's hash seed.
+
+    Like reciprocal CSE, this reassociates floating-point arithmetic and can
+    change rounding. Calls, array accesses and nonliteral divisors are opaque.
+    The caller must prune scalar declarations after assembling the whole body.
+    """
+    max_terms = 32
+    max_factors = 8
+    uses: Counter[str] = Counter()
+
+    def count(expr):
+        if isinstance(expr, L.Symbol):
+            uses[expr.name] += 1
+        elif isinstance(expr, L.BinOp):
+            count(expr.lhs)
+            count(expr.rhs)
+        elif isinstance(expr, L.NaryOp | L.MathFunction):
+            for arg in expr.args:
+                count(arg)
+        elif isinstance(expr, L.PrefixUnaryOp):
+            count(expr.arg)
+
+    for stmt in statements:
+        if isinstance(stmt, L.VariableDecl):
+            count(stmt.value)
+
+    # A polynomial maps a sorted tuple of atomic factor keys to a coefficient.
+    expanded: dict[str, dict[tuple, complex | float | int]] = {}
+    atoms: dict[tuple, L.LExpr] = {}
+    output: list[L.LNode] = []
+    seen: dict[tuple, L.Symbol] = {}
+
+    def atom(expr):
+        key = expr_key(expr)
+        atoms[key] = expr
+        return {(key,): 1}
+
+    def polynomial(expr):
+        if isinstance(expr, L.Symbol):
+            return expanded[expr.name] if expr.name in expanded else atom(expr)
+        if isinstance(expr, L.LiteralInt | L.LiteralFloat):
+            return {(): expr.value}
+        if isinstance(expr, L.Neg):
+            return {key: -value for key, value in polynomial(expr.arg).items()}
+        if isinstance(expr, L.Add):
+            result = polynomial(expr.lhs).copy()
+            for key, value in polynomial(expr.rhs).items():
+                result[key] = result.get(key, 0) + value
+            if len(result) > max_terms:
+                return atom(expr)
+            return {key: value for key, value in result.items() if value != 0}
+        if isinstance(expr, L.Mul):
+            lhs, rhs = polynomial(expr.lhs), polynomial(expr.rhs)
+            if len(lhs) * len(rhs) > max_terms:
+                return atom(expr)
+            result = {}
+            for lk, lv in lhs.items():
+                for rk, rv in rhs.items():
+                    key = tuple(sorted(lk + rk, key=repr))
+                    result[key] = result.get(key, 0) + lv * rv
+            return {key: value for key, value in result.items() if value != 0}
+        if isinstance(expr, L.Div) and isinstance(expr.rhs, L.LiteralInt | L.LiteralFloat):
+            return {key: value / expr.rhs.value for key, value in polynomial(expr.lhs).items()}
+        return atom(expr)
+
+    def literal(value):
+        return L.LiteralFloat(value) if isinstance(value, complex) else L.as_lexpr(value)
+
+    def product(args):
+        return L.as_lexpr(L.float_product(args))
+
+    def build(terms):
+        if not terms:
+            return L.LiteralFloat(0.0)
+        if len(terms) == 1:
+            ((key, value),) = terms.items()
+            return product([literal(value), *[atoms[arg] for arg in key]])
+        counts = Counter(arg for key in terms for arg in sorted(set(key), key=repr))
+
+        def priority(key):
+            reuse = uses[atoms[key].name] if isinstance(atoms[key], L.Symbol) else 0
+            return counts[key], reuse
+
+        best = max(counts, key=priority, default=None)
+        if best is not None and counts[best] > 1:
+            group, rest = {}, {}
+            for key, value in terms.items():
+                if best in key:
+                    factors = list(key)
+                    factors.remove(best)
+                    group[tuple(factors)] = value
+                else:
+                    rest[key] = value
+            term = product([atoms[best], build(group)])
+            return L.Sum([term, build(rest)]) if rest else term
+        return L.Sum(
+            [
+                product([literal(value), *[atoms[arg] for arg in key]])
+                for key, value in terms.items()
+            ]
+        )
+
+    for stmt in statements:
+        if not isinstance(stmt, L.VariableDecl) or not isinstance(
+            stmt.value, L.Add | L.Mul | L.Neg | L.Div
+        ):
+            output.append(stmt)
+            continue
+        terms = polynomial(stmt.value)
+        value = build(terms)
+        key = expr_key(value)
+        if key in seen:
+            value = seen[key]
+        else:
+            seen[key] = stmt.symbol
+        output.append(L.VariableDecl(stmt.symbol, value))
+        if (uses[stmt.symbol.name] == 1 and len(terms) <= max_terms) or (
+            len(terms) == 1 and len(next(iter(terms))) <= max_factors
+        ):
+            expanded[stmt.symbol.name] = terms
+    return output
