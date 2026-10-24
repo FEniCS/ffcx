@@ -110,6 +110,10 @@ jobs:
       - name: Static check with mypy
         run: mypy -p ffcx
 
+      - name: Setup cl.exe (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Run unit tests
         run: >
           python -m pytest -vs test/
@@ -133,10 +137,6 @@ jobs:
         # Use always() to always run this step to publish test results
         # when there are test failures
         if: always()
-
-      - name: Setup cl.exe (Windows)
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
 
       - name: Run FFCx demos
         run: |
