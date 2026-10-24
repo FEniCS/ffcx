@@ -14,6 +14,7 @@
 # sys.path.insert(0, os.path.abspath('.'))
 import datetime as dt
 import importlib.metadata
+import os
 
 # -- Project information -----------------------------------------------------
 
@@ -81,11 +82,19 @@ pygments_style = "sphinx"
 # html_theme = 'alabaster'
 html_theme = "pydata_sphinx_theme"
 
-# Theme options are theme-specific and customize the look and feel of a theme
-# further.  For a list of options available for each theme, see the
-# documentation.
-#
-# html_theme_options = {}
+# Version switcher. FEniCS/docs generates the version list from the
+# published documentation. CI sets DOCS_VERSION to the branch or tag
+# name the documentation is published under.
+html_theme_options = {
+    "switcher": {
+        "json_url": "https://docs.fenicsproject.org/ffcx/switcher.json",
+        "version_match": os.environ.get("DOCS_VERSION", "main"),
+    },
+    "navbar_end": ["version-switcher", "theme-switcher", "navbar-icon-links"],
+    # The version list is fetched by the browser; don't fetch it at build time
+    "check_switcher": False,
+    "show_version_warning_banner": True,
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

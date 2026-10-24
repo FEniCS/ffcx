@@ -143,6 +143,8 @@ jobs:
           pytest -vs demo/test_demos.py -W error
 
       - name: Build documentation
+        env:
+          DOCS_VERSION: ${{ github.ref_name }}
         run: |
           cd doc
           python -m sphinx -W -b html source/ build/html/
