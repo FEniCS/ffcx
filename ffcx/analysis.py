@@ -261,10 +261,29 @@ def _analyze_form(
                 if "quadrature_degree" in metadata.keys():
                     qd = metadata["quadrature_degree"]
 
+                # An upper bound on the estimated degree. It caps the
+                # degree that UFL estimates, and is contradictory if the
+                # degree has also been set explicitly.
+                qd_max = metadata.get("max_quadrature_degree")
+                if qd_max is not None:
+                    if qd >= 0:
+                        raise ValueError(
+                            "Cannot set both 'quadrature_degree' and "
+                            "'max_quadrature_degree' in integral metadata. "
+                            "'max_quadrature_degree' bounds the estimated degree, "
+                            "so it has no effect when the degree is given explicitly."
+                        )
+                    if int(qd_max) < 0:
+                        raise ValueError(
+                            f"'max_quadrature_degree' must be non-negative, got {qd_max}."
+                        )
+
                 # Sending in a negative quadrature degree means that we want to be
                 # able to customize it at a later stage.
                 if qd < 0:
                     qd = int(np.max(integral.metadata()["estimated_polynomial_degree"]))
+                    if qd_max is not None:
+                        qd = min(qd, int(qd_max))
                 # Extract quadrature rule
                 qr = integral.metadata().get("quadrature_rule", "default")
 
