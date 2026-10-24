@@ -163,17 +163,13 @@ jobs:
           repository: "FEniCS/docs"
           path: "docs"
           ssh-key: "${{ secrets.SSH_GITHUB_DOCS_PRIVATE_KEY }}"
-      - name: Set version name
-        if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.14 }}
-        run: |
-          echo "VERSION_NAME=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - name: Copy documentation into repository
         if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.14 }}
         run: |
           cd docs
-          git rm -r --ignore-unmatch ffcx/${{ env.VERSION_NAME }}
-          mkdir -p ffcx/${{ env.VERSION_NAME }}
-          cp -r ../doc/build/html/* ffcx/${{ env.VERSION_NAME }}
+          git rm -r --ignore-unmatch ffcx/${{ github.ref_name }}
+          mkdir -p ffcx/${{ github.ref_name }}
+          cp -r ../doc/build/html/* ffcx/${{ github.ref_name }}
       - name: Commit and push documentation to FEniCS/docs
         if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.14 }}
         run: |
