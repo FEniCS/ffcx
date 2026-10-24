@@ -2596,3 +2596,86 @@ def test_bessel_functions(compile_args):
 
     # Vertex rule on [a, b]: (b - a) / 2 * (f(a) + f(b))
     assert np.isclose(J[0], 0.5 * (b - a) * (f(a) + f(b)))
+
+
+def _assemble_scalar(compile_args, form, coords, w, facet=None):
+    """Assemble a scalar form on one cell or facet."""
+    compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
+        [form], cffi_extra_compile_args=compile_args
+    )
+    f = compiled_forms[0]
+    offsets = f.form_integral_offsets
+    itype = module.lib.cell if facet is None else module.lib.exterior_facet
+    integral = f.form_integrals[offsets[itype]]
+
+    ffi = module.ffi
+    J = np.zeros(1, dtype=np.float64)
+    entity = np.array([0 if facet is None else facet], dtype=np.intc)
+    integral.tabulate_tensor_float64(
+        ffi.cast("double *", J.ctypes.data),
+        ffi.cast("double *", w.ctypes.data),
+        ffi.NULL,
+        ffi.cast("double *", coords.ctypes.data),
+        ffi.NULL if facet is None else ffi.cast("int *", entity.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+    )
+    return J[0]
+
+
+def test_cell_avg(compile_args):
+    """Test cell_avg of a coefficient.
+
+    The average over a cell satisfies `int_K cell_avg(u) dx == int_K u dx`,
+    which pins the value without needing a reference implementation.
+    """
+    c_el = basix.ufl.element("Lagrange", "triangle", 1, shape=(2,))
+    mesh = ufl.Mesh(c_el)
+    u = ufl.Coefficient(ufl.FunctionSpace(mesh, basix.ufl.element("Lagrange", "triangle", 1)))
+
+    coords = np.array([0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 3.0, 0.0], dtype=np.float64)
+    w = np.array([1.0, 4.0, 7.0], dtype=np.float64)
+
+    averaged = _assemble_scalar(compile_args, ufl.cell_avg(u) * ufl.dx, coords, w)
+    direct = _assemble_scalar(compile_args, u * ufl.dx, coords, w)
+    assert np.isclose(averaged, direct)
+
+    # The average of a P1 function is the mean of its vertex values, and
+    # the cell area here is 3
+    assert np.isclose(averaged, w.mean() * 3.0)
+
+
+@pytest.mark.parametrize("facet", [0, 1, 2])
+def test_facet_avg(compile_args, facet):
+    """Test facet_avg of a coefficient, via `int_F facet_avg(u) ds == int_F u ds`."""
+    c_el = basix.ufl.element("Lagrange", "triangle", 1, shape=(2,))
+    mesh = ufl.Mesh(c_el)
+    u = ufl.Coefficient(ufl.FunctionSpace(mesh, basix.ufl.element("Lagrange", "triangle", 1)))
+
+    coords = np.array([0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 3.0, 0.0], dtype=np.float64)
+    w = np.array([1.0, 4.0, 7.0], dtype=np.float64)
+
+    averaged = _assemble_scalar(compile_args, ufl.facet_avg(u) * ufl.ds, coords, w, facet=facet)
+    direct = _assemble_scalar(compile_args, u * ufl.ds, coords, w, facet=facet)
+    assert np.isclose(averaged, direct)
+
+
+@pytest.mark.parametrize(
+    "cellname,degree", [("triangle", 2), ("quadrilateral", 1), ("tetrahedron", 2)]
+)
+def test_avg_rejects_non_affine_cells(cellname, degree):
+    """Averaging is rejected where the Jacobian is not constant.
+
+    The averaged table is built on the reference cell, so the Jacobian
+    determinant only cancels when it is constant. Returning a reference
+    average would be silently wrong, so it is refused instead.
+    """
+    gdim = 2 if cellname in ("triangle", "quadrilateral") else 3
+    c_el = basix.ufl.element("Lagrange", cellname, degree, shape=(gdim,))
+    mesh = ufl.Mesh(c_el)
+    u = ufl.Coefficient(ufl.FunctionSpace(mesh, basix.ufl.element("Lagrange", cellname, 1)))
+
+    with pytest.raises(NotImplementedError, match="constant Jacobian"):
+        ffcx.codegeneration.jit.compile_forms([ufl.cell_avg(u) * ufl.dx])
+    with pytest.raises(NotImplementedError, match="constant Jacobian"):
+        ffcx.codegeneration.jit.compile_forms([ufl.facet_avg(u) * ufl.ds])
