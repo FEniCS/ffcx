@@ -625,7 +625,10 @@ class IntegralGenerator:
         All terms share the same dof loops. Stage arrays and contributions
         shared by several terms, such as the components of a vector
         Laplacian, are computed once, and each element tensor entry is
-        updated once.
+        updated once. Terms updating the same entries with the same last
+        direction tables, such as the derivative pairs of a Laplacian, have
+        their last stages summed and are contracted together, since that
+        innermost contraction runs the most often.
         """
         dim = iq.dim
 
@@ -644,18 +647,20 @@ class IntegralGenerator:
             ]
             return accesses, self._tables_key(term["tables"], direction)
 
-        def contract(stage, accesses, direction, stride, m):
-            """Return a loop accumulating stage contracted in direction into a new scalar."""
+        def contract(stages, accesses, direction, stride, m):
+            """Return a loop accumulating stages, summed, contracted in direction into a scalar."""
             nonlocal num_accumulators
             acc = L.Symbol(f"acc{group_id}_{num_accumulators}", dtype=L.DataType.SCALAR)
             num_accumulators += 1
             q = iq.local_index(direction)
             index = q if m is None else q * stride + m
+            values = [stage[index] for stage in stages]
+            value = values[0] if len(values) == 1 else L.Sum(values)
             loop = L.ForRange(
                 q,
                 0,
                 iq.sizes[direction],
-                [L.AssignAdd(acc, L.float_product([stage[index]] + accesses))],
+                [L.AssignAdd(acc, L.float_product([value] + accesses))],
             )
             return acc, [L.VariableDecl(acc, L.LiteralFloat(0.0)), loop]
 
@@ -666,8 +671,7 @@ class IntegralGenerator:
         level_code: list[list[L.LNode]] = [[] for _ in range(dim)]
         declarations: list[L.LNode] = []
         stages: dict[tuple, L.Symbol] = {}
-        contributions: dict[tuple, L.Symbol] = {}
-        targets: dict[tuple, tuple[list[L.LExpr], list[L.LExpr]]] = {}
+        targets: dict[tuple, tuple[list[L.LExpr], dict[tuple, tuple[list, list[L.Symbol]]]]] = {}
         num_accumulators = 0
         for term in terms:
             stage = term["cache"]
@@ -684,28 +688,38 @@ class IntegralGenerator:
                     stages[key] = next_stage
                     declarations.append(L.ArrayDecl(next_stage, sizes=stride))
                     m = L.Symbol(f"iqm{s}", dtype=L.DataType.INT)
-                    acc, code = contract(stage, accesses, s, stride, m)
+                    acc, code = contract([stage], accesses, s, stride, m)
                     level_code[s].append(
                         L.ForRange(m, 0, stride, code + [L.Assign(next_stage[m], acc)])
                     )
                 stage = stages[key]
 
-            # Last direction: contract to a scalar contribution
+            # Terms updating the same entries with the same last direction
+            # tables are contracted once, with the sum of their stages
             accesses, names = factors(term, dim - 1)
-            key = key + (names,)
-            if key not in contributions:
-                acc, code = contract(stage, accesses, dim - 1, 1, None)
-                contributions[key] = acc
-                level_code[dim - 1] += code
-
             target = tuple(expr_key(index) for index in term["A_indices"])
-            targets.setdefault(target, (term["A_indices"], []))[1].append(contributions[key])
+            merged = targets.setdefault(target, (term["A_indices"], {}))[1]
+            merged.setdefault(names, (accesses, []))[1].append(stage)
 
+        # Last direction: contract the summed stages to a scalar
+        # contribution. Summing in the contraction loop, rather than into
+        # an array outside the dof loops, keeps it vectorising well.
         A = self.backend.symbols.element_tensor
-        for A_indices, values in targets.values():
+        contributions: dict[tuple, L.Symbol] = {}
+        updates: list[L.LNode] = []
+        for A_indices, merged in targets.values():
+            values: list[L.LExpr] = []
+            for names, (accesses, terms_stages) in merged.items():
+                key = (tuple(stage.name for stage in terms_stages), names)
+                if key not in contributions:
+                    acc, code = contract(terms_stages, accesses, dim - 1, 1, None)
+                    contributions[key] = acc
+                    level_code[dim - 1] += code
+                values.append(contributions[key])
             A_index = L.MultiIndex(list(A_indices), self.ir.expression.tensor_shape)
             value = values[0] if len(values) == 1 else L.Sum(values)
-            level_code[dim - 1].append(L.AssignAdd(A[A_index], value))
+            updates.append(L.AssignAdd(A[A_index], value))
+        level_code[dim - 1] += updates
 
         body = dof_loops(dim - 1, level_code[dim - 1])
         for s in reversed(range(dim - 1)):
