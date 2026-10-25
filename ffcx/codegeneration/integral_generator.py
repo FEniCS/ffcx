@@ -603,9 +603,15 @@ class IntegralGenerator:
             return None
         coefficients.stack_left -= sum(sizes)
 
-        bs = tabledata.block_size
-        begin = tabledata.offset
-        assert bs is not None and begin is not None
+        stride = tabledata.block_size if is_coefficient else 3
+        offset = tabledata.offset
+        assert stride is not None and offset is not None
+        dofs = (
+            self.backend.symbols.coefficient_dof_access(mt.terminal, offset)
+            if is_coefficient
+            else self.backend.symbols.coordinate_dofs[offset]
+        )
+        source, offset = dofs.array, dofs.indices[0]
 
         def loop(name: str, extent: int) -> tuple[L.LExpr, Any]:
             """Return a loop index and a function wrapping a body in its loop.
@@ -620,7 +626,6 @@ class IntegralGenerator:
         name = f"{access.name}_{quadrature_rule.id()}"
         dtype = L.DataType.SCALAR if is_coefficient else L.DataType.REAL
         code: list[L.LNode] = []
-        source = None
         for d in reversed(range(dim)):
             stage = L.Symbol(f"{name}_c{d}", dtype=dtype)
             code.append(L.ArrayDecl(stage, sizes=sizes[d]))
@@ -630,31 +635,21 @@ class IntegralGenerator:
             b, b_loop = loop("b", inner)
             out = stage[(a * num_points[d] + q) * inner + b]
 
-            def term(i, d=d, a=a, q=q, b=b, inner=inner, source=source):
-                """Return the term of dof i of direction d."""
-                index = (a * num_dofs[d] + i) * inner + b
-                if source is None and is_coefficient:
-                    value = self.backend.symbols.coefficient_dof_access(
-                        mt.terminal, index * bs + begin
-                    )
-                elif source is None:
-                    # coordinate_dofs hold three components per node
-                    value = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)[index * 3 + begin]
-                else:
-                    value = source[index]
-                table, _ = self.backend.access.tensor_factor_access(tabledata, d, q, i)
-                return value * table
+            i = L.Symbol("sfc_i", dtype=L.DataType.INT)
+            terms = []
+            for index in (L.LiteralInt(0), i):
+                value = source[((a * num_dofs[d] + index) * inner + b) * stride + offset]
+                table, _ = self.backend.access.tensor_factor_access(tabledata, d, q, index)
+                terms.append(value * table)
 
             # The first dof sets the stage, the others add to it, in a
             # contiguous innermost loop over the points of later directions
-            body = b_loop([L.Assign(out, term(L.LiteralInt(0)))])
+            body = b_loop([L.Assign(out, terms[0])])
             if num_dofs[d] > 1:
-                i = L.Symbol("sfc_i", dtype=L.DataType.INT)
-                body += [L.ForRange(i, 1, num_dofs[d], b_loop([L.AssignAdd(out, term(i))]))]
+                body += [L.ForRange(i, 1, num_dofs[d], b_loop([L.AssignAdd(out, terms[1])]))]
             code += a_loop(q_loop(body))
-            source = stage
+            source, stride, offset = stage, 1, 0
         coefficients.code += code
-        assert source is not None
         return L.Section(
             type(mt.terminal).__name__,
             [],

@@ -167,6 +167,8 @@ def sum_factorisation_forms(cell_type, P):
     u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
     uw, vw = ufl.TrialFunction(W), ufl.TestFunction(W)
     f = ufl.Coefficient(V)
+    fw = ufl.Coefficient(W)
+    g = ufl.Coefficient(Q)
     x = ufl.SpatialCoordinate(mesh)
     nf = V.ufl_element().dim
     return {
@@ -184,6 +186,11 @@ def sum_factorisation_forms(cell_type, P):
         "mixed_spaces": (ufl.TrialFunction(Q) * v * ufl.dx, 0),
         "linear": (ufl.sin(x[0]) * f * v * ufl.dx, nf),
         "linear_gradient": (ufl.inner(ufl.grad(f), ufl.grad(v)) * ufl.dx, nf),
+        "vector_coefficient_gradient": (
+            ufl.inner(ufl.grad(fw), ufl.grad(vw)) * ufl.dx,
+            W.ufl_element().dim,
+        ),
+        "two_coefficients": (ufl.inner(f * g, v) * ufl.dx, nf + Q.ufl_element().dim),
         "non_tensor_product_argument": (ufl.TrialFunction(DG0) * v * ufl.dx, 0),
     }
 
@@ -241,6 +248,8 @@ def uses_sum_factorised_contraction(form, dtype):
         "mixed_spaces",
         "linear",
         "linear_gradient",
+        "vector_coefficient_gradient",
+        "two_coefficients",
         "non_tensor_product_argument",
     ],
 )
@@ -259,7 +268,10 @@ def test_sum_factorised_contraction(name, P, cell_type, compile_args, tmp_path):
 @pytest.mark.xfail(
     sys.platform.startswith("win32"), raises=NotImplementedError, reason="missing _Complex"
 )
-@pytest.mark.parametrize("name", ["coefficient_mass", "vector_laplace"])
+@pytest.mark.parametrize(
+    "name",
+    ["coefficient_mass", "vector_laplace", "vector_coefficient_gradient", "two_coefficients"],
+)
 @pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
 def test_sum_factorised_contraction_complex(name, cell_type, compile_args, tmp_path):
     dtype = "complex128"
