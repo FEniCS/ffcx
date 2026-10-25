@@ -29,12 +29,18 @@ FFCX_DEFAULT_OPTIONS = {
     ),
     "sum_factorization": (
         bool,
-        False,
-        "Use sum factorization for cell integrals of tensor product elements: tabulate on a "
-        "tensor product quadrature rule and contract one direction at a time, at a cost of "
-        "O(P^(2d+1)) for a bilinear form of degree P in dimension d. Uses up to 256 KiB of "
-        "stack; larger integrals keep a quadrature loop that updates the element tensor at "
-        "every point.",
+        True,
+        "Use sum factorization where available for cell integrals of tensor product elements: "
+        "tabulate on a tensor product quadrature rule and contract one direction at a time, "
+        "at a cost of O(P^(2d+1)) for a bilinear form of degree P in dimension d.",
+        None,
+    ),
+    "sum_factorization_stack_limit": (
+        int,
+        262144,
+        "Bytes of stack the arrays of a sum-factorised kernel may take. The integrand factors are "
+        "cached and contracted in batches to stay within it, and ordinary quadrature is used if "
+        "a single factor doesn't fit. 0 for no limit.",
         None,
     ),
     "table_rtol": (

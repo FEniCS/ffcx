@@ -466,7 +466,7 @@ class FFCXBackendAccess:
         if tabledata.is_permuted:
             qp = self.symbols.entity_permutation(restriction)
 
-        if dof_index.dim == 1 and quadrature_index.dim == 1:
+        if not tabledata.has_tensor_factorisation:
             symbols += [L.Symbol(tabledata.name, dtype=L.DataType.REAL)]
             return self.symbols.element_tables[tabledata.name][qp][entity][iq_global_index][
                 ic_global_index
@@ -474,13 +474,8 @@ class FFCXBackendAccess:
         else:
             FE = []
             for i in range(dof_index.dim):
-                # A piecewise table's 1D factors are constant over the points,
-                # and it's accessed outside the quadrature loop
-                iq_i = (
-                    L.LiteralInt(0) if tabledata.is_piecewise else quadrature_index.local_index(i)
-                )
                 table, symbol = self.tensor_factor_access(
-                    tabledata, i, iq_i, dof_index.local_index(i)
+                    tabledata, i, quadrature_index.local_index(i), dof_index.local_index(i)
                 )
                 symbols += [symbol]
                 FE.append(table)

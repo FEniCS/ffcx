@@ -12,8 +12,9 @@ import numpy as np
 import pytest
 import ufl
 
+import ffcx.analysis
 import ffcx.codegeneration.jit
-import ffcx.compiler
+import ffcx.ir.representation
 import ffcx.options
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 
@@ -39,29 +40,33 @@ def create_tensor_product_element(cell_type, degree, variant, shape=None):
         return basix.ufl.blocked_element(uflelement, shape=shape)
 
 
-def generate_kernel(forms, dtype, options, compile_args=[], cache_dir=None):
-    """Generate kernel for given forms."""
-    if cache_dir is None:
-        # use a different cache directory for each option
-        sf = options.get("sum_factorization", False)
-        cache_dir = f"./ffcx-cache-{sf}"
-
-    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
-        forms, cache_dir=cache_dir, options=options, cffi_extra_compile_args=compile_args
+def jit_compile(forms, options, compile_args, cache_dir):
+    """Compile forms into a module."""
+    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms, cache_dir=cache_dir, options=options, cffi_extra_compile_args=compile_args or []
     )
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
+    return compiled_forms, module
 
-    form0 = compiled_forms[0]
 
-    offsets = form0.form_integral_offsets
+def generate_kernel(forms, dtype, options, compile_args=None, cache_dir=None):
+    """Generate the kernel of the first of some forms."""
+    if cache_dir is None:
+        # use a different cache directory for each option
+        sf = ffcx.options.get_options(options)["sum_factorization"]
+        cache_dir = f"./ffcx-cache-{sf}"
+    compiled_forms, module = jit_compile(forms, options, compile_args, cache_dir)
+    return cell_kernel(compiled_forms[0], module, dtype), module
+
+
+def cell_kernel(compiled_form, module, dtype):
+    """Return the kernel of the default cell integral of a compiled form."""
+    offsets = compiled_form.form_integral_offsets
     cell = module.lib.cell
     assert offsets[cell + 1] - offsets[cell] == 1
-    integral_id = form0.form_integral_ids[offsets[cell]]
-    assert integral_id == -1
-    default_integral = form0.form_integrals[offsets[cell]]
-    kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
-    return kernel, code, module
+    assert compiled_form.form_integral_ids[offsets[cell]] == -1
+    return getattr(compiled_form.form_integrals[offsets[cell]], f"tabulate_tensor_{dtype}")
 
 
 @pytest.mark.parametrize("dtype", ["float32", "float64"])
@@ -107,7 +112,9 @@ def test_bilinear_form(dtype, P, cell_type):
 
     c_type = dtype_to_c_type(dtype)
     c_xtype = dtype_to_c_type(xdtype)
-    kernel, _code, module = generate_kernel([a], dtype, options={"scalar_type": dtype})
+    kernel, module = generate_kernel(
+        [a], dtype, options={"scalar_type": dtype, "sum_factorization": False}
+    )
     ffi = module.ffi
     kernel(
         ffi.cast(f"{c_type} *", A.ctypes.data),
@@ -121,7 +128,7 @@ def test_bilinear_form(dtype, P, cell_type):
 
     # Use sum factorization
     A1 = np.zeros((ndofs, ndofs), dtype=dtype)
-    kernel, _code, module = generate_kernel(
+    kernel, module = generate_kernel(
         [a], dtype, options={"scalar_type": dtype, "sum_factorization": True}
     )
     ffi = module.ffi
@@ -191,15 +198,14 @@ def sum_factorisation_forms(cell_type, P):
             W.ufl_element().dim,
         ),
         "two_coefficients": (ufl.inner(f * g, v) * ufl.dx, nf + Q.ufl_element().dim),
+        # The value and derivative of f share a stage of their evaluation
+        "coefficient_and_derivative": ((f + f.dx(0)) * v * ufl.dx, nf),
         "non_tensor_product_argument": (ufl.TrialFunction(DG0) * v * ufl.dx, 0),
     }
 
 
-def tabulate(form, num_coefficients, cell_type, dtype, options, compile_args, cache_dir):
-    """Tabulate the cell integral of a form on a distorted cell."""
-    kernel, _code, module = generate_kernel(
-        [form], dtype, {"scalar_type": dtype, **options}, compile_args, cache_dir
-    )
+def tabulate_kernel(kernel, module, form, num_coefficients, cell_type, dtype):
+    """Tabulate the cell integral kernel of a form on a distorted cell."""
     xdtype = dtype_to_scalar_dtype(dtype)
     coords = distorted_cell(cell_type, xdtype)
     A = np.zeros(
@@ -221,84 +227,259 @@ def tabulate(form, num_coefficients, cell_type, dtype, options, compile_args, ca
     return A
 
 
-def assert_matches_fused_loop(args, compile_args, tmp_path):
-    """Check a cell integral tabulated with sum factorisation matches the default fused loop."""
-    A_ref = tabulate(*args, {}, compile_args, tmp_path / "ref")
-    A = tabulate(*args, {"sum_factorization": True}, compile_args, tmp_path / "sf")
+def assert_close(A, A_ref):
+    """Check an element tensor matches a reference."""
     np.testing.assert_allclose(A, A_ref, rtol=1e-12, atol=1e-12 * np.max(np.abs(A_ref)))
 
 
-def uses_sum_factorised_contraction(form, dtype):
-    """Check if the generated code contracts one direction at a time."""
-    options = ffcx.options.get_options({"scalar_type": dtype, "sum_factorization": True})
-    code, _ = ffcx.compiler.compile_ufl_objects([form], options)
-    return "_g1_" in "".join(code)
+def assert_kernels_match(kernels, form, num_coefficients, cell_type, dtype):
+    """Check the kernels of a cell integral, by the fused loop and by sum factorisation, match."""
+    A_ref, A = (
+        tabulate_kernel(kernel, module, form, num_coefficients, cell_type, dtype)
+        for kernel, module in kernels
+    )
+    assert_close(A, A_ref)
 
 
-@pytest.mark.parametrize(
-    "name",
-    [
-        "mass",
-        "laplace",
-        "mixed_derivative",
-        "coefficient_mass",
-        "sin_coefficient",
-        "vector_laplace",
-        "elasticity",
-        "mixed_spaces",
-        "linear",
-        "linear_gradient",
-        "vector_coefficient_gradient",
-        "two_coefficients",
-        "non_tensor_product_argument",
-    ],
+def assert_matches_fused_loop(args, compile_args, tmp_path, options=None):
+    """Check a cell integral tabulated with sum factorisation matches the fused loop."""
+    form, num_coefficients, cell_type, dtype = args
+    kernels = [
+        generate_kernel(
+            [form], dtype, {"scalar_type": dtype, **options}, compile_args, tmp_path / cache_dir
+        )
+        for options, cache_dir in (({"sum_factorization": False}, "ref"), (options or {}, "sf"))
+    ]
+    assert_kernels_match(kernels, form, num_coefficients, cell_type, dtype)
+
+
+def integrands(form, dtype, **options):
+    """Return the quadrature rules and IR of the integrands of a form."""
+    options = ffcx.options.get_options({"scalar_type": dtype, **options})
+    analysis = ffcx.analysis.analyze_ufl_objects(
+        [form], dtype, do_cancel_jacobian_products=options["do_cancel_jacobian_products"]
+    )
+    ir = ffcx.ir.representation.compute_ir(analysis, {}, "", options, None)
+    return [
+        (rule, integrand)
+        for integral in ir.integrals
+        for (_, rule), integrand in integral.expression.integrand.items()
+    ]
+
+
+def sum_factorisation_plans(form, dtype, **options):
+    """Return the plans of the integrands of a form contracted one direction at a time."""
+    return [
+        integrand["sum_factorisation"]
+        for _, integrand in integrands(form, dtype, **options)
+        if integrand["sum_factorisation"] is not None
+    ]
+
+
+def sum_factorised(form, dtype, **options):
+    """Check if the integrals of a form are contracted one direction at a time."""
+    return len(sum_factorisation_plans(form, dtype, **options)) > 0
+
+
+# Forms of `sum_factorisation_forms` compiled together into one module
+CONTRACTION_FORMS = (
+    "mass",
+    "laplace",
+    "mixed_derivative",
+    "coefficient_mass",
+    "sin_coefficient",
+    "vector_laplace",
+    "elasticity",
+    "mixed_spaces",
+    "linear",
+    "linear_gradient",
+    "vector_coefficient_gradient",
+    "two_coefficients",
+    "coefficient_and_derivative",
+    "non_tensor_product_argument",
 )
-@pytest.mark.parametrize("P", [1, 3])
-@pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
-def test_sum_factorised_contraction(name, P, cell_type, compile_args, tmp_path):
-    dtype = "float64"
-    form, num_coefficients = sum_factorisation_forms(cell_type, P)[name]
-    args = (form, num_coefficients, cell_type, dtype)
-    assert_matches_fused_loop(args, compile_args, tmp_path)
+COMPLEX_FORMS = (
+    "coefficient_mass",
+    "vector_laplace",
+    "vector_coefficient_gradient",
+    "two_coefficients",
+)
+VECTOR_FORMS = ("vector_laplace", "elasticity")
 
+
+def cell_degrees(degrees):
+    """Parametrise over cells and degrees, grouping tests that share compiled forms.
+
+    With ``pytest -n <workers> --dist loadgroup``, one worker compiles each module.
+    """
+    return [
+        pytest.param(cell_type, P, marks=pytest.mark.xdist_group(f"{cell_type.name}_P{P}"))
+        for cell_type in (basix.CellType.quadrilateral, basix.CellType.hexahedron)
+        for P in degrees
+    ]
+
+
+@pytest.fixture(scope="module")
+def compiled_forms(tmp_path_factory, compile_args):
+    """Compile forms of `sum_factorisation_forms` into one module, once for all tests using them."""
+    modules = {}
+
+    def compile(names, cell_type, P, dtype, sum_factorization):
+        key = (names, cell_type, P, dtype, sum_factorization)
+        if key not in modules:
+            forms = sum_factorisation_forms(cell_type, P)
+            options = {"scalar_type": dtype, "sum_factorization": sum_factorization}
+            compiled, module = jit_compile(
+                [forms[name][0] for name in names],
+                options,
+                compile_args,
+                tmp_path_factory.mktemp("forms"),
+            )
+            modules[key] = forms, compiled, module
+        return modules[key]
+
+    return compile
+
+
+def check_form(compiled_forms, names, name, P, cell_type, dtype):
+    """Check a form of `sum_factorisation_forms` matches the fused loop.
+
+    Returns whether it is contracted one direction at a time.
+    """
+    kernels = []
+    for sum_factorization in (False, True):
+        forms, compiled, module = compiled_forms(names, cell_type, P, dtype, sum_factorization)
+        kernels.append((cell_kernel(compiled[names.index(name)], module, dtype), module))
+    form, num_coefficients = forms[name]
+    assert_kernels_match(kernels, form, num_coefficients, cell_type, dtype)
+    return sum_factorised(form, dtype)
+
+
+@pytest.mark.parametrize("sum_factorization,expected", [(None, True), (True, True), (False, False)])
+@pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
+def test_sum_factorisation_default_and_opt_out(sum_factorization, expected, cell_type):
+    form, _ = sum_factorisation_forms(cell_type, 2)["mass"]
+    options = {} if sum_factorization is None else {"sum_factorization": sum_factorization}
+    assert sum_factorised(form, "float64", **options) == expected
+
+
+@pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
+def test_sum_factorisation_diagonal(cell_type):
+    """Assembling only the diagonal uses ordinary quadrature."""
+    form, _ = sum_factorisation_forms(cell_type, 2)["laplace"]
+    assert not sum_factorised(form, "float64", part="diagonal")
+
+
+@pytest.mark.parametrize("rule", ["custom", "vertex"])
+@pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
+def test_sum_factorisation_unfactorised_rule(rule, cell_type, compile_args, tmp_path):
+    """A rule without tensor factors uses ordinary quadrature by default."""
+    form, _ = sum_factorisation_forms(cell_type, 2)["mass"]
+    metadata = {"quadrature_rule": rule, "quadrature_degree": 1}
+    if rule == "custom":
+        points, weights = basix.make_quadrature(cell_type, 4)
+        metadata.update(quadrature_points=points, quadrature_weights=weights)
+    form = form.integrals()[0].integrand() * ufl.dx(metadata=metadata)
+    assert_matches_fused_loop((form, 0, cell_type, "float64"), compile_args, tmp_path)
+    assert not sum_factorised(form, "float64")
+
+
+@pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
+def test_sum_factorisation_unfactorised_coefficient(cell_type, compile_args, tmp_path):
+    """Ordinary coefficient and geometry tables work with tensor-product argument tables."""
+    gdim = cell_to_gdim(cell_type)
+    mesh = ufl.Mesh(basix.ufl.element("P", cell_type, 1, shape=(gdim,)))
+    V = ufl.FunctionSpace(
+        mesh, create_tensor_product_element(cell_type, 2, basix.LagrangeVariant.gll_warped)
+    )
+    Q = ufl.FunctionSpace(mesh, basix.ufl.element("P", cell_type, 2))
+    w, v = ufl.Coefficient(Q), ufl.TestFunction(V)
+    form = (w * v + ufl.inner(ufl.grad(w), ufl.grad(v))) * ufl.dx
+    args = (form, Q.ufl_element().dim, cell_type, "float64")
+    assert_matches_fused_loop(args, compile_args, tmp_path)
+    assert sum_factorised(form, "float64")
+
+
+@pytest.mark.parametrize("name", CONTRACTION_FORMS)
+@pytest.mark.parametrize("cell_type,P", cell_degrees([1, 3]))
+def test_sum_factorised_contraction(name, P, cell_type, compiled_forms):
+    contracted = check_form(compiled_forms, CONTRACTION_FORMS, name, P, cell_type, "float64")
     # A table without a tensor factorisation falls back to the fused loop
-    assert uses_sum_factorised_contraction(form, dtype) == (name != "non_tensor_product_argument")
+    assert contracted == (name != "non_tensor_product_argument")
 
 
 @pytest.mark.xfail(
     sys.platform.startswith("win32"), raises=NotImplementedError, reason="missing _Complex"
 )
-@pytest.mark.parametrize(
-    "name",
-    ["coefficient_mass", "vector_laplace", "vector_coefficient_gradient", "two_coefficients"],
-)
-@pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
-def test_sum_factorised_contraction_complex(name, cell_type, compile_args, tmp_path):
-    dtype = "complex128"
-    form, num_coefficients = sum_factorisation_forms(cell_type, 2)[name]
-    args = (form, num_coefficients, cell_type, dtype)
-    assert_matches_fused_loop(args, compile_args, tmp_path)
-    assert uses_sum_factorised_contraction(form, dtype)
+@pytest.mark.parametrize("name", COMPLEX_FORMS)
+@pytest.mark.parametrize("cell_type,P", cell_degrees([2]))
+def test_sum_factorised_contraction_complex(name, cell_type, P, compiled_forms):
+    assert check_form(compiled_forms, COMPLEX_FORMS, name, P, cell_type, "complex128")
+
+
+@pytest.mark.parametrize("name", VECTOR_FORMS)
+@pytest.mark.parametrize("cell_type,P", cell_degrees([2, 4]))
+def test_sum_factorised_contraction_vector(name, P, cell_type, compiled_forms):
+    """Vector-valued forms, whose blocks share contributions, at even degree.
+
+    An even degree gives an odd number of dofs and points per direction.
+    """
+    assert check_form(compiled_forms, VECTOR_FORMS, name, P, cell_type, "float64")
 
 
 @pytest.mark.parametrize(
-    "quadrature_degree,dtype,expected",
+    "quadrature_degree,dtype",
     [
-        (8, "float64", True),
-        (22, "float64", True),
-        (22, "complex128", False),
-        (34, "float64", False),
+        (8, "float64"),
+        (22, "float64"),
+        (22, "complex128"),
+        (34, "float64"),
     ],
 )
-def test_sum_factorised_contraction_stack_budget(quadrature_degree, dtype, expected):
-    """Rules whose buffers don't fit the stack keep the fused loop.
-
-    The buffers hold scalars, so complex rules reach the budget first.
-    """
+def test_sum_factorised_contraction_large_rule(quadrature_degree, dtype):
+    """Without a stack limit, large rules keep directional contractions."""
     form, _ = sum_factorisation_forms(basix.CellType.hexahedron, 1)["laplace"]
     integrand = form.integrals()[0].integrand()
     a = integrand * ufl.dx(metadata={"quadrature_degree": quadrature_degree})
-    assert uses_sum_factorised_contraction(a, dtype) == expected
+    assert sum_factorised(a, dtype, sum_factorization_stack_limit=0)
+
+
+@pytest.mark.parametrize(
+    "cell_type,name,limit",
+    [
+        (basix.CellType.quadrilateral, "elasticity", 2048),
+        (basix.CellType.quadrilateral, "elasticity", 1024),
+        (basix.CellType.quadrilateral, "vector_laplace", 1024),
+        (basix.CellType.hexahedron, "elasticity", 16384),
+    ],
+)
+def test_sum_factorisation_batches(cell_type, name, limit, compile_args, tmp_path):
+    """A stack limit splits the integrand factors into batches, contracted in turn."""
+    form, num_coefficients = sum_factorisation_forms(cell_type, 2)[name]
+    options = {"sum_factorization_stack_limit": limit}
+    (plan,) = sum_factorisation_plans(form, "float64", **options)
+    assert len(plan.batches) > 1
+    args = (form, num_coefficients, cell_type, "float64")
+    assert_matches_fused_loop(args, compile_args, tmp_path, options)
+
+
+@pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
+def test_sum_factorisation_stack_limit_fallback(cell_type, compile_args, tmp_path):
+    """Ordinary quadrature is used if one integrand factor doesn't fit the stack limit."""
+    form, num_coefficients = sum_factorisation_forms(cell_type, 2)["elasticity"]
+    options = {"sum_factorization_stack_limit": 256}
+    assert not sum_factorised(form, "float64", **options)
+    # The tensor product rule is used as an ordinary rule
+    assert all(not rule.has_tensor_factors for rule, _ in integrands(form, "float64", **options))
+    args = (form, num_coefficients, cell_type, "float64")
+    assert_matches_fused_loop(args, compile_args, tmp_path, options)
+
+
+@pytest.mark.parametrize("P", [7, 8])
+def test_sum_factorised_contraction_high_degree_elasticity(P):
+    """Hex elasticity keeps directional contractions beyond the former buffer limit."""
+    form, _ = sum_factorisation_forms(basix.CellType.hexahedron, P)["elasticity"]
+    assert sum_factorised(form, "float64")
 
 
 @pytest.mark.parametrize("name", ["two_quadrature_degrees", "piecewise_coefficient", "linear"])

@@ -33,6 +33,12 @@ class QuadratureRule:
         self.has_tensor_factors = tensor_factors is not None
         self._hash = None
 
+    @property
+    def num_points(self) -> list[int]:
+        """Return the number of points in each direction of a tensor product rule."""
+        assert self.tensor_factors is not None
+        return [int(weights.size) for _, weights in self.tensor_factors]
+
     def __hash__(self):
         """Hash."""
         if self._hash is None:

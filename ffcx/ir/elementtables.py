@@ -636,9 +636,6 @@ def build_optimized_tables(
 
         cell_offset = 0
 
-        if use_sum_factorization and (not quadrature_rule.has_tensor_factors):
-            raise RuntimeError("Sum factorization not available for this quadrature rule.")
-
         tensor_factors: list[UniqueTableReferenceT] | None = None
         tensor_perm = None
         factors = element.get_tensor_product_representation()
