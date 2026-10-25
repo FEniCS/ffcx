@@ -189,12 +189,6 @@ class IntegralGenerator:
         # scaled by |det J|) and fuse it with the quadrature weight once.
         self._piecewise_mul_operands: dict[str, tuple[L.LExpr, L.LExpr]] = {}
 
-        # Sum-factorised contraction plan of each quadrature rule, or None
-        # where it doesn't apply, see `_sum_factorisation_plan`
-        self._sum_factorisation_plans: dict[
-            tuple[basix.CellType, QuadratureRule], dict[str, Any] | None
-        ] = {}
-
         # Set of counters used for assigning names to intermediate
         # variables
         self.symbol_counters: dict[str, int] = collections.defaultdict(int)
@@ -311,20 +305,20 @@ class IntegralGenerator:
         # contraction reads weighted copies of 1D tables instead of some of
         # the tables, and folds the quadrature weights into them
         read = referenced_names(parts)
-        tables = [
+        parts = (
             L.commented_code_list(
                 [table for table in quadrature_tables if table.symbol.name in read],
                 "Quadrature rules",
-            ),
-            L.commented_code_list(
+            )
+            + L.commented_code_list(
                 [table for table in element_tables if table.symbol.name in read],
                 [
                     "Precomputed values of basis functions and precomputations",
                     "FE* dimensions: [permutation][entities][points][dofs]",
                 ],
-            ),
-        ]
-        parts = tables[0] + tables[1] + parts
+            )
+            + parts
+        )
 
         # Drop every unread scalar declaration now the kernel body is whole.
         # Done on the LNode tree, before formatting, so it respects scopes
@@ -387,10 +381,10 @@ class IntegralGenerator:
         # Generate varying partition
         definitions, intermediates_0 = self.generate_varying_partition(quadrature_rule, domain)
 
-        plan = self._sum_factorisation_plan(quadrature_rule, domain)
-        if plan is not None:
+        groups = self._sum_factorisation_groups(quadrature_rule, domain)
+        if groups is not None:
             return self._sum_factorised_quadrature_loop(
-                definitions, intermediates_0, quadrature_rule, domain, plan
+                definitions, intermediates_0, quadrature_rule, domain, groups
             )
 
         # Generate dofblock parts, some of this will be placed before or after quadloop
@@ -437,27 +431,21 @@ class IntegralGenerator:
         """
         return (td.tensor_factors[direction].name, arg == 0)
 
-    def _sum_factorisation_plan(
+    @classmethod
+    def _tables_key(cls, tables: list, direction: int) -> tuple:
+        """Identify the 1D tables of all arguments in a direction in a contraction."""
+        return tuple(cls._table_key(td, arg, direction) for arg, td in enumerate(tables))
+
+    def _sum_factorisation_groups(
         self, quadrature_rule: QuadratureRule, domain: basix.CellType
-    ) -> dict[str, Any] | None:
-        """Return how to contract a rule by sum factorisation, or `None` if it doesn't apply.
+    ) -> list[list[tuple[tuple, BlockDataT]]] | None:
+        """Return the blocks to contract by sum factorisation, or `None` if it doesn't apply.
 
         Sum factorisation applies when the option is set and every block's
         arguments factorise over the directions of the tensor product rule,
-        with buffers that fit the stack budget. The plan holds the blocks
-        grouped by their dof loops, and is computed once per rule.
+        with buffers that fit the stack budget. The blocks are grouped by
+        their dof loops.
         """
-        key = (domain, quadrature_rule)
-        if key not in self._sum_factorisation_plans:
-            self._sum_factorisation_plans[key] = self._compute_sum_factorisation_plan(
-                quadrature_rule, domain
-            )
-        return self._sum_factorisation_plans[key]
-
-    def _compute_sum_factorisation_plan(
-        self, quadrature_rule: QuadratureRule, domain: basix.CellType
-    ) -> dict[str, Any] | None:
-        """Compute the plan of `_sum_factorisation_plan`."""
         options = self.backend.access.options
         if not options.get("sum_factorization_contraction", False):
             return None
@@ -513,21 +501,17 @@ class IntegralGenerator:
         for group in groups.values():
             stages = set()
             for _, blockdata in group:
+                tables = [mad.tabledata for mad in blockdata.ma_data]
                 stage: tuple = (blockdata.factor_indices_comp_indices[0][0],)
                 for s in range(dim - 1):
-                    stage += (
-                        tuple(
-                            self._table_key(mad.tabledata, arg, s)
-                            for arg, mad in enumerate(blockdata.ma_data)
-                        ),
-                    )
+                    stage += (self._tables_key(tables, s),)
                     if stage not in stages:
                         stages.add(stage)
                         num_scalars += math.prod(num_points[s + 1 :])
         scalar_size = np.dtype(options["scalar_type"]).itemsize
         if num_scalars * scalar_size > _SUM_FACTORISATION_STACK_BUDGET_BYTES:
             return None
-        return {"groups": list(groups.values())}
+        return list(groups.values())
 
     def _sum_factorised_quadrature_loop(
         self,
@@ -535,7 +519,7 @@ class IntegralGenerator:
         intermediates: list[L.LNode],
         quadrature_rule: QuadratureRule,
         domain: basix.CellType,
-        plan: dict[str, Any],
+        groups: list[list[tuple[tuple, BlockDataT]]],
     ) -> list[L.LNode]:
         """Evaluate the integrand on the tensor product rule, then contract one direction at a time.
 
@@ -559,7 +543,7 @@ class IntegralGenerator:
         # Cache every integrand factor on the whole rule
         caches: dict[int, L.Symbol] = {}
         store: list[L.LNode] = []
-        for _, blockdata in itertools.chain.from_iterable(plan["groups"]):
+        for _, blockdata in itertools.chain.from_iterable(groups):
             factor_index = blockdata.factor_indices_comp_indices[0][0]
             if factor_index not in caches:
                 f = self.get_var(quadrature_rule, domain, F.nodes[factor_index]["expression"])
@@ -599,23 +583,24 @@ class IntegralGenerator:
             return weighted_tables[key][0][0][quadrature_index][dof_index]
 
         contraction: list[L.LNode] = []
-        for group_id, group in enumerate(plan["groups"]):
+        for group_id, group in enumerate(groups):
+            # The blocks of a group share their dof loops
+            B_indices = [
+                create_dof_index(mad.tabledata, self.backend.symbols.argument_loop_index(i))
+                for i, mad in enumerate(group[0][1].ma_data)
+            ]
             terms = []
             for blockmap, blockdata in group:
-                B_indices = [
-                    create_dof_index(mad.tabledata, self.backend.symbols.argument_loop_index(i))
-                    for i, mad in enumerate(blockdata.ma_data)
-                ]
+                factor_index = blockdata.factor_indices_comp_indices[0][0]
                 terms.append(
                     {
-                        "factor": blockdata.factor_indices_comp_indices[0][0],
-                        "cache": caches[blockdata.factor_indices_comp_indices[0][0]],
+                        "factor": factor_index,
+                        "cache": caches[factor_index],
                         "tables": [mad.tabledata for mad in blockdata.ma_data],
-                        "B_indices": B_indices,
                         "A_indices": self._element_tensor_indices(blockmap, blockdata, B_indices),
                     }
                 )
-            contraction += self._sum_factorised_contraction(terms, iq, table, group_id)
+            contraction += self._sum_factorised_contraction(terms, iq, B_indices, table, group_id)
 
         caches_declarations: list[L.LNode] = [
             L.ArrayDecl(cache, sizes=math.prod(iq.sizes)) for cache in caches.values()
@@ -628,7 +613,12 @@ class IntegralGenerator:
         )
 
     def _sum_factorised_contraction(
-        self, terms: list[dict[str, Any]], iq: L.MultiIndex, table, group_id: int
+        self,
+        terms: list[dict[str, Any]],
+        iq: L.MultiIndex,
+        B_indices: list[L.MultiIndex],
+        table,
+        group_id: int,
     ) -> list[L.LNode]:
         """Contract cached integrand factors with the argument 1D tables, direction by direction.
 
@@ -638,7 +628,6 @@ class IntegralGenerator:
         updated once.
         """
         dim = iq.dim
-        B_indices = terms[0]["B_indices"]
 
         def dof_loops(direction: int, body: list[L.LNode]) -> list[L.LNode]:
             # Last argument innermost, so the innermost loop is contiguous in A
@@ -648,15 +637,12 @@ class IntegralGenerator:
                 ]
             return body
 
-        def factors(term, direction, quadrature_index):
+        def factors(term, direction):
             accesses = [
-                table(arg, td, direction, quadrature_index, B_index.local_index(direction))
+                table(arg, td, direction, iq.local_index(direction), B_index.local_index(direction))
                 for arg, (td, B_index) in enumerate(zip(term["tables"], B_indices))
             ]
-            keys = tuple(
-                self._table_key(td, arg, direction) for arg, td in enumerate(term["tables"])
-            )
-            return accesses, keys
+            return accesses, self._tables_key(term["tables"], direction)
 
         def contract(stage, accesses, direction, stride, m):
             """Return a loop accumulating stage contracted in direction into a new scalar."""
@@ -687,7 +673,7 @@ class IntegralGenerator:
             stage = term["cache"]
             key: tuple = (term["factor"],)
             for s in range(dim - 1):
-                accesses, names = factors(term, s, iq.local_index(s))
+                accesses, names = factors(term, s)
                 key = key + (names,)
                 if key not in stages:
                     stride = math.prod(iq.sizes[s + 1 :])
@@ -705,7 +691,7 @@ class IntegralGenerator:
                 stage = stages[key]
 
             # Last direction: contract to a scalar contribution
-            accesses, names = factors(term, dim - 1, iq.local_index(dim - 1))
+            accesses, names = factors(term, dim - 1)
             key = key + (names,)
             if key not in contributions:
                 acc, code = contract(stage, accesses, dim - 1, 1, None)
