@@ -27,13 +27,14 @@ FFCX_DEFAULT_OPTIONS = {
         "Scalar type to use in generated code.",
         ("float32", "float64", "complex64", "complex128"),
     ),
-    "sum_factorization": (bool, False, "Use sum factorization.", None),
-    "sum_factorization_contraction": (
+    "sum_factorization": (
         bool,
         False,
-        "With sum factorization, contract cell integrals one direction at a time instead of "
-        "updating the element tensor at every quadrature point. Uses up to 256 KiB of stack; "
-        "larger integrals keep the fused quadrature loop.",
+        "Use sum factorization for cell integrals of tensor product elements: tabulate on a "
+        "tensor product quadrature rule and contract one direction at a time, at a cost of "
+        "O(P^(2d+1)) for a bilinear form of degree P in dimension d. Uses up to 256 KiB of "
+        "stack; larger integrals keep a quadrature loop that updates the element tensor at "
+        "every point.",
         None,
     ),
     "table_rtol": (

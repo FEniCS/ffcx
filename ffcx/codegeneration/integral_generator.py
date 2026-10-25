@@ -441,14 +441,12 @@ class IntegralGenerator:
     ) -> list[list[tuple[tuple, BlockDataT]]] | None:
         """Return the blocks to contract by sum factorisation, or `None` if it doesn't apply.
 
-        Sum factorisation applies when the option is set and every block's
-        arguments factorise over the directions of the tensor product rule,
-        with buffers that fit the stack budget. The blocks are grouped by
-        their dof loops.
+        Sum factorisation applies when the rule is a tensor product rule
+        (with the `sum_factorization` option) and every block's arguments
+        factorise over its directions, with buffers that fit the stack
+        budget. The blocks are grouped by their dof loops.
         """
         options = self.backend.access.options
-        if not options.get("sum_factorization_contraction", False):
-            return None
         if quadrature_rule is None or not quadrature_rule.has_tensor_factors:
             return None
         if self.ir.expression.integral_type in ufl.custom_integral_types:
