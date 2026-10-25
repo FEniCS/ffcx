@@ -4,6 +4,8 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import itertools
+
 import basix.ufl
 import numpy as np
 import pytest
@@ -11,6 +13,13 @@ import ufl
 
 import ffcx.codegeneration.jit
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
+from ffcx.element_interface import basix_index
+from ffcx.ir.elementtables import (
+    TensorProductTablePlaceholder,
+    analyse_table_type,
+    analyse_tensor_product_table_type,
+    clamp_table_small_numbers,
+)
 
 
 def cell_to_gdim(cell_type):
@@ -194,3 +203,50 @@ def test_sum_factorisation_quadrature_rules(name, cell_type, compile_args, tmp_p
     A_ref = tabulate({}, tmp_path / "ref")
     A = tabulate({"sum_factorization": True}, tmp_path / "sf")
     np.testing.assert_allclose(A, A_ref, rtol=1e-12, atol=1e-12 * np.max(np.abs(A_ref)))
+
+
+@pytest.mark.parametrize("P", [1, 2, 3])
+@pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
+def test_tensor_product_table_type(cell_type, P):
+    """The table type derived from the 1D factors matches the one of the full table."""
+    d = cell_to_gdim(cell_type)
+    element = basix.create_tp_element(
+        basix.ElementFamily.P, cell_type, P, basix.LagrangeVariant.gll_warped
+    )
+    factor = element.get_tensor_product_representation()[0][0]
+    rules = [basix.make_quadrature(basix.CellType.interval, q)[0] for q in (0, 1, 2 * P)]
+    # Collocated with the dofs, giving quadrature tables
+    rules.append(basix.create_lattice(basix.CellType.interval, P, basix.LatticeType.gll, True))
+    for x in rules:
+        points = np.array(list(itertools.product(*[x[:, 0]] * d)))
+        for derivatives in itertools.product(range(3), repeat=d):
+            if sum(derivatives) > 2:
+                continue
+            table = element.tabulate(sum(derivatives), points)[basix_index(derivatives)][..., 0]
+            table = clamp_table_small_numbers(table.reshape(1, 1, *table.shape))
+            factors = [
+                clamp_table_small_numbers(
+                    factor.tabulate(n, x)[n][..., 0].reshape(1, 1, x.shape[0], -1)
+                )
+                for n in derivatives
+            ]
+            assert analyse_tensor_product_table_type(factors) == analyse_table_type(table)
+
+
+def test_tensor_product_table_type_clamped_to_zero():
+    """Factors whose products all clamp to zero give a zero table."""
+    rng = np.random.default_rng(0)
+    factors = [1e-5 * (1 + rng.random((1, 1, 3, 2))) for _ in range(2)]
+    full = np.einsum("pi,qj->pqij", factors[0][0, 0], factors[1][0, 0]).reshape(1, 1, 9, 4)
+    assert analyse_table_type(clamp_table_small_numbers(full)) == "zeros"
+    assert analyse_tensor_product_table_type(factors) == "zeros"
+
+
+def test_tensor_product_table_placeholder():
+    """The placeholder of a table that isn't formed has a shape but no values."""
+    table = TensorProductTablePlaceholder((1, 1, 9, 4))
+    assert table.shape == (1, 1, 9, 4)
+    with pytest.raises(RuntimeError):
+        np.asarray(table)
+    with pytest.raises(RuntimeError):
+        table[0]
