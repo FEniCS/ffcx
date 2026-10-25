@@ -468,8 +468,10 @@ def _max_sum_factorisation_scalars(
     """Return how many scalars the arrays of a sum-factorised contraction may take.
 
     That is the stack limit less the arrays evaluating coefficients and
-    geometry on the whole rule (not counting stages they share), or `None`
-    for no limit.
+    geometry on the whole rule, counting stages shared by terminals reading
+    the same dofs with the same 1D tables once, as
+    `FFCXBackendDefinitions._sum_factorised_lincomb` does, or `None` for no
+    limit.
     """
     limit = int(p["sum_factorization_stack_limit"])
     if limit <= 0:
@@ -478,6 +480,7 @@ def _max_sum_factorisation_scalars(
     real = np.finfo(scalar).dtype
     num_points = quadrature_rule.num_points
     evaluation = 0
+    stages: set[tuple] = set()
     for i, v in F.nodes.items():
         tr = v.get("tr")
         if i in argkeys or tr is None or not tr.has_tensor_factorisation:
@@ -485,12 +488,21 @@ def _max_sum_factorisation_scalars(
         if v["status"] != "varying":
             continue
         assert tr.tensor_factors is not None
+        terminal = v["mt"].terminal
         num_dofs = [int(factor.values.shape[-1]) for factor in tr.tensor_factors]
-        size = sum(evaluation_stage_sizes(num_dofs, num_points))
-        itemsize = (
-            scalar.itemsize if isinstance(v["mt"].terminal, ufl.Coefficient) else real.itemsize
-        )
-        evaluation += size * itemsize
+        sizes = evaluation_stage_sizes(num_dofs, num_points)
+        if isinstance(terminal, ufl.Coefficient):
+            itemsize = scalar.itemsize
+            key: tuple = (terminal, tr.offset, tr.block_size)
+        else:
+            # The spatial coordinate and the Jacobian read the coordinate dofs
+            itemsize = real.itemsize
+            key = (ufl.domain.extract_unique_domain(terminal), tr.offset)
+        for d in reversed(range(len(sizes))):
+            key += (tr.tensor_factors[d].name,)
+            if key not in stages:
+                stages.add(key)
+                evaluation += sizes[d] * itemsize
     return max(limit - evaluation, 0) // int(scalar.itemsize)
 
 

@@ -501,7 +501,9 @@ class IntegralGenerator:
                     plan, group, iq, caches, next(groups)
                 )
             code += [L.Scope(batch_code)] if batched else batch_code
-        return code
+        # The stack limit applies to each rule, so a scope per rule lets the
+        # next reuse the stack of this one's arrays
+        return [L.Scope(code)]
 
     def _sum_factorised_contraction(
         self,
