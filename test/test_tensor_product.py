@@ -401,7 +401,7 @@ def test_sum_factorisation_unfactorised_coefficient(cell_type, compile_args, tmp
 
 
 @pytest.mark.parametrize("name", CONTRACTION_FORMS)
-@pytest.mark.parametrize("cell_type,P", cell_degrees([1, 3]))
+@pytest.mark.parametrize("cell_type,P", cell_degrees([1, 2, 3]))
 def test_sum_factorised_contraction(name, P, cell_type, compiled_forms):
     contracted = check_form(compiled_forms, CONTRACTION_FORMS, name, P, cell_type, "float64")
     # A table without a tensor factorisation falls back to the fused loop
@@ -412,7 +412,7 @@ def test_sum_factorised_contraction(name, P, cell_type, compiled_forms):
     sys.platform.startswith("win32"), raises=NotImplementedError, reason="missing _Complex"
 )
 @pytest.mark.parametrize("name", COMPLEX_FORMS)
-@pytest.mark.parametrize("cell_type,P", cell_degrees([2]))
+@pytest.mark.parametrize("cell_type,P", cell_degrees([1, 2]))
 def test_sum_factorised_contraction_complex(name, cell_type, P, compiled_forms):
     assert check_form(compiled_forms, COMPLEX_FORMS, name, P, cell_type, "complex128")
 

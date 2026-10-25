@@ -35,6 +35,9 @@ from ffcx.codegeneration.optimizer import (
     referenced_symbol_names,
     scalar_declaration_names,
 )
+from ffcx.codegeneration.optimizer import (
+    map_expressions as _map_expressions,
+)
 from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT, CommonExpressionIR, TensorPart
 from ffcx.ir.representation import IntegralIR
@@ -264,58 +267,6 @@ def _tables_indexed_last_by(
         return all(visit(child) for child in _children(node))
 
     return found if all(visit(e) for e in exprs) else None
-
-
-def _map_expressions(node, fn):
-    """Rebuild a statement or expression tree, replacing nodes with ``fn``.
-
-    ``fn`` returns a replacement for a node or ``None`` to keep it and
-    rebuild its operands.
-    """
-    if isinstance(node, list):
-        return [_map_expressions(n, fn) for n in node]
-    replacement = fn(node)
-    if replacement is not None:
-        return replacement
-    if isinstance(node, L.Section):
-        return L.Section(
-            node.name,
-            _map_expressions(list(node.statements), fn),
-            _map_expressions(list(node.declarations), fn),
-            node.input,
-            node.output,
-            node.annotations,
-        )
-    if isinstance(node, L.StatementList):
-        return L.StatementList(_map_expressions(list(node.statements), fn))
-    if isinstance(node, L.ForRange):
-        return L.ForRange(
-            node.index, node.begin, node.end, _map_expressions(list(node.body.statements), fn)
-        )
-    if isinstance(node, L.VariableDecl):
-        value = None if node.value is None else _map_expressions(node.value, fn)
-        return L.VariableDecl(node.symbol, value)
-    if isinstance(node, (L.ArrayDecl, L.Comment)):
-        return node
-    if isinstance(node, L.Statement):
-        return L.Statement(_map_expressions(node.expr, fn))
-    if isinstance(node, L.ArrayAccess):
-        return L.ArrayAccess(node.array, [_map_expressions(i, fn) for i in node.indices])
-    if isinstance(node, L.MathFunction):
-        return L.MathFunction(node.function, [_map_expressions(a, fn) for a in node.args])
-    if isinstance(node, L.NaryOp):
-        return type(node)([_map_expressions(a, fn) for a in node.args])
-    if isinstance(node, L.BinOp):
-        return type(node)(_map_expressions(node.lhs, fn), _map_expressions(node.rhs, fn))
-    if isinstance(node, L.PrefixUnaryOp):
-        return type(node)(_map_expressions(node.arg, fn))
-    if isinstance(node, L.Conditional):
-        return L.Conditional(
-            _map_expressions(node.condition, fn),
-            _map_expressions(node.true, fn),
-            _map_expressions(node.false, fn),
-        )
-    return node
 
 
 def _contraction_nest(section: L.Section, A: L.Symbol, arguments: list[L.Symbol]):
@@ -1902,6 +1853,21 @@ class IntegralGenerator:
         def dof_loops(direction: int, body: list[L.LNode], indices) -> list[L.LNode]:
             # Last argument innermost, so the innermost loop is contiguous in A
             for B_index in reversed(indices):
+                if direction == last and num_points <= 3 and B_index.sizes[direction] <= 3:
+                    index = B_index.local_index(direction)
+                    body = [
+                        statement
+                        for k in range(B_index.sizes[direction])
+                        for statement in _map_expressions(
+                            body,
+                            lambda node: (
+                                L.LiteralInt(k)
+                                if isinstance(node, L.Symbol) and node == index
+                                else None
+                            ),
+                        )
+                    ]
+                    continue
                 body = [
                     L.ForRange(B_index.local_index(direction), 0, B_index.sizes[direction], body)
                 ]
@@ -2038,6 +2004,21 @@ class IntegralGenerator:
                     [L.AssignAdd(acc[dof], update(L.LiteralInt(dof))) for dof in range(num_inner)],
                 ),
             ]
+            if num_points <= 3:
+                # Expose short quadrature reductions so each row entry can
+                # stay in a register under ordinary optimisation flags.
+                row_body = []
+                for point in range(num_points):
+                    value = L.LiteralInt(point)
+                    for dof in range(num_inner):
+                        contribution = _map_expressions(
+                            update(L.LiteralInt(dof)),
+                            lambda node: (
+                                value if isinstance(node, L.Symbol) and node == q else None
+                            ),
+                        )
+                        assign = L.Assign if point == 0 else L.AssignAdd
+                        row_body.append(assign(acc[dof], contribution))
             store = []
             for target in row.targets:
                 A_indices = self._element_tensor_indices(

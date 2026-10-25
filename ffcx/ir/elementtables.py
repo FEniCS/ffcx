@@ -650,6 +650,9 @@ def build_optimized_tables(
                 pts = quadrature_rule.tensor_factors[i][0]
                 d = local_derivatives[i]
                 sub_tbl = j.tabulate(d, pts)[d]
+                # Apply the full table's tolerances to its factors too, so
+                # tabulation round-off does not hide exact zeros and units.
+                sub_tbl = clamp_table_small_numbers(sub_tbl, rtol=rtol, atol=atol)
                 sub_tbl = sub_tbl.reshape(1, 1, sub_tbl.shape[0], sub_tbl.shape[1])
                 for tensor_factor in all_tensor_factors:
                     if tensor_factor.values.shape == sub_tbl.shape and np.allclose(

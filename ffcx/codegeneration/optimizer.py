@@ -735,3 +735,57 @@ def factor_scalar_sums(statements: list[L.LNode]) -> list[L.LNode]:
         ):
             expanded[stmt.symbol.name] = terms
     return output
+
+
+def map_expressions(node, fn):
+    """Rebuild a statement or expression tree, replacing nodes with ``fn``.
+
+    ``fn`` returns a replacement for a node or ``None`` to keep it and
+    rebuild its operands.
+    """
+    if isinstance(node, list):
+        return [map_expressions(n, fn) for n in node]
+    replacement = fn(node)
+    if replacement is not None:
+        return replacement
+    if isinstance(node, L.Section):
+        return L.Section(
+            node.name,
+            map_expressions(list(node.statements), fn),
+            map_expressions(list(node.declarations), fn),
+            node.input,
+            node.output,
+            node.annotations,
+        )
+    if isinstance(node, L.StatementList):
+        return L.StatementList(map_expressions(list(node.statements), fn))
+    if isinstance(node, L.ForRange):
+        return L.ForRange(
+            node.index, node.begin, node.end, map_expressions(list(node.body.statements), fn)
+        )
+    if isinstance(node, L.VariableDecl):
+        value = None if node.value is None else map_expressions(node.value, fn)
+        return L.VariableDecl(node.symbol, value)
+    if isinstance(node, (L.ArrayDecl, L.Comment)):
+        return node
+    if isinstance(node, L.Statement):
+        return L.Statement(map_expressions(node.expr, fn))
+    if isinstance(node, L.MultiIndex):
+        return L.MultiIndex([map_expressions(i, fn) for i in node.symbols], node.sizes)
+    if isinstance(node, L.ArrayAccess):
+        return L.ArrayAccess(node.array, [map_expressions(i, fn) for i in node.indices])
+    if isinstance(node, L.MathFunction):
+        return L.MathFunction(node.function, [map_expressions(a, fn) for a in node.args])
+    if isinstance(node, L.NaryOp):
+        return type(node)([map_expressions(a, fn) for a in node.args])
+    if isinstance(node, L.BinOp):
+        return type(node)(map_expressions(node.lhs, fn), map_expressions(node.rhs, fn))
+    if isinstance(node, L.PrefixUnaryOp):
+        return type(node)(map_expressions(node.arg, fn))
+    if isinstance(node, L.Conditional):
+        return L.Conditional(
+            map_expressions(node.condition, fn),
+            map_expressions(node.true, fn),
+            map_expressions(node.false, fn),
+        )
+    return node
