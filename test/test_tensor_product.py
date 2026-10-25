@@ -297,23 +297,27 @@ def test_sum_factorised_contraction_vector(name, P, cell_type, compile_args, tmp
 
 
 @pytest.mark.parametrize(
-    "quadrature_degree,dtype,expected",
+    "quadrature_degree,dtype",
     [
-        (8, "float64", True),
-        (22, "float64", True),
-        (22, "complex128", False),
-        (34, "float64", False),
+        (8, "float64"),
+        (22, "float64"),
+        (22, "complex128"),
+        (34, "float64"),
     ],
 )
-def test_sum_factorised_contraction_stack_budget(quadrature_degree, dtype, expected):
-    """Rules whose buffers don't fit the stack keep the fused loop.
-
-    The buffers hold scalars, so complex rules reach the budget first.
-    """
+def test_sum_factorised_contraction_large_rule(quadrature_degree, dtype):
+    """Large rules keep directional contractions for real and complex scalars."""
     form, _ = sum_factorisation_forms(basix.CellType.hexahedron, 1)["laplace"]
     integrand = form.integrals()[0].integrand()
     a = integrand * ufl.dx(metadata={"quadrature_degree": quadrature_degree})
-    assert uses_sum_factorised_contraction(a, dtype) == expected
+    assert uses_sum_factorised_contraction(a, dtype)
+
+
+@pytest.mark.parametrize("P", [7, 8])
+def test_sum_factorised_contraction_high_degree_elasticity(P):
+    """Hex elasticity keeps directional contractions beyond the former buffer limit."""
+    form, _ = sum_factorisation_forms(basix.CellType.hexahedron, P)["elasticity"]
+    assert uses_sum_factorised_contraction(form, "float64")
 
 
 @pytest.mark.parametrize("name", ["two_quadrature_degrees", "piecewise_coefficient", "linear"])

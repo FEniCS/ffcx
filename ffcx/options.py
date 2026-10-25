@@ -32,9 +32,7 @@ FFCX_DEFAULT_OPTIONS = {
         False,
         "Use sum factorization for cell integrals of tensor product elements: tabulate on a "
         "tensor product quadrature rule and contract one direction at a time, at a cost of "
-        "O(P^(2d+1)) for a bilinear form of degree P in dimension d. Uses up to 256 KiB of "
-        "stack; larger integrals keep a quadrature loop that updates the element tensor at "
-        "every point.",
+        "O(P^(2d+1)) for a bilinear form of degree P in dimension d.",
         None,
     ),
     "table_rtol": (
