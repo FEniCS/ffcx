@@ -257,13 +257,6 @@ def _collect_referenced_names(node, out: set[str]) -> None:
         _referenced_symbol_names(node.expr, out)
 
 
-def referenced_names(code: list[L.LNode]) -> set[str]:
-    """Return the names of every symbol read anywhere in a code tree."""
-    names: set[str] = set()
-    _collect_referenced_names(code, names)
-    return names
-
-
 def _drop_unreferenced(node, dead: set[str]):
     """Recursively rebuild a code tree, dropping VariableDecls named in `dead`."""
     if isinstance(node, list):
@@ -341,7 +334,9 @@ def prune_dead_scalars(code: list[L.LNode], candidates: set[str]) -> list[L.LNod
     """
     candidates = set(candidates)
     while True:
-        dead = candidates - referenced_names(code)
+        referenced: set[str] = set()
+        _collect_referenced_names(code, referenced)
+        dead = candidates - referenced
         if not dead:
             return code
         code = _drop_unreferenced(code, dead)

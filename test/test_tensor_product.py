@@ -241,6 +241,16 @@ def contracts_by_direction(code):
     return "_g1_" in "".join(code)
 
 
+def check_form(name, P, cell_type, dtype, compile_args, tmp_path):
+    """Check a form of `sum_factorisation_forms` matches the fused loop.
+
+    Returns whether its default code contracts one direction at a time.
+    """
+    form, num_coefficients = sum_factorisation_forms(cell_type, P)[name]
+    args = (form, num_coefficients, cell_type, dtype)
+    return contracts_by_direction(assert_matches_fused_loop(args, compile_args, tmp_path))
+
+
 def uses_sum_factorised_contraction(form, dtype, sum_factorization=None):
     """Check if the code generated for a form contracts one direction at a time."""
     options = {"scalar_type": dtype}
@@ -319,13 +329,9 @@ def test_sum_factorisation_unfactorised_coefficient(cell_type, compile_args, tmp
 @pytest.mark.parametrize("P", [1, 3])
 @pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
 def test_sum_factorised_contraction(name, P, cell_type, compile_args, tmp_path):
-    dtype = "float64"
-    form, num_coefficients = sum_factorisation_forms(cell_type, P)[name]
-    args = (form, num_coefficients, cell_type, dtype)
-    code = assert_matches_fused_loop(args, compile_args, tmp_path)
-
+    contracted = check_form(name, P, cell_type, "float64", compile_args, tmp_path)
     # A table without a tensor factorisation falls back to the fused loop
-    assert contracts_by_direction(code) == (name != "non_tensor_product_argument")
+    assert contracted == (name != "non_tensor_product_argument")
 
 
 @pytest.mark.xfail(
@@ -337,11 +343,7 @@ def test_sum_factorised_contraction(name, P, cell_type, compile_args, tmp_path):
 )
 @pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
 def test_sum_factorised_contraction_complex(name, cell_type, compile_args, tmp_path):
-    dtype = "complex128"
-    form, num_coefficients = sum_factorisation_forms(cell_type, 2)[name]
-    args = (form, num_coefficients, cell_type, dtype)
-    code = assert_matches_fused_loop(args, compile_args, tmp_path)
-    assert contracts_by_direction(code)
+    assert check_form(name, 2, cell_type, "complex128", compile_args, tmp_path)
 
 
 @pytest.mark.parametrize("name", ["vector_laplace", "elasticity"])
@@ -352,11 +354,7 @@ def test_sum_factorised_contraction_vector(name, P, cell_type, compile_args, tmp
 
     An even degree gives an odd number of dofs and points per direction.
     """
-    dtype = "float64"
-    form, num_coefficients = sum_factorisation_forms(cell_type, P)[name]
-    args = (form, num_coefficients, cell_type, dtype)
-    code = assert_matches_fused_loop(args, compile_args, tmp_path)
-    assert contracts_by_direction(code)
+    assert check_form(name, P, cell_type, "float64", compile_args, tmp_path)
 
 
 @pytest.mark.parametrize(

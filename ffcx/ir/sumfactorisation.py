@@ -41,12 +41,24 @@ def _factors(td: UniqueTableReferenceT) -> list[UniqueTableReferenceT]:
     return td.tensor_factors
 
 
-def tables_key(tables: list[UniqueTableReferenceT], direction: int) -> tuple:
-    """Identify the 1D tables of all arguments in a direction in a contraction.
+def _names(tables: list[UniqueTableReferenceT], direction: int) -> tuple[str, ...]:
+    """Return the names of the 1D tables in a direction."""
+    return tuple(_factors(td)[direction].name for td in tables)
 
-    The first argument's tables have the 1D quadrature weights folded in.
+
+def _stage_keys(factor: int, tables: list[UniqueTableReferenceT]) -> list[tuple]:
+    """Identify an integrand factor contracted over each number of directions.
+
+    Key d identifies the factor contracted with the tables over directions
+    < d. The last key, over all directions, identifies the contribution to
+    the element tensor. The first argument's tables have the 1D quadrature
+    weights folded in.
     """
-    return tuple((_factors(td)[direction].name, arg == 0) for arg, td in enumerate(tables))
+    keys: list[tuple] = [(factor,)]
+    for direction in range(len(_factors(tables[0]))):
+        names = _names(tables, direction)
+        keys.append(keys[-1] + (tuple((name, arg == 0) for arg, name in enumerate(names)),))
+    return keys
 
 
 class ContractionTerm(typing.NamedTuple):
@@ -55,23 +67,8 @@ class ContractionTerm(typing.NamedTuple):
     factor: int  # Index of the integrand factor in the factorisation graph
     blockmap: tuple[tuple[int, ...], ...]
     blockdata: BlockDataT
-
-    @property
-    def tables(self) -> list[UniqueTableReferenceT]:
-        """The argument tables."""
-        return [mad.tabledata for mad in self.blockdata.ma_data]
-
-    def stage_keys(self) -> list[tuple]:
-        """Identify the integrand factor contracted over each number of directions.
-
-        Key d identifies the factor contracted with the term's tables over
-        directions < d. The last key, over all directions, identifies the
-        term's contribution to the element tensor.
-        """
-        keys: list[tuple] = [(self.factor,)]
-        for direction in range(len(_factors(self.tables[0]))):
-            keys.append(keys[-1] + (tables_key(self.tables, direction),))
-        return keys
+    tables: list[UniqueTableReferenceT]  # The argument tables
+    stage_keys: list[tuple]  # See `_stage_keys`
 
 
 class ContractionRow(typing.NamedTuple):
@@ -96,25 +93,23 @@ class SumFactorisationPlan(typing.NamedTuple):
 
     groups: list[ContractionGroup]
     # Products of the 1D quadrature weights and the 1D tables of the first
-    # arguments, by direction and table names
-    weighted_tables: dict[tuple[int, tuple[str, ...]], str]
+    # arguments, [points][dofs of each argument], by name
+    tables: dict[str, npt.NDArray[np.float64]]
+    # Names of the products, by direction and 1D table names
+    table_names: dict[tuple[int, tuple[str, ...]], str]
     # 1D argument tables the contraction reads without weights
     factors: set[str]
 
     def weighted_table(self, direction: int, tables: list[UniqueTableReferenceT]) -> str:
         """Return the name of the weighted product of the 1D tables in a direction."""
-        names = tuple(_factors(td)[direction].name for td in tables)
-        return self.weighted_tables[(direction, names)]
+        return self.table_names[(direction, _names(tables, direction))]
 
 
 def plan_sum_factorisation(
     quadrature_rule: QuadratureRule,
     block_contributions: dict[tuple[tuple[int, ...], ...], list[BlockDataT]],
-) -> tuple[SumFactorisationPlan, dict[str, npt.NDArray[np.float64]]]:
-    """Plan the contraction of the blocks of a sum-factorisable integrand.
-
-    Returns the plan and the weighted tables it reads.
-    """
+) -> SumFactorisationPlan:
+    """Plan the contraction of the blocks of a sum-factorisable integrand."""
     dim = len(quadrature_rule.tensor_factors)
     last = dim - 1
 
@@ -122,21 +117,23 @@ def plan_sum_factorisation(
     grouped: dict[tuple, list[ContractionTerm]] = collections.defaultdict(list)
     for blockmap, blocks in sorted(block_contributions.items()):
         for blockdata in blocks:
-            term = ContractionTerm(blockdata.factor_indices_comp_indices[0][0], blockmap, blockdata)
+            factor = blockdata.factor_indices_comp_indices[0][0]
+            tables = [mad.tabledata for mad in blockdata.ma_data]
+            term = ContractionTerm(factor, blockmap, blockdata, tables, _stage_keys(factor, tables))
             sizes = tuple(
                 tuple(factor.values.shape[-1] for factor in _factors(td)) for td in term.tables
             )
             grouped[sizes].append(term)
 
     # Directions with the same 1D rule share weighted tables
-    weighted_tables: dict[tuple[int, tuple[str, ...]], str] = {}
+    table_names: dict[tuple[int, tuple[str, ...]], str] = {}
     by_values: dict[tuple[tuple[str, ...], bytes], str] = {}
     values: dict[str, npt.NDArray[np.float64]] = {}
     factors: set[str] = set()
 
     def weight(direction: int, tables: list[UniqueTableReferenceT]):
         """Add the product of 1D tables and the 1D quadrature weights in a direction."""
-        names = tuple(_factors(td)[direction].name for td in tables)
+        names = _names(tables, direction)
         weights = quadrature_rule.tensor_factors[direction][1]
         key = (names, weights.tobytes())
         if key not in by_values:
@@ -149,7 +146,7 @@ def plan_sum_factorisation(
             name = f"FE_TP{len(values)}_Q{quadrature_rule.id()}"
             values[name] = table
             by_values[key] = name
-        weighted_tables[(direction, names)] = by_values[key]
+        table_names[(direction, names)] = by_values[key]
 
     groups = []
     for terms in grouped.values():
@@ -162,7 +159,7 @@ def plan_sum_factorisation(
         contributions: dict[tuple, ContractionTerm] = {}
         targets: dict[tuple, tuple[ContractionTerm, list[tuple]]] = {}
         for term in terms:
-            key = term.stage_keys()[-1]
+            key = term.stage_keys[-1]
             contributions.setdefault(key, term)
             targets.setdefault(term.blockmap, (term, []))[1].append(key)
 
@@ -189,4 +186,4 @@ def plan_sum_factorisation(
             rows.append(ContractionRow(row_targets, combined, single))
         groups.append(ContractionGroup(terms, rows))
 
-    return SumFactorisationPlan(groups, weighted_tables, factors), values
+    return SumFactorisationPlan(groups, values, table_names, factors)

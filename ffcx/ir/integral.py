@@ -295,28 +295,26 @@ def _compute_integral_ir(
                 F.nodes[i]["tr"] = tr
 
     # Sum factorise if the rule is a tensor product rule and every block's
-    # arguments factorise over its directions. Otherwise, tables are
-    # accessed whole, so drop their tensor factors.
+    # arguments factorise over its directions. Only the tables of the
+    # arguments, and of the terminals then evaluated on the whole rule, keep
+    # their tensor factors; other tables are accessed whole.
+    dim = len(quadrature_rule.tensor_factors) if quadrature_rule.has_tensor_factors else 0
     sum_factorise = (
-        quadrature_rule.has_tensor_factors
-        and integral_type not in ufl.custom_integral_types
-        and TensorPart.from_str(str(p["part"])) != TensorPart.diagonal
+        dim > 0
         and len(argument_factorization) > 0
         and all(
             len(ma_indices) > 0
             and len(fi_ci) == 1
-            and all(
-                factorises(F.nodes[ai]["tr"], len(quadrature_rule.tensor_factors))
-                for ai in ma_indices
-            )
+            and all(factorises(F.nodes[ai]["tr"], dim) for ai in ma_indices)
             for ma_indices, fi_ci in argument_factorization.items()
         )
     )
-    if not sum_factorise:
-        for v in F.nodes.values():
-            tr = v.get("tr")
-            if tr is not None and tr.has_tensor_factorisation:
-                v["tr"] = tr._replace(tensor_factors=None)
+    for i, v in F.nodes.items():
+        tr = v.get("tr")
+        if tr is None or not tr.has_tensor_factorisation:
+            continue
+        if not (sum_factorise and (i in _argkeys or (factorises(tr, dim) and not tr.is_piecewise))):
+            v["tr"] = tr._replace(tensor_factors=None)
 
     # Attach 'status' to each node: 'inactive', 'piecewise' or 'varying'
     analyse_dependencies(F, mt_table_reference)
@@ -389,11 +387,7 @@ def _compute_integral_ir(
         # Insert in expr_ir for this quadrature loop
         block_contributions[blockmap].append(blockdata)
 
-    plan, weighted_tables = (
-        plan_sum_factorisation(quadrature_rule, block_contributions)
-        if sum_factorise
-        else (None, {})
-    )
+    plan = plan_sum_factorisation(quadrature_rule, block_contributions) if sum_factorise else None
 
     # Figure out which table names are referenced
     active_table_names = set()
@@ -424,8 +418,6 @@ def _compute_integral_ir(
         if table_types[name] not in ("zeros", "ones"):
             active_tables[name] = tables[name]
             active_table_types[name] = table_types[name]
-    active_tables.update(weighted_tables)
-    active_table_types.update({name: "tensor_factor" for name in weighted_tables})
     return (
         active_tables,
         active_table_types,

@@ -312,13 +312,20 @@ class IntegralGenerator:
         if expression.integral_type in skip:
             return parts
 
-        # Loop over quadrature rules. A sum-factorised contraction folds the
-        # weights into its 1D tables.
+        # Loop over quadrature rules
         for (cell, quadrature_rule), integrand in expression.integrand.items():
-            if domain == cell and integrand["sum_factorisation"] is None:
+            if domain != cell:
+                continue
+            plan = integrand["sum_factorisation"]
+            if plan is None:
                 # Generate quadrature weights array
                 wsym = self.backend.symbols.weights_table(quadrature_rule)
                 parts += [L.ArrayDecl(wsym, values=quadrature_rule.weights, const=True)]
+            else:
+                # A sum-factorised contraction folds the weights into products
+                # of 1D tables, [points][dofs of each argument]
+                for name, table in plan.tables.items():
+                    parts += self.declare_table(name, table)
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, "Quadrature rules")
@@ -410,19 +417,6 @@ class IntegralGenerator:
             return split
 
         return [L.create_nested_for_loops([iq], code)]
-
-    def _blocks(
-        self, quadrature_rule: QuadratureRule, domain: basix.CellType
-    ) -> list[tuple[tuple, BlockDataT]]:
-        """Return the element tensor blocks of a quadrature rule, in a fixed order."""
-        block_contributions = self.ir.expression.integrand[(domain, quadrature_rule)][
-            "block_contributions"
-        ]
-        return [
-            (blockmap, blockdata)
-            for blockmap, contributions in sorted(block_contributions.items())
-            for blockdata in contributions
-        ]
 
     def _sum_factorised_quadrature_loop(
         self,
@@ -558,7 +552,7 @@ class IntegralGenerator:
         stages: dict[tuple, L.Symbol] = {}
         for term in group.terms:
             stage = caches[term.factor]
-            keys = term.stage_keys()
+            keys = term.stage_keys
             for s in range(last):
                 if keys[s + 1] not in stages:
                     stride = math.prod(iq.sizes[s + 1 :])
@@ -604,7 +598,7 @@ class IntegralGenerator:
 
         def last_stage(term) -> L.Symbol:
             """Return the cache of a term contracted over all but the last direction."""
-            return stages[term.stage_keys()[last]] if last > 0 else caches[term.factor]
+            return stages[term.stage_keys[last]] if last > 0 else caches[term.factor]
 
         # pre_rows runs inside the dof loops of directions < last, before
         # the last direction's; row_code inside those of the other arguments
@@ -840,11 +834,8 @@ class IntegralGenerator:
 
                     # Backend specific modified terminal translation
                     vaccess = self.backend.access.get(mt, tabledata, quadrature_rule)
-                    vdef = self.backend.definitions.get(mt, tabledata, quadrature_rule, vaccess)
-
-                    # A sum-factorised definition is a list of sections
-                    for section in vdef if isinstance(vdef, list) else [vdef]:
-                        assert isinstance(section, L.Section)
+                    sections = self.backend.definitions.get(mt, tabledata, quadrature_rule, vaccess)
+                    for section in sections:
                         # Only add if definition is unique.
                         # This can happen when using sub-meshes
                         if section not in definitions:
@@ -899,8 +890,15 @@ class IntegralGenerator:
         domain: basix.CellType,
     ):
         """Generate a dofblock partition."""
+        block_contributions = self.ir.expression.integrand[(domain, quadrature_rule)][
+            "block_contributions"
+        ]
         quadparts = []
-        blocks = self._blocks(quadrature_rule, domain)
+        blocks = [
+            (blockmap, blockdata)
+            for blockmap, contributions in sorted(block_contributions.items())
+            for blockdata in contributions
+        ]
 
         block_groups = collections.defaultdict(list)
 

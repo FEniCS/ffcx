@@ -473,7 +473,8 @@ def _compute_integral_ir(
             form_data.argument_elements,
             integral_type,
             ufl_cell,
-            options["sum_factorization"],
+            # Assembling the diagonal of a bilinear form uses ordinary quadrature
+            options["sum_factorization"] and not diagonalise,
         )
 
         # Sum up all integrands for a given quadrature rule

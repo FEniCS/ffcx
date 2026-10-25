@@ -17,7 +17,6 @@ from ffcx.definitions import entity_types
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
-from ffcx.ir.sumfactorisation import factorises
 
 logger = logging.getLogger("ffcx")
 
@@ -109,8 +108,8 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> L.Section | list:
-        """Return definition code for a terminal."""
+    ) -> list[L.Section]:
+        """Return the sections defining a terminal."""
         # Call appropriate handler, depending on the type of terminal
         terminal = mt.terminal
         ttype = type(terminal)
@@ -134,7 +133,7 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> L.Section | list:
+    ) -> list[L.Section]:
         """Return definition code for coefficients."""
         # For applying tensor product to coefficients, we need to know
         # if the coefficient has a tensor factorisation and if the
@@ -167,7 +166,7 @@ class FFCXBackendDefinitions:
 
         assert begin < end
 
-        if self._sum_factorises(mt, tabledata, quadrature_rule):
+        if tabledata.has_tensor_factorisation:
             dofs = self.symbols.coefficient_dof_access(mt.terminal, begin)
             return self._sum_factorised_lincomb(
                 mt, tabledata, quadrature_rule, access, dofs, bs, L.DataType.SCALAR
@@ -192,7 +191,7 @@ class FFCXBackendDefinitions:
         assert all(isinstance(i, L.Symbol) for i in input)
         assert all(isinstance(o, L.Symbol) for o in output)
 
-        return L.Section(name, code, declaration, input, output, annotations)
+        return [L.Section(name, code, declaration, input, output, annotations)]
 
     def _define_coordinate_dofs_lincomb(
         self,
@@ -200,7 +199,7 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> L.Section | list:
+    ) -> list[L.Section]:
         """Define x or J as a linear combination of coordinate dofs with given table data."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
@@ -270,7 +269,7 @@ class FFCXBackendDefinitions:
             )
             closure_index = closure_table[perm][entity]
 
-        if closure_table is None and self._sum_factorises(mt, tabledata, quadrature_rule):
+        if closure_table is None and tabledata.has_tensor_factorisation:
             return self._sum_factorised_lincomb(
                 mt,
                 tabledata,
@@ -347,26 +346,7 @@ class FFCXBackendDefinitions:
         assert all(isinstance(i, L.Symbol) for i in input)
         assert all(isinstance(o, L.Symbol) for o in output)
 
-        return L.Section(name, code, declaration, input, output, annotations)
-
-    def _sum_factorises(
-        self,
-        mt: ModifiedTerminal,
-        tabledata: UniqueTableReferenceT,
-        quadrature_rule: QuadratureRule,
-    ) -> bool:
-        """Return whether a terminal is evaluated on the whole tensor product rule.
-
-        The IR keeps the tensor factors of tables only on the tensor product
-        rules whose integrand it sum factorises.
-        """
-        return (
-            tabledata.has_tensor_factorisation
-            and not tabledata.is_piecewise
-            and not tabledata.is_permuted
-            and mt.restriction is None
-            and factorises(tabledata, len(quadrature_rule.tensor_factors))
-        )
+        return [L.Section(name, code, declaration, input, output, annotations)]
 
     def _sum_factorised_lincomb(
         self,
@@ -379,6 +359,9 @@ class FFCXBackendDefinitions:
         dtype: L.DataType,
     ) -> list[L.Section]:
         """Evaluate a linear combination of dofs on the whole tensor product rule.
+
+        The IR keeps the tensor factors of a table only if its terminal is
+        evaluated this way.
 
         Evaluated at each point, a coefficient, or the spatial coordinate or
         Jacobian, sums over all its dofs, costing O(Q^d N^d). Contracting
@@ -394,9 +377,9 @@ class FFCXBackendDefinitions:
         """
         iq = create_quadrature_index(quadrature_rule, self.symbols.quadrature_loop_index)
         dim = iq.dim
-        num_dofs = create_dof_index(tabledata, self.symbols.coefficient_dof_sum_index).sizes
-        num_points = iq.sizes
         assert tabledata.tensor_factors is not None
+        num_dofs = [factor.values.shape[-1] for factor in tabledata.tensor_factors]
+        num_points = iq.sizes
         assert all(
             factor.values.shape[2] == n for factor, n in zip(tabledata.tensor_factors, num_points)
         )
@@ -486,7 +469,7 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> L.Section | list:
+    ) -> list[L.Section]:
         """Return definition code for the physical spatial coordinates.
 
         If physical coordinates are given:
@@ -512,7 +495,7 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> L.Section | list:
+    ) -> list[L.Section]:
         """Return definition code for the Jacobian of x(X)."""
         return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)
 
@@ -522,6 +505,6 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> L.Section | list:
+    ) -> list[L.Section]:
         """Return definition code for pass through terminals."""
         return []
