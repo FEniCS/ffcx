@@ -820,7 +820,9 @@ class Statement(LNode):
 
 def as_statement(node):
     """Perform type checking on node and wrap in a suitable statement type if necessary."""
-    if isinstance(node, StatementList) and len(node.statements) == 1:
+    if isinstance(node, Scope):
+        return node
+    elif isinstance(node, StatementList) and len(node.statements) == 1:
         # Cleans up the expression tree a bit
         return node.statements[0]
     elif isinstance(node, Statement):
@@ -854,7 +856,7 @@ class Annotation(Enum):
     fuse = 1  # fuse loops in section
     unroll = 2  # unroll loop in section
     licm = 3  # loop invariant code motion
-    factorize = 4  # apply sum factorization
+    factorize = 4  # sum-factorised evaluation, run once before the quadrature loop
 
 
 class Declaration(Statement):
@@ -925,6 +927,13 @@ class StatementList(LNode):
     def __repr__(self):
         """Representation."""
         return f"StatementList({self.statements})"
+
+
+class Scope(StatementList):
+    """A sequence of statements in their own scope.
+
+    Backends without block scope format it as a plain statement list.
+    """
 
 
 class Comment(Statement):

@@ -6,16 +6,19 @@
 """FFCx/UFCx specific variable definitions."""
 
 import logging
+import math
 
 import numpy as np
 import ufl
 
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration import geometry
+from ffcx.codegeneration.optimizer import expr_key
 from ffcx.definitions import entity_types
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
+from ffcx.ir.sumfactorisation import evaluation_stage_sizes
 
 logger = logging.getLogger("ffcx")
 
@@ -103,6 +106,10 @@ class FFCXBackendDefinitions:
         self.access = access
         self.options = options
 
+        # Stages of sum-factorised evaluations, by quadrature rule, dofs and
+        # the 1D tables contracted with, shared by the terminals of a kernel
+        self._stages: dict[tuple, L.Symbol] = {}
+
         # called, depending on the first argument type.
         self.handler_lookup = {
             ufl.coefficient.Coefficient: self.coefficient,
@@ -134,8 +141,8 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> L.Section | list:
-        """Return definition code for a terminal."""
+    ) -> list[L.Section]:
+        """Return the sections defining a terminal."""
         # Call appropriate handler, depending on the type of terminal
         terminal = mt.terminal
         ttype = type(terminal)
@@ -159,7 +166,7 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> L.Section | list:
+    ) -> list[L.Section]:
         """Return definition code for coefficients."""
         # For applying tensor product to coefficients, we need to know
         # if the coefficient has a tensor factorisation and if the
@@ -192,6 +199,12 @@ class FFCXBackendDefinitions:
 
         assert begin < end
 
+        if tabledata.has_tensor_factorisation:
+            dofs = self.symbols.coefficient_dof_access(mt.terminal, begin)
+            return self._sum_factorised_lincomb(
+                mt, tabledata, quadrature_rule, access, dofs, bs, L.DataType.SCALAR
+            )
+
         if (
             tabledata.is_piecewise
             and tabledata.is_uniform
@@ -206,13 +219,15 @@ class FFCXBackendDefinitions:
                 for k, value in enumerate(tabledata.values[0, 0, 0])
                 if value != 0.0
             ]
-            return L.Section(
-                type(mt.terminal).__name__,
-                [],
-                [L.VariableDecl(access, L.Sum(terms))],
-                [self.symbols.coefficient_dof_access(mt.terminal, begin).array],
-                [access],
-            )
+            return [
+                L.Section(
+                    type(mt.terminal).__name__,
+                    [],
+                    [L.VariableDecl(access, L.Sum(terms))],
+                    [self.symbols.coefficient_dof_access(mt.terminal, begin).array],
+                    [access],
+                )
+            ]
 
         # Expand small reductions to expose SIMD across quadrature points,
         # including the evaluation/contraction split for varying geometry.
@@ -241,16 +256,18 @@ class FFCXBackendDefinitions:
                         self.symbols.coefficient_dof_access(mt.terminal, int(k) * bs + begin) * FE
                     )
                     tables.extend(term_tables)
-                return L.Section(
-                    type(mt.terminal).__name__,
-                    [],
-                    [L.VariableDecl(access, L.Sum(terms))],
-                    [
-                        self.symbols.coefficient_dof_access(mt.terminal, begin).array,
-                        *dict.fromkeys(tables),
-                    ],
-                    [access],
-                )
+                return [
+                    L.Section(
+                        type(mt.terminal).__name__,
+                        [],
+                        [L.VariableDecl(access, L.Sum(terms))],
+                        [
+                            self.symbols.coefficient_dof_access(mt.terminal, begin).array,
+                            *dict.fromkeys(tables),
+                        ],
+                        [access],
+                    )
+                ]
         # Get access to element table
         FE, tables = self.access.table_access(tabledata, self.entity_type, mt.restriction, iq, ic)
         dof_access: L.ArrayAccess = self.symbols.coefficient_dof_access(
@@ -270,7 +287,7 @@ class FFCXBackendDefinitions:
         assert all(isinstance(i, L.Symbol) for i in input)
         assert all(isinstance(o, L.Symbol) for o in output)
 
-        return L.Section(name, code, declaration, input, output, annotations)
+        return [L.Section(name, code, declaration, input, output, annotations)]
 
     def _define_coordinate_dofs_lincomb(
         self,
@@ -278,7 +295,7 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> L.Section | list:
+    ) -> list[L.Section]:
         """Define x or J as a linear combination of coordinate dofs with given table data."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
@@ -347,6 +364,17 @@ class FFCXBackendDefinitions:
                 else self.symbols.entity_permutation(mt.restriction)
             )
             closure_index = closure_table[perm][entity]
+
+        if closure_table is None and tabledata.has_tensor_factorisation:
+            return self._sum_factorised_lincomb(
+                mt,
+                tabledata,
+                quadrature_rule,
+                access,
+                dof_access[begin + offset],
+                dim,
+                L.DataType.REAL,
+            )
 
         # Map a submesh-local scalar dof index to its coordinate_dofs index.
         if closure_table is None:
@@ -441,7 +469,122 @@ class FFCXBackendDefinitions:
         assert all(isinstance(i, L.Symbol) for i in input)
         assert all(isinstance(o, L.Symbol) for o in output)
 
-        return L.Section(name, code, declaration, input, output, annotations)
+        return [L.Section(name, code, declaration, input, output, annotations)]
+
+    def _sum_factorised_lincomb(
+        self,
+        mt: ModifiedTerminal,
+        tabledata: UniqueTableReferenceT,
+        quadrature_rule: QuadratureRule,
+        access: L.Symbol,
+        dofs: L.ArrayAccess,
+        stride: int,
+        dtype: L.DataType,
+    ) -> list[L.Section]:
+        """Evaluate a linear combination of dofs on the whole tensor product rule.
+
+        The IR keeps the tensor factors of a table only if its terminal is
+        evaluated this way.
+
+        Evaluated at each point, a coefficient, or the spatial coordinate or
+        Jacobian, sums over all its dofs, costing O(Q^d N^d). Contracting
+        its dofs with the 1D tables one
+        direction at a time, last direction first, costs O(N^d Q + ... +
+        Q^d N); in 2D
+
+            t[i0, q1] = sum_i1 B1[q1, i1] w[i0, i1]
+            f[q0, q1] = sum_i0 B0[q0, i0] t[i0, q1]
+
+        Returns a section evaluating f, annotated to run before the
+        quadrature loop, and a section reading f at each point.
+        """
+        iq = create_quadrature_index(quadrature_rule, self.symbols.quadrature_loop_index)
+        dim = iq.dim
+        assert tabledata.tensor_factors is not None
+        num_dofs = [factor.values.shape[-1] for factor in tabledata.tensor_factors]
+        num_points = iq.sizes
+        assert all(
+            factor.values.shape[2] == n for factor, n in zip(tabledata.tensor_factors, num_points)
+        )
+
+        # Contracting direction d leaves the dofs of directions < d and the
+        # points of directions >= d
+        sizes = evaluation_stage_sizes(num_dofs, num_points)
+
+        def loop(name: str, extent: int):
+            """Return a loop index and a function wrapping a body in its loop.
+
+            A loop of one iteration is left out, its index being zero.
+            """
+            if extent == 1:
+                return L.LiteralInt(0), lambda body: body
+            index = L.Symbol(f"sfc_{name}", dtype=L.DataType.INT)
+            return index, lambda body: [L.ForRange(index, 0, extent, body)]
+
+        source, offset = dofs.array, dofs.indices[0]
+        inputs: list[L.Symbol] = []
+        name = f"{access.name}_{quadrature_rule.id()}"
+        code: list[L.LNode] = []
+        # Terminals reading the same dofs with the same 1D tables, such as x
+        # and the derivatives of x, share their first stages
+        key: tuple = (quadrature_rule.id(), expr_key(dofs), stride)
+        for d in reversed(range(dim)):
+            key += (tabledata.tensor_factors[d].name,)
+            if key in self._stages:
+                source, stride, offset = self._stages[key], 1, 0
+                continue
+            if source not in inputs:
+                inputs.append(source)
+            stage = L.Symbol(f"{name}_c{d}", dtype=dtype)
+            self._stages[key] = stage
+            code.append(L.ArrayDecl(stage, sizes=sizes[d]))
+            inner = math.prod(num_points[d + 1 :])
+            a, a_loop = loop("a", math.prod(num_dofs[:d]))
+            q, q_loop = loop("q", num_points[d])
+            width = num_points[-1] if d < dim - 1 else 1
+            b, b_loop = loop("b", inner // width)
+
+            i = L.Symbol("sfc_i", dtype=L.DataType.INT)
+            initial, updates = [], []
+            for lane in range(width):
+                point = b * width + lane
+                out = stage[(a * num_points[d] + q) * inner + point]
+                terms = []
+                for index in (L.LiteralInt(0), i):
+                    value = source[((a * num_dofs[d] + index) * inner + point) * stride + offset]
+                    table, symbol = self.access.tensor_factor_access(tabledata, d, q, index)
+                    terms.append(value * table)
+                initial.append(L.Assign(out, terms[0]))
+                updates.append(L.AssignAdd(out, terms[1]))
+            if symbol not in inputs:
+                inputs.append(symbol)
+
+            # The first dof sets the stage, the others add to it, in a
+            # contiguous innermost loop over the points of later directions
+            body = b_loop(initial)
+            if num_dofs[d] > 1:
+                body += [L.ForRange(i, 1, num_dofs[d], b_loop(updates))]
+            code += a_loop(q_loop(body))
+            source, stride, offset = stage, 1, 0
+
+        terminal = type(mt.terminal).__name__
+        evaluation = L.Section(
+            f"{terminal} on the tensor product rule",
+            code,
+            [],
+            inputs,
+            [source],
+            [L.Annotation.factorize],
+        )
+        read = L.Section(
+            terminal,
+            [],
+            [L.VariableDecl(access, source[iq.global_index])],
+            [source],
+            [access],
+            [L.Annotation.fuse],
+        )
+        return [evaluation, read]
 
     def spatial_coordinate(
         self,
@@ -449,7 +592,7 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> L.Section | list:
+    ) -> list[L.Section]:
         """Return definition code for the physical spatial coordinates.
 
         If physical coordinates are given:
@@ -475,7 +618,7 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> L.Section | list:
+    ) -> list[L.Section]:
         """Return definition code for the Jacobian of x(X)."""
         return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)
 
@@ -485,6 +628,6 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> L.Section | list:
+    ) -> list[L.Section]:
         """Return definition code for pass through terminals."""
         return []

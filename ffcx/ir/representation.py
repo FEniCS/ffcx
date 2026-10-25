@@ -161,7 +161,14 @@ def _group_integrands_by_quadrature_rule(
     grouped_integrands: dict[basix.CellType, dict[QuadratureRule, list[Expr]]] = {}
     # NOTE: this variable changes throughout the loop
     cell_type = basix_cell_from_string(ufl_cell.cellname)
-    use_sum_factorization = sum_factorization and integral_type == "cell"
+    # A tensor product rule is only useful if every argument factorises,
+    # otherwise the integral is not sum factorised
+    use_sum_factorization = (
+        sum_factorization
+        and integral_type == "cell"
+        and len(argument_elements) > 0
+        and all(e.has_tensor_product_factorisation for e in argument_elements)
+    )
     for integral in integrals:
         md = integral.metadata() or {}
         scheme = md["quadrature_rule"]
@@ -473,7 +480,8 @@ def _compute_integral_ir(
             form_data.argument_elements,
             integral_type,
             ufl_cell,
-            options["sum_factorization"],
+            # Assembling the diagonal of a bilinear form uses ordinary quadrature
+            options["sum_factorization"] and not diagonalise,
         )
 
         # Sum up all integrands for a given quadrature rule

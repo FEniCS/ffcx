@@ -66,6 +66,8 @@ addopts = "-ra"
 testpaths = ["test"]
 norecursedirs = ["libs", "docs"]
 log_cli = true
+# Registered for runs without pytest-xdist, which defines it
+markers = ["xdist_group: tests sharing compiled forms, run on one worker with --dist loadgroup"]
 
 [tool.mypy]
 # Suggested at https://blog.wolt.com/engineering/2021/09/30/professional-grade-mypy-configuration/
