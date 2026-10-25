@@ -8,6 +8,7 @@
 """Integral generator."""
 
 import collections
+import dataclasses
 import itertools
 import logging
 import math
@@ -47,6 +48,16 @@ _UNSUPPORTED_VECTOR_MATH_MIN_CONTRACTION_WORK = 256
 # Stack budget for the buffers of a sum-factorised contraction: the cached
 # integrand on the whole tensor product rule plus the per-term stage arrays
 _SUM_FACTORISATION_STACK_BUDGET_BYTES = 262144
+
+
+@dataclasses.dataclass
+class _CoefficientEvaluation:
+    """Coefficients evaluated on a whole tensor product rule, before its quadrature loop."""
+
+    # Stack left for the evaluation's buffers, in scalars
+    stack_left: int
+    code: list[L.LNode] = dataclasses.field(default_factory=list)
+
 
 # GCC can lower these calls to glibc libmvec on supported x86-64 Linux
 # targets. Other hosts commonly keep scalar libm calls, in which case a
@@ -189,12 +200,6 @@ class IntegralGenerator:
         # entries sharing one factor (e.g. several metric-tensor entries all
         # scaled by |det J|) and fuse it with the quadrature weight once.
         self._piecewise_mul_operands: dict[str, tuple[L.LExpr, L.LExpr]] = {}
-
-        # While generating the varying partition of a sum-factorised rule:
-        # the code evaluating coefficients on the whole rule, and the stack
-        # left for its buffers (see `_sum_factorised_coefficient`)
-        self._coefficient_evaluation: list[L.LNode] | None = None
-        self._coefficient_stack_left = 0
 
         # Set of counters used for assigning names to intermediate
         # variables
@@ -388,23 +393,19 @@ class IntegralGenerator:
         # The coefficients of a sum-factorised rule are evaluated on the whole
         # rule while generating its varying partition, within the stack left
         plan = self._sum_factorisation_groups(quadrature_rule, domain)
+        coefficients = None
         if plan is not None:
-            self._coefficient_evaluation = []
-            self._coefficient_stack_left = plan[1]
+            groups, stack_left = plan
+            coefficients = _CoefficientEvaluation(stack_left)
 
         # Generate varying partition
-        definitions, intermediates_0 = self.generate_varying_partition(quadrature_rule, domain)
-        coefficient_evaluation, self._coefficient_evaluation = self._coefficient_evaluation, None
+        definitions, intermediates_0 = self.generate_varying_partition(
+            quadrature_rule, domain, coefficients
+        )
 
-        if plan is not None:
-            assert coefficient_evaluation is not None
+        if coefficients is not None:
             return self._sum_factorised_quadrature_loop(
-                definitions,
-                intermediates_0,
-                quadrature_rule,
-                domain,
-                plan[0],
-                coefficient_evaluation,
+                definitions, intermediates_0, quadrature_rule, domain, groups, coefficients.code
             )
 
         # Generate dofblock parts, some of this will be placed before or after quadloop
@@ -444,6 +445,15 @@ class IntegralGenerator:
         return [L.create_nested_for_loops([iq], code)]
 
     @staticmethod
+    def _factorises(td: UniqueTableReferenceT, dim: int) -> bool:
+        """Return whether a table factorises over the directions of a tensor product rule."""
+        return (
+            td.ttype not in ("zeros", "ones")
+            and td.tensor_factors is not None
+            and len(td.tensor_factors) == dim
+        )
+
+    @staticmethod
     def _table_key(td, arg: int, direction: int) -> tuple[str, bool]:
         """Identify the 1D table of an argument in a direction in a contraction.
 
@@ -465,7 +475,7 @@ class IntegralGenerator:
         (with the `sum_factorization` option) and every block's arguments
         factorise over its directions, with buffers that fit the stack
         budget. The blocks are grouped by their dof loops, and returned with
-        the stack left for evaluating coefficients (in bytes).
+        the stack left for evaluating coefficients, in scalars.
         """
         options = self.backend.access.options
         if quadrature_rule is None or not quadrature_rule.has_tensor_factors:
@@ -492,14 +502,8 @@ class IntegralGenerator:
                 or len(blockdata.factor_indices_comp_indices) != 1
             ):
                 return None
-            for mad in blockdata.ma_data:
-                td = mad.tabledata
-                if (
-                    td.ttype in ("zeros", "ones")
-                    or td.tensor_factors is None
-                    or len(td.tensor_factors) != dim
-                ):
-                    return None
+            if not all(self._factorises(mad.tabledata, dim) for mad in blockdata.ma_data):
+                return None
 
         # Group blocks with the same dof loops, so they share one loop nest
         groups: dict[tuple, list[tuple[tuple, BlockDataT]]] = collections.defaultdict(list)
@@ -528,7 +532,7 @@ class IntegralGenerator:
                         stages.add(stage)
                         num_scalars += math.prod(num_points[s + 1 :])
         scalar_size = np.dtype(options["scalar_type"]).itemsize
-        stack_left = _SUM_FACTORISATION_STACK_BUDGET_BYTES - num_scalars * scalar_size
+        stack_left = _SUM_FACTORISATION_STACK_BUDGET_BYTES // scalar_size - num_scalars
         if stack_left < 0:
             return None
         return list(groups.values()), stack_left
@@ -539,6 +543,7 @@ class IntegralGenerator:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
+        coefficients: _CoefficientEvaluation,
     ) -> L.Section | None:
         """Evaluate a coefficient on the whole tensor product rule, one direction at a time.
 
@@ -550,23 +555,24 @@ class IntegralGenerator:
             t[i0, q1] = sum_i1 B1[q1, i1] w[i0, i1]
             f[q0, q1] = sum_i0 B0[q0, i0] t[i0, q1]
 
-        The quadrature loop then reads f. Returns `None` where this doesn't
-        apply, or the buffers don't fit the stack left, and the coefficient
-        is evaluated at each point.
+        The evaluation is added to `coefficients`, and the quadrature loop
+        then reads f. Returns `None` where this doesn't apply, or the buffers
+        don't fit the stack left, and the coefficient is evaluated at each
+        point.
         """
+        iq = create_quadrature_index(quadrature_rule, self.backend.symbols.quadrature_loop_index)
+        dim = iq.dim
         if (
             not isinstance(mt.terminal, ufl.Coefficient)
             or mt.restriction is not None
-            or tabledata.ttype in ("zeros", "ones")
             or tabledata.is_piecewise
             or tabledata.is_permuted
-            or tabledata.tensor_factors is None
-            or len(tabledata.tensor_factors) != len(quadrature_rule.tensor_factors)
+            or not self._factorises(tabledata, dim)
         ):
             return None
-        dim = len(tabledata.tensor_factors)
-        num_dofs = [factor.values.shape[-1] for factor in tabledata.tensor_factors]
-        num_points = [weights.size for _, weights in quadrature_rule.tensor_factors]
+        num_dofs = create_dof_index(tabledata, self.backend.symbols.coefficient_dof_sum_index).sizes
+        num_points = iq.sizes
+        assert tabledata.tensor_factors is not None
         assert all(
             factor.values.shape[2] == n for factor, n in zip(tabledata.tensor_factors, num_points)
         )
@@ -574,10 +580,9 @@ class IntegralGenerator:
         # Contracting direction d leaves the dofs of directions < d and the
         # points of directions >= d
         sizes = [math.prod(num_dofs[:d]) * math.prod(num_points[d:]) for d in range(dim)]
-        scalar_size = np.dtype(self.backend.access.options["scalar_type"]).itemsize
-        if sum(sizes) * scalar_size > self._coefficient_stack_left:
+        if sum(sizes) > coefficients.stack_left:
             return None
-        self._coefficient_stack_left -= sum(sizes) * scalar_size
+        coefficients.stack_left -= sum(sizes)
 
         bs = tabledata.block_size
         begin = tabledata.offset
@@ -602,23 +607,30 @@ class IntegralGenerator:
             inner = math.prod(num_points[d + 1 :])
             a, a_loop = loop("a", math.prod(num_dofs[:d]))
             q, q_loop = loop("q", num_points[d])
-            i, i_loop = loop("i", num_dofs[d])
             b, b_loop = loop("b", inner)
-            index = (a * num_dofs[d] + i) * inner + b
-            if source is None:
-                value = self.backend.symbols.coefficient_dof_access(mt.terminal, index * bs + begin)
-            else:
-                value = source[index]
-            table, _ = self.backend.access.tensor_factor_access(tabledata, d, q, i)
             out = stage[(a * num_points[d] + q) * inner + b]
-            # Contiguous innermost loop over the points of later directions
-            body = b_loop([L.Assign(out, 0.0)]) + i_loop(b_loop([L.AssignAdd(out, value * table)]))
+
+            def term(i, d=d, a=a, q=q, b=b, inner=inner, source=source):
+                """Return the term of dof i of direction d."""
+                index = (a * num_dofs[d] + i) * inner + b
+                if source is None:
+                    value = self.backend.symbols.coefficient_dof_access(
+                        mt.terminal, index * bs + begin
+                    )
+                else:
+                    value = source[index]
+                table, _ = self.backend.access.tensor_factor_access(tabledata, d, q, i)
+                return value * table
+
+            # The first dof sets the stage, the others add to it, in a
+            # contiguous innermost loop over the points of later directions
+            body = b_loop([L.Assign(out, term(L.LiteralInt(0)))])
+            if num_dofs[d] > 1:
+                i = L.Symbol("sfc_i", dtype=L.DataType.INT)
+                body += [L.ForRange(i, 1, num_dofs[d], b_loop([L.AssignAdd(out, term(i))]))]
             code += a_loop(q_loop(body))
             source = stage
-        assert self._coefficient_evaluation is not None
-        self._coefficient_evaluation += code
-
-        iq = create_quadrature_index(quadrature_rule, self.backend.symbols.quadrature_loop_index)
+        coefficients.code += code
         assert source is not None
         return L.Section(
             type(mt.terminal).__name__,
@@ -978,14 +990,25 @@ class IntegralGenerator:
         arraysymbol = L.Symbol(f"sp_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
         return self.generate_partition(arraysymbol, F, "piecewise", None, None)
 
-    def generate_varying_partition(self, quadrature_rule, domain: basix.CellType):
-        """Generate a varying partition."""
+    def generate_varying_partition(
+        self,
+        quadrature_rule,
+        domain: basix.CellType,
+        coefficients: _CoefficientEvaluation | None = None,
+    ):
+        """Generate a varying partition.
+
+        With `coefficients`, coefficients are evaluated on the whole tensor
+        product rule where possible, see `_sum_factorised_coefficient`.
+        """
         # Get annotated graph of factorisation
         F = self.ir.expression.integrand[(domain, quadrature_rule)]["factorization"]
         arraysymbol = L.Symbol(f"sv_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
-        return self.generate_partition(arraysymbol, F, "varying", quadrature_rule, domain)
+        return self.generate_partition(
+            arraysymbol, F, "varying", quadrature_rule, domain, coefficients
+        )
 
-    def generate_partition(self, symbol, F, mode, quadrature_rule, domain):
+    def generate_partition(self, symbol, F, mode, quadrature_rule, domain, coefficients=None):
         """Generate a partition."""
         definitions = []
         intermediates = []
@@ -1005,9 +1028,9 @@ class IntegralGenerator:
                     # Backend specific modified terminal translation
                     vaccess = self.backend.access.get(mt, tabledata, quadrature_rule)
                     vdef = None
-                    if mode == "varying" and self._coefficient_evaluation is not None:
+                    if coefficients is not None:
                         vdef = self._sum_factorised_coefficient(
-                            mt, tabledata, quadrature_rule, vaccess
+                            mt, tabledata, quadrature_rule, vaccess, coefficients
                         )
                     if vdef is None:
                         vdef = self.backend.definitions.get(mt, tabledata, quadrature_rule, vaccess)
