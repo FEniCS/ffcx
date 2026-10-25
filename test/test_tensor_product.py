@@ -181,7 +181,7 @@ def sum_factorisation_forms(cell_type, P):
     return {
         "mass": (u * v * ufl.dx, 0),
         "laplace": (ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx, 0),
-        "mixed_derivative": (u.dx(0) * v.dx(gdim - 1) * ufl.dx, 0),
+        "mixed_derivative": (ufl.inner(u.dx(0), v.dx(gdim - 1)) * ufl.dx, 0),
         "coefficient_mass": (ufl.inner(f * u, v) * ufl.dx, nf),
         "sin_coefficient": (ufl.sin(f) * u.dx(0) * v * ufl.dx, nf),
         "vector_laplace": (ufl.inner(ufl.grad(uw), ufl.grad(vw)) * ufl.dx, 0),
@@ -432,13 +432,18 @@ def test_sum_factorised_contraction_complex(name, cell_type, P, compiled_forms):
         ),
     ],
 )
-@pytest.mark.parametrize("name", ["coefficient_mass", "linear_gradient"])
-def test_sum_factorisation_three_point_low_precision(
-    name, dtype, cell_type, compile_args, tmp_path
+@pytest.mark.parametrize(
+    "name", ["coefficient_mass", "linear_gradient", "laplace", "mixed_derivative"]
+)
+@pytest.mark.parametrize("degree,quadrature_degree", [(1, 2), (2, 4)])
+def test_sum_factorisation_short_rules_low_precision(
+    name, dtype, cell_type, degree, quadrature_degree, compile_args, tmp_path
 ):
     """Short reductions and exact basis zeros preserve single-precision accuracy."""
-    form, num_coefficients = sum_factorisation_forms(cell_type, 2)[name]
-    form = form.integrals()[0].integrand() * ufl.dx(metadata={"quadrature_degree": 4})
+    form, num_coefficients = sum_factorisation_forms(cell_type, degree)[name]
+    form = form.integrals()[0].integrand() * ufl.dx(
+        metadata={"quadrature_degree": quadrature_degree}
+    )
     assert sum_factorised(form, dtype)
     tensors = []
     for enabled in (False, True):

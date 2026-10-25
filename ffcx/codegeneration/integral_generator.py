@@ -1803,7 +1803,13 @@ class IntegralGenerator:
                 evaluation = prune_dead_scalars(evaluation, scalar_declaration_names(evaluation))
 
             batch_code: list[L.LNode] = [
-                L.ArrayDecl(cache, sizes=math.prod(iq.sizes)) for cache in batch_caches
+                L.Comment("Cache scalar integrand factors on the tensor-product quadrature grid."),
+                L.Comment(
+                    "fq* contains geometry and coefficient factors; argument basis tables "
+                    "and one-dimensional quadrature weights enter the contractions below."
+                ),
+                L.Comment(f"Point-grid shape: {iq.sizes}; the last direction is contiguous."),
+                *[L.ArrayDecl(cache, sizes=math.prod(iq.sizes)) for cache in batch_caches],
             ]
             batch_code.append(L.create_nested_for_loops([iq], evaluation))
             for group in batch:
@@ -1813,6 +1819,259 @@ class IntegralGenerator:
             code += [L.Scope(batch_code)] if batched else batch_code
         # The stack limit applies to each rule, so a scope per rule lets the
         # next reuse the stack of this one's arrays
+        return [L.Scope(code)]
+
+    def _sum_factorised_constant_direction(
+        self,
+        plan: SumFactorisationPlan,
+        group: ContractionGroup,
+        iq: L.MultiIndex,
+        caches: dict[int, L.Symbol],
+    ) -> list[L.LNode] | None:
+        """Contract small linear forms through point-independent directions first.
+
+        When B0 is independent of q0, first sum f(q0, q1) over q0,
+        project that sum onto B1(q1, j1), and multiply by B0(j0) only
+        when updating A. The scalar expansion is bounded by four points
+        and four argument dofs per contribution.
+        """
+        if iq.dim != 2 or len(group.terms[0].tables) != 1 or math.prod(iq.sizes) > 4:
+            return None
+        terms = {term.stage_keys[-1]: term for term in group.terms}
+        tables, constant = {}, {}
+        for key, term in terms.items():
+            basis_tables = [plan.tables[plan.weighted_table(d, term.tables)] for d in range(iq.dim)]
+            if math.prod(table.shape[1] for table in basis_tables) > 4:
+                return None
+            axes = [d for d, table in enumerate(basis_tables) if np.all(table == table[:1])]
+            if not axes:
+                return None
+            tables[key], constant[key] = basis_tables, axes
+
+        code: list[L.LNode] = [
+            L.Comment("Contract a linear form through point-independent basis directions first."),
+            L.Comment(
+                "sf_sum* sums cached integrand values over those directions; "
+                "sf_projection* applies the remaining weighted basis tables."
+            ),
+        ]
+        projected = {}
+        for key, term in terms.items():
+            active = [d for d in range(iq.dim) if d not in constant[key]]
+            sizes = [1 if d in constant[key] else iq.sizes[d] for d in range(iq.dim)]
+            values = {}
+            for index in itertools.product(*(range(n) for n in sizes)):
+                points = [
+                    range(iq.sizes[d]) if d in constant[key] else [index[d]] for d in range(iq.dim)
+                ]
+                summands = [
+                    caches[term.factor][L.MultiIndex(list(point), iq.sizes)]
+                    for point in itertools.product(*points)
+                ]
+                symbol = self.new_temp_symbol("sf_sum")
+                code.append(L.VariableDecl(symbol, L.Sum(summands)))
+                values[index] = symbol
+            for d in active:
+                previous, sizes = sizes, list(sizes)
+                sizes[d] = tables[key][d].shape[1]
+                next_values = {}
+                for index in itertools.product(*(range(n) for n in sizes)):
+                    summands = []
+                    for point in range(previous[d]):
+                        source_index = list(index)
+                        source_index[d] = point
+                        summands.append(
+                            values[tuple(source_index)]
+                            * L.LiteralFloat(float(tables[key][d][point, index[d]]))
+                        )
+                    symbol = self.new_temp_symbol("sf_projection")
+                    code.append(L.VariableDecl(symbol, L.Sum(summands)))
+                    next_values[index] = symbol
+                values = next_values
+            projected[key] = values
+
+        A = self.backend.symbols.element_tensor
+        code.append(
+            L.Comment(
+                "Multiply by the constant-direction weighted basis factors and add the contributions to A."
+            )
+        )
+        for row in group.rows:
+            sizes = [table.shape[1] for table in tables[row.single[0].stage_keys[-1]]]
+            for index in itertools.product(*(range(n) for n in sizes)):
+                summands = []
+                for term in row.single:
+                    key = term.stage_keys[-1]
+                    projection_index = tuple(
+                        0 if d in constant[key] else index[d] for d in range(iq.dim)
+                    )
+                    scale = math.prod(tables[key][d][0, index[d]] for d in constant[key])
+                    summands.append(projected[key][projection_index] * L.LiteralFloat(float(scale)))
+                value = self.new_temp_symbol("sf_value")
+                code.append(L.VariableDecl(value, L.Sum(summands)))
+                dofs = [L.MultiIndex([L.LiteralInt(i) for i in index], sizes)]
+                for target in row.targets:
+                    indices = self._element_tensor_indices(target.blockmap, target.blockdata, dofs)
+                    code.append(
+                        L.AssignAdd(
+                            A[L.MultiIndex(indices, self.ir.expression.tensor_shape)], value
+                        )
+                    )
+        return [L.Scope(code)]
+
+    def _sum_factorised_small_matrix(
+        self,
+        plan: SumFactorisationPlan,
+        group: ContractionGroup,
+        iq: L.MultiIndex,
+        caches: dict[int, L.Symbol],
+    ) -> list[L.LNode] | None:
+        """Share signed basis columns in Q1 matrix contractions on two-point rules.
+
+        Expand at most eight points and eight dofs per argument. Cache each
+        directional projection by its actual table columns, with signs
+        moved to the final sum. Repeated columns and matrix entries then
+        share work, including symmetric entries without assuming symmetry
+        of the form. Directions with fewer distinct signed columns are
+        contracted first. Higher-degree contractions retain their loops.
+        """
+        if iq.dim not in (2, 3) or len(group.terms[0].tables) != 2 or any(n != 2 for n in iq.sizes):
+            return None
+        sizes = [
+            create_dof_index(td, self.backend.symbols.argument_loop_index(i)).sizes
+            for i, td in enumerate(group.terms[0].tables)
+        ]
+        if any(n != 2 for shape in sizes for n in shape):
+            return None
+        # Constant derivative directions offer substantial column reuse.
+        # Pure value tables already work well with the loop contraction.
+        if any(
+            not any(
+                np.all(factor.values == factor.values[:, :, :1, :])
+                for td in term.tables
+                for factor in (td.tensor_factors or [])
+            )
+            for term in group.terms
+        ):
+            return None
+        code: list[L.LNode] = [
+            L.Comment("Contract Q1 argument basis products with the cached integrand factors."),
+            L.Comment(
+                "Each sf_projection* sums one reference direction, including its "
+                "quadrature weights and argument basis values or derivatives."
+            ),
+            L.Comment(
+                "Columns equal up to sign share projections; signs are restored in sf_value*. "
+                "Identical entry sums are reused, including matching transposed entries."
+            ),
+        ]
+        stages: dict[tuple, L.Symbol] = {}
+
+        def project(
+            factor: int,
+            columns: tuple[tuple[float, ...], ...],
+            points: tuple[int, ...],
+            order: tuple[int, ...],
+        ) -> L.Symbol:
+            key = (factor, columns, points, order)
+            if key in stages:
+                return stages[key]
+            assert columns
+            summands = []
+            constant = len(set(columns[-1])) == 1
+            for q, weight in enumerate(columns[-1]):
+                if weight:
+                    value = (
+                        project(factor, columns[:-1], (q, *points), order)
+                        if len(columns) > 1
+                        else caches[factor][
+                            L.MultiIndex(
+                                [dict(zip(order, [q, *points]))[d] for d in range(iq.dim)], iq.sizes
+                            )
+                        ]
+                    )
+                    summands.append(value if constant else value * L.LiteralFloat(weight))
+            symbol: L.Symbol = self.new_temp_symbol("sf_projection")
+            code.append(
+                L.Comment(
+                    f"{symbol.name}: contract direction {order[len(columns) - 1]} "
+                    f"of {caches[factor].name}; contraction order {order}."
+                )
+            )
+            value = L.Sum(summands)
+            if constant:
+                value = value * L.LiteralFloat(columns[-1][0])
+            code.append(L.VariableDecl(symbol, value))
+            stages[key] = symbol
+            return symbol
+
+        basis_tables, orders = {}, {}
+        for term in group.terms:
+            key = term.stage_keys[-1]
+            tables = []
+            counts = []
+            for d in range(iq.dim):
+                try:
+                    table = plan.tables[plan.weighted_table(d, term.tables)]
+                except KeyError:
+                    outer = plan.tables[plan.weighted_table(d, term.tables[:1])]
+                    factors = term.tables[1].tensor_factors
+                    assert factors is not None
+                    table = outer[:, :, None] * factors[d].values.reshape((2, 1, 2))
+                tables.append(table)
+                canonical = set()
+                for i, j in itertools.product(range(2), repeat=2):
+                    col = tuple(float(x) for x in table[:, i, j])
+                    sign = -1 if next((v for v in col if v), 1) < 0 else 1
+                    canonical.add(tuple(sign * v for v in col))
+                counts.append(len(canonical))
+            basis_tables[key] = tables
+            orders[key] = tuple(sorted(range(iq.dim), key=lambda d: (counts[d], -d)))
+
+        values = {}
+        A = self.backend.symbols.element_tensor
+        for row in group.rows:
+            terms = list(row.single) + [term for members in row.combined for term in members]
+            for indices in itertools.product(*(range(math.prod(shape)) for shape in sizes)):
+                dofs = [tuple(np.unravel_index(i, shape)) for i, shape in zip(indices, sizes)]
+                contributions: collections.Counter[L.Symbol] = collections.Counter()
+                for term in terms:
+                    columns, sign = [], 1
+                    order = orders[term.stage_keys[-1]]
+                    for d in order:
+                        table = basis_tables[term.stage_keys[-1]][d]
+                        column = tuple(float(x) for x in table[:, dofs[0][d], dofs[1][d]])
+                        first = next((v for v in column if v), 1)
+                        if first < 0:
+                            sign = -sign
+                            column = tuple(-v for v in column)
+                        columns.append(column)
+                    projection = project(term.factor, tuple(columns), (), order)
+                    contributions[projection] += sign
+                key = tuple(sorted(((v.name, n) for v, n in contributions.items() if n)))
+                if key not in values:
+                    value = self.new_temp_symbol("sf_value")
+                    summands = [v * L.LiteralFloat(float(n)) for v, n in contributions.items() if n]
+                    code.append(
+                        L.Comment(
+                            f"{value.name}: sum the form's contributions for argument dofs "
+                            f"{tuple(indices)}; add to A without overwriting existing entries."
+                        )
+                    )
+                    code.append(L.VariableDecl(value, L.Sum(summands)))
+                    values[key] = value
+                value = values[key]
+                B_indices = [
+                    L.MultiIndex([L.LiteralInt(int(i)) for i in dof], shape)
+                    for dof, shape in zip(dofs, sizes)
+                ]
+                for target in row.targets:
+                    output = self._element_tensor_indices(
+                        target.blockmap, target.blockdata, B_indices
+                    )
+                    code.append(
+                        L.AssignAdd(A[L.MultiIndex(output, self.ir.expression.tensor_shape)], value)
+                    )
         return [L.Scope(code)]
 
     def _sum_factorised_contraction(
@@ -1839,6 +2098,12 @@ class IntegralGenerator:
         per term. Blocks receiving the same contributions, such as the
         components of a vector Laplacian, share one sum.
         """
+        constant_direction = self._sum_factorised_constant_direction(plan, group, iq, caches)
+        if constant_direction is not None:
+            return constant_direction
+        small_matrix = self._sum_factorised_small_matrix(plan, group, iq, caches)
+        if small_matrix is not None:
+            return small_matrix
         B_indices = [
             create_dof_index(td, self.backend.symbols.argument_loop_index(i))
             for i, td in enumerate(group.terms[0].tables)
@@ -1906,6 +2171,12 @@ class IntegralGenerator:
                     )
                     stages[keys[s + 1]] = next_stage
                     declarations.append(L.ArrayDecl(next_stage, sizes=stride))
+                    level_code[s].append(
+                        L.Comment(
+                            f"{next_stage.name}: sum {stage.name} over reference direction {s} "
+                            "with its quadrature weights and argument basis products."
+                        )
+                    )
                     m = L.Symbol(f"iqm{s}", dtype=L.DataType.INT)
                     qs = iq.local_index(s)
                     scale = self.new_temp_symbol("basis", dtype=L.DataType.REAL)
@@ -1999,6 +2270,12 @@ class IntegralGenerator:
                     ]
                 )
                 pre_rows.append(
+                    L.Comment(
+                        f"{h.name}[q,j] combines terms sharing outer-argument tables: "
+                        "sum_t g_t[q] B_t[q,j] in the final direction."
+                    )
+                )
+                pre_rows.append(
                     L.ForRange(
                         q,
                         0,
@@ -2055,7 +2332,17 @@ class IntegralGenerator:
                 A_index = L.MultiIndex(A_indices, self.ir.expression.tensor_shape)
                 store.append(L.AssignAdd(A[A_index], acc[j]))
             row_body.append(L.ForRange(j, 0, num_inner, store))
-            row_code += row_body
+            row_code += [
+                L.Comment(
+                    f"Contract the final reference direction {last} into {acc.name}; "
+                    "each entry sums contributions at its quadrature points."
+                ),
+                L.Comment(
+                    "Add the resulting dof row to A in flattened argument order; "
+                    "reuse the row for blocks with identical contributions."
+                ),
+                *row_body,
+            ]
 
         body = pre_rows + dof_loops(last, row_code, outer_indices)
         if num_points <= 3:

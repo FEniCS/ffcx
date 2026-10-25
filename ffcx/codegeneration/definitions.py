@@ -5,6 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """FFCx/UFCx specific variable definitions."""
 
+import itertools
 import logging
 import math
 
@@ -536,7 +537,65 @@ class FFCXBackendDefinitions:
         # Terminals reading the same dofs with the same 1D tables, such as x
         # and the derivatives of x, share their first stages
         key: tuple = (quadrature_rule.id(), expr_key(dofs), stride)
-        for d in reversed(range(dim)):
+        code += [
+            L.Comment(f"Evaluate {access.name} from dofs using one-dimensional basis tables."),
+            L.Comment(
+                "Each stage replaces one dof index by a quadrature-point index; "
+                "point-independent directions are stored only once."
+            ),
+        ]
+        directions = list(reversed(range(dim)))
+        if (
+            dim in (2, 3)
+            and all(n == 2 for n in num_dofs)
+            and all(n <= 3 for n in num_points)
+            and any(num_points[d] == 1 for d in range(dim - 1))
+        ):
+            # Form differences of dofs before interpolating the remaining
+            # directions when the derivative table is point-independent.
+            result_key = key + tuple(f.name for f in reversed(tabledata.tensor_factors))
+            if result_key not in self._stages:
+                order = sorted(directions, key=lambda d: num_points[d] != 1)
+                shape = list(num_dofs)
+                partial_key = key
+                for d in order:
+                    partial_key += ((d, tabledata.tensor_factors[d].name),)
+                    previous = list(shape)
+                    shape[d] = num_points[d]
+                    if partial_key not in self._stages:
+                        if source not in inputs:
+                            inputs.append(source)
+                        stage = L.Symbol(f"{name}_r{d}", dtype=dtype)
+                        code.append(
+                            L.Comment(
+                                f"Contract dof direction {d} into {stage.name}; "
+                                f"tensor shape {previous} -> {shape}."
+                            )
+                        )
+                        code.append(L.ArrayDecl(stage, sizes=math.prod(shape)))
+                        for node_index in itertools.product(*(range(n) for n in shape)):
+                            terms = []
+                            for dof in range(num_dofs[d]):
+                                source_index = list(node_index)
+                                source_index[d] = dof
+                                flat = L.MultiIndex(source_index, previous).global_index
+                                table = tabledata.tensor_factors[d].values[0, 0, node_index[d], dof]
+                                terms.append(
+                                    L.float_product(
+                                        [
+                                            source[flat * stride + offset],
+                                            L.LiteralFloat(float(table)),
+                                        ]
+                                    )
+                                )
+                            target = L.MultiIndex(list(node_index), shape).global_index
+                            code.append(L.Assign(stage[target], L.Sum(terms)))
+                        self._stages[partial_key] = stage
+                    source, stride, offset = self._stages[partial_key], 1, 0
+                self._stages[result_key] = source
+            source = self._stages[result_key]
+            directions = []
+        for d in directions:
             key += (tabledata.tensor_factors[d].name,)
             if key in self._stages:
                 source, stride, offset = self._stages[key], 1, 0
@@ -545,6 +604,12 @@ class FFCXBackendDefinitions:
                 inputs.append(source)
             stage = L.Symbol(f"{name}_c{d}", dtype=dtype)
             self._stages[key] = stage
+            code.append(
+                L.Comment(
+                    f"Contract dof direction {d} into {stage.name}; "
+                    "earlier directions still index dofs, later directions index points."
+                )
+            )
             code.append(L.ArrayDecl(stage, sizes=sizes[d]))
             inner = math.prod(num_points[d + 1 :])
             a, a_loop = loop("a", math.prod(num_dofs[:d]))
