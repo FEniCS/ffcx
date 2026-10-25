@@ -466,7 +466,7 @@ class FFCXBackendAccess:
         if tabledata.is_permuted:
             qp = self.symbols.entity_permutation(restriction)
 
-        if dof_index.dim == 1 and quadrature_index.dim == 1:
+        if not tabledata.has_tensor_factorisation:
             symbols += [L.Symbol(tabledata.name, dtype=L.DataType.REAL)]
             return self.symbols.element_tables[tabledata.name][qp][entity][iq_global_index][
                 ic_global_index

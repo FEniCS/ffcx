@@ -86,7 +86,8 @@ example by setting ``CC=clang`` before starting Python.
 
 C compiler arguments are separate from FFCx code-generation options such
 as ``scalar_type`` and ``sum_factorization``, which belong in the
-``options`` dictionary.
+``options`` dictionary. :doc:`sum-factorisation` is enabled by default
+where supported.
 
 Setting flags through DOLFINx
 -----------------------------

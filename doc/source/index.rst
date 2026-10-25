@@ -10,6 +10,7 @@ It is developed at https://github.com/FEniCS/ffcx.
    :caption: Contents:
 
    kernel-names
+   sum-factorisation
    compiler-flags
 
 API reference
