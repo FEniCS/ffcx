@@ -1,0 +1,1010 @@
+[
+  {
+    "case": "hexahedron_p1_elasticity",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      2,
+      2,
+      2
+    ],
+    "ffcx_sha256": "204753bcc7fdc61491c976a47823404cf6d3fefe879bf58988325fb733d057f9",
+    "tsfc_sha256": "b720777f807deefd565b660922f1121604383d7afc2956d0fc4263696673bc08"
+  },
+  {
+    "case": "hexahedron_p1_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      2,
+      2,
+      2
+    ],
+    "ffcx_sha256": "bddd7dc121412dfcb1af372e84d61475db2732d454f89d4d2c6e0a383943eaa7",
+    "tsfc_sha256": "ed7b0132ab60fbe0f7394fca3532e730653c2544e3f5482b08334a2db4e578cd"
+  },
+  {
+    "case": "hexahedron_p1_laplace_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      2,
+      2,
+      2
+    ],
+    "ffcx_sha256": "642e25ce6c756de9b831364cd49e30a06dff6e10c5645efab4a36424f68ed876",
+    "tsfc_sha256": "38934e0338783227c4775edd33dd665b9fd4063c162692f4b1bda7cc805f9b70"
+  },
+  {
+    "case": "hexahedron_p1_mass",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      2,
+      2,
+      2
+    ],
+    "ffcx_sha256": "ef7288f05a35789339255686d8043dd7cbbd9530e7fa4bdcc0f6c2de4ebfeab7",
+    "tsfc_sha256": "c17dee01a459f1cb4f895752b5aad4bfc78163167be271091d7928fbc3d8d8f2"
+  },
+  {
+    "case": "hexahedron_p1_mass_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      2,
+      2,
+      2
+    ],
+    "ffcx_sha256": "49f0091dc21e3df163124b44d333542cf12eda5436a70ec20f9155ff9e4a614d",
+    "tsfc_sha256": "bda17e76f87f6992701d963eb3f93c913e11b262ed3b44ba642b1f8ec5382cdf"
+  },
+  {
+    "case": "hexahedron_p1_vector_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      2,
+      2,
+      2
+    ],
+    "ffcx_sha256": "d95d5770a62d56d78e4ac65b930feaa3e8158844854620fdcc0f221bc6903fa8",
+    "tsfc_sha256": "17f9935ce97709db8f4c74314359753257f4985ecbff939b0ba7f6ca9af6ecd2"
+  },
+  {
+    "case": "hexahedron_p2_elasticity",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      3,
+      3,
+      3
+    ],
+    "ffcx_sha256": "877e86862c0b6da293056a72bf487b54050e8c3f3f96f044ff89ef26994f7197",
+    "tsfc_sha256": "1dbce1b04209c09213cf3d45f21def028c3eacc1dc0c0414c7870b7ca1b4694b"
+  },
+  {
+    "case": "hexahedron_p2_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      3,
+      3,
+      3
+    ],
+    "ffcx_sha256": "5e3c2cf3ba5f80220753c9981761b9b91a546703540b2ea65b5b1045fcb7da30",
+    "tsfc_sha256": "b8b38494a10376df500c232de35dad019cc1ce68a1c0b24bce127466950704dc"
+  },
+  {
+    "case": "hexahedron_p2_laplace_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      3,
+      3,
+      3
+    ],
+    "ffcx_sha256": "85e8dc2e60fab9574e65b71ad87b1b6abd7ab8e1dcd606fce190d7c4064fa0c8",
+    "tsfc_sha256": "02000aee0b33835cf51674b23faad0788082b90b1577f4d6d31623bfa410966f"
+  },
+  {
+    "case": "hexahedron_p2_mass",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      3,
+      3,
+      3
+    ],
+    "ffcx_sha256": "d06b7b64869dcdc95b18f8309b91e24dd2dee33655a56da86b928a2add951b04",
+    "tsfc_sha256": "04d70b1db764c9cb4dbb067593a99f91f52042c4698c037967022963ceeabd4d"
+  },
+  {
+    "case": "hexahedron_p2_mass_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      3,
+      3,
+      3
+    ],
+    "ffcx_sha256": "246f40c714645b0ea37d7095b76b079a252c86f5b9a193dc0bec5f251ea7f30b",
+    "tsfc_sha256": "abe09c87b97fcdbc876d0cfd02189fb9ac0f10140c781bc1545ef17ce2059b89"
+  },
+  {
+    "case": "hexahedron_p2_vector_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      3,
+      3,
+      3
+    ],
+    "ffcx_sha256": "c2359d2d1a9bc3dac0a0f6fcde93269c2dc591c4a3e7be0b3df37a86e0714db7",
+    "tsfc_sha256": "6fbbba1117a7de96e5e985da94b2e05cc2ed56a893f4ded0f3fdb8db58b792ba"
+  },
+  {
+    "case": "hexahedron_p3_elasticity",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      4,
+      4,
+      4
+    ],
+    "ffcx_sha256": "fbd77985066bac3d369ae8b078851e417e6ff8781ba7d45ba12760d08275eeee",
+    "tsfc_sha256": "92579104f26c3aeaf6215cb7039f2430e37f209d794b01777e67d6547b4efae0"
+  },
+  {
+    "case": "hexahedron_p3_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      4,
+      4,
+      4
+    ],
+    "ffcx_sha256": "8d238a8407b9bce99c72a700e30f5eded9b45755fe80cc28242a8f2b1d863602",
+    "tsfc_sha256": "48a3288941bc74dfc80a18dcaf7341977b3279757c407ea4b4d365a0e63a1b4a"
+  },
+  {
+    "case": "hexahedron_p3_laplace_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      4,
+      4,
+      4
+    ],
+    "ffcx_sha256": "9c1264f255cc4532790560504b3cc02a114b5c6655a2bd999295a654f0f41db5",
+    "tsfc_sha256": "c76a4f409ea24d5dbf247ca1d7cc67f5473c2bb3ece0164625a4595be485dddd"
+  },
+  {
+    "case": "hexahedron_p3_mass",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      4,
+      4,
+      4
+    ],
+    "ffcx_sha256": "f91aaa8b42e032ac1aeebb61f25878bbc0b8dea7e44b0a94ced46c5bcf5ac62c",
+    "tsfc_sha256": "9c03e36cfdad931fc7b70efbc36f21c55dab8769b07e61dbd9b2b09f9db4a795"
+  },
+  {
+    "case": "hexahedron_p3_mass_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      4,
+      4,
+      4
+    ],
+    "ffcx_sha256": "48989c2cafef155d676dbb4d2b09ce3d0eb860a33e1ac418f704644962c2eb1b",
+    "tsfc_sha256": "a7dcf120556bc671742db35ac1a123acfb38cbfd17f85d6e0d489d9011da41e6"
+  },
+  {
+    "case": "hexahedron_p3_vector_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      4,
+      4,
+      4
+    ],
+    "ffcx_sha256": "4de7bec90bce3d9992db0eb9d606c8e2c4f417d2d96d288309ea173b5ed89c3c",
+    "tsfc_sha256": "94148106927469442fe20ceb628cb63e041a9479328054d08c24557fd4bded57"
+  },
+  {
+    "case": "hexahedron_p4_elasticity",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      5,
+      5,
+      5
+    ],
+    "ffcx_sha256": "0555c1c3d91d7af04655554b9b30d4815a4bc873d62f9375f4fba968ab2c35ef",
+    "tsfc_sha256": "8ef6fea12ed791018c65bb5135ece03b7db3b540a385f76ac17f9013e05dacb1"
+  },
+  {
+    "case": "hexahedron_p4_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      5,
+      5,
+      5
+    ],
+    "ffcx_sha256": "e08ecb3237bac78d4da5b40d22a17857cddfef3884dea3637f7121997ba6a317",
+    "tsfc_sha256": "e9f6f7fe95a3fd80f8741100c40ba8f34c61755ec5f2498ba1a5a71d8b7e1a9b"
+  },
+  {
+    "case": "hexahedron_p4_laplace_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      5,
+      5,
+      5
+    ],
+    "ffcx_sha256": "02a788bbaa81ec31cddbca20c677f70678618fd25ca163b01bc289e9cf9ca2c5",
+    "tsfc_sha256": "2fe96b37981c20e5a0dcf3a5fb2cf3e03100b1343a59b43f5941e59a001db35c"
+  },
+  {
+    "case": "hexahedron_p4_mass",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      5,
+      5,
+      5
+    ],
+    "ffcx_sha256": "9db3e30494a42eb79f21eded5209bd29d5b7949da1f68b4ae197b298872cdf62",
+    "tsfc_sha256": "363542eef9a65b9adb669d605bbf78f3424c632559c84f96397440adc4239143"
+  },
+  {
+    "case": "hexahedron_p4_mass_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      5,
+      5,
+      5
+    ],
+    "ffcx_sha256": "5688d02542cc0f6aa24ec6731fb147e31a7af33af8bc478c32116b4fde023765",
+    "tsfc_sha256": "dffecdcbd73f4d2b1ce4684567c5bcf1551510fc15ebe352090dba9516aaeaee"
+  },
+  {
+    "case": "hexahedron_p4_vector_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      5,
+      5,
+      5
+    ],
+    "ffcx_sha256": "5643fab304e86bdd7568623da6ac9da20102d622dc1856b992eef143f7de564b",
+    "tsfc_sha256": "f5ffbee0831b21839ee7ff17f26b452acd10ebc73f47ffe7b13b565505916cca"
+  },
+  {
+    "case": "hexahedron_p5_elasticity",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      6,
+      6,
+      6
+    ],
+    "ffcx_sha256": "03b292eb8f3f4b431424cae07d9d355233d7bc639dbaa599de85c43551eeaf89",
+    "tsfc_sha256": "8939482e6f435ce7a7310618a99f94497602d7a5eaf919886a624849046c7513"
+  },
+  {
+    "case": "hexahedron_p5_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      6,
+      6,
+      6
+    ],
+    "ffcx_sha256": "82310fc8ce6e34169c913d9b6899fcf71dd61b3f2780cf8c567896b603ed20d0",
+    "tsfc_sha256": "c063faf8882606c2380467b15cdc5cda96af19d3bda07bed5dee80d653960533"
+  },
+  {
+    "case": "hexahedron_p5_laplace_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      6,
+      6,
+      6
+    ],
+    "ffcx_sha256": "7327b71ba5469fe5815e2144bd440a1c20b23db35be1eb558c5971e5e81c3ac3",
+    "tsfc_sha256": "31bc6fda3ad725d5a8e8eeb2cd15f3d7a1c0cd4d2c4e3aa756803334c3047789"
+  },
+  {
+    "case": "hexahedron_p5_mass",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      6,
+      6,
+      6
+    ],
+    "ffcx_sha256": "668294cc1863624a4a35f2ac1ba555da2c3ba8a198b3311e6eea88054049c9c7",
+    "tsfc_sha256": "9d0512fbae0d5cfef8979f0446e2ae2f7c09ead5fa08efebf4a014958d237fae"
+  },
+  {
+    "case": "hexahedron_p5_mass_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      6,
+      6,
+      6
+    ],
+    "ffcx_sha256": "af30894bbb36f999408816499aabe165478068025d72612a69e0b478797c8a97",
+    "tsfc_sha256": "1234a1198d2d024f82422c1b2dc8fbc7bc909d2509d8f5af3cf8a08d6744a82f"
+  },
+  {
+    "case": "hexahedron_p5_vector_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      6,
+      6,
+      6
+    ],
+    "ffcx_sha256": "bbf881d473b4a7417c90438a1629b580098a89c11fa375a20c4dfc271e9de8d5",
+    "tsfc_sha256": "766e14b1d325ad2e8ca815aa2b9ccda0412102ce645419d869cc0a4ed3390227"
+  },
+  {
+    "case": "hexahedron_p6_elasticity",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      7,
+      7,
+      7
+    ],
+    "ffcx_sha256": "7190c1f5d65c2461ed289f60160f0bd8e3fd301eca12a3c5ac359d2a1c3f3f17",
+    "tsfc_sha256": "de785c4a13f4f49a475e5e7a9e94fccbf39f8db531d0fd556fdd74f2e0b6a8e1"
+  },
+  {
+    "case": "hexahedron_p6_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      7,
+      7,
+      7
+    ],
+    "ffcx_sha256": "9bb0f5f3bb362b4be5149ad655489f26579756f8a0ac6f3fe6338105e4cb4270",
+    "tsfc_sha256": "834064b81b2b918de367aaa34b1be49fd11ed8dec011e28e7e75cb585f988d5d"
+  },
+  {
+    "case": "hexahedron_p6_laplace_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      7,
+      7,
+      7
+    ],
+    "ffcx_sha256": "25c9b655b85cfd3ecab2df7eb460535da68aeb89afa7296a79f67d7cd5aedd95",
+    "tsfc_sha256": "961c60f3b259f5eec9c8985f2666d3572bc22b99caf1aa6b1cd93a83345c736c"
+  },
+  {
+    "case": "hexahedron_p6_mass",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      7,
+      7,
+      7
+    ],
+    "ffcx_sha256": "a06e554b3219a6235fba0eb59498a0115be9872b89754cebcd51828a7a5a48ed",
+    "tsfc_sha256": "3aeb04700680db09a41be13a5cc3b5afc127f6d5b0d0c0d428992d2ebb340ede"
+  },
+  {
+    "case": "hexahedron_p6_mass_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      7,
+      7,
+      7
+    ],
+    "ffcx_sha256": "30ad3eb0612eff46e11adad78d195b4447860dbdb7f53b44ced6ae0721b50b90",
+    "tsfc_sha256": "e9893e4ebdf323b21e470507272538861e2013d9e4cd872ebbaff70111e0ea30"
+  },
+  {
+    "case": "hexahedron_p6_vector_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      7,
+      7,
+      7
+    ],
+    "ffcx_sha256": "520edea23b4ceb6635039c362357d7353382acaa677e19efb9394c3dfc25230a",
+    "tsfc_sha256": "48410a8d76b08a8e6de93781a26d72a463dcc50a03c93ebeb2a25a457d34f883"
+  },
+  {
+    "case": "hexahedron_p7_elasticity",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      8,
+      8,
+      8
+    ],
+    "ffcx_sha256": "e605dc1d0d89a8d01b0b8c97ea1e82427c2573502d9caca3cf7aff05df8a4748",
+    "tsfc_sha256": "478944ec5e5a9624706a166f061d97a611bf1b0b9d1a048589326edf6b97a185"
+  },
+  {
+    "case": "hexahedron_p7_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      8,
+      8,
+      8
+    ],
+    "ffcx_sha256": "3a867a6994dc6cdddd595d3b3c30fbe128c6e61dd02d71568a69b8f136bfaa8e",
+    "tsfc_sha256": "1ce3910c40fe6eb016915a98ef6e7f07baf69a5e303e8d326611a0902f0ac3b0"
+  },
+  {
+    "case": "hexahedron_p7_laplace_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      8,
+      8,
+      8
+    ],
+    "ffcx_sha256": "5b01c1111a2beef1dbb5ebb68680e15ffcebb6feaf3c056b7bbfa4c6c2ea821d",
+    "tsfc_sha256": "e37272f8ecc378fc512a97eeb00f21f60bc2ca27936a58b6481f02b1da57c601"
+  },
+  {
+    "case": "hexahedron_p7_mass",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      8,
+      8,
+      8
+    ],
+    "ffcx_sha256": "a635bd57e6d30cef8251953794238d991bde021e189e8e79fb3980c77b29593e",
+    "tsfc_sha256": "ce95a90437961b64ac69d22453c8a29eccd1eda6759adc3ce5a3eb4db05c5739"
+  },
+  {
+    "case": "hexahedron_p7_mass_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      8,
+      8,
+      8
+    ],
+    "ffcx_sha256": "ec11db192085503af63a603652bc6fae4dcb3571760ce969f8a3bf6fcfe3872c",
+    "tsfc_sha256": "d30fdc42fead736d0566a4b311d95f4d0759df81d631a023666ce5fbe7a04ca8"
+  },
+  {
+    "case": "hexahedron_p7_vector_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      8,
+      8,
+      8
+    ],
+    "ffcx_sha256": "c980ca33e26791e0db39cbee49708a6295b7e9bf3f395473d4b31260e1007a43",
+    "tsfc_sha256": "0a204404f7cbad545c9035d904594b6e80e6cd35dda186d37d7e45ec643de978"
+  },
+  {
+    "case": "hexahedron_p8_elasticity",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      9,
+      9,
+      9
+    ],
+    "ffcx_sha256": "550e13a630f42f542355067b74c958c8417090e04e891dcf6184a62dfb545e53",
+    "tsfc_sha256": "72236885fa731ea8c2cfcf57b4de69ee99123ca7d894a9f0cc8c031b761052c0"
+  },
+  {
+    "case": "hexahedron_p8_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      9,
+      9,
+      9
+    ],
+    "ffcx_sha256": "4d858d1cf14c1e89b343bdff1f44d380e93b549ed7142a33511f2f835f40082d",
+    "tsfc_sha256": "33a88df414dc7e76dc47330e5b275f7876b7db0c0cbc9eea06f629f5dd51c2db"
+  },
+  {
+    "case": "hexahedron_p8_laplace_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      9,
+      9,
+      9
+    ],
+    "ffcx_sha256": "6fc781ea4d52d44b8ee869c455f58794e6c183e7c960fff2eaafd48702f565ae",
+    "tsfc_sha256": "65c825943351d78552539913116c8fa8d3d404891d5c3c909035db5fa58f333d"
+  },
+  {
+    "case": "hexahedron_p8_mass",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      9,
+      9,
+      9
+    ],
+    "ffcx_sha256": "f0084e111bd4a802c88c7da5e636890c0346c09792fac2d17a12cce919f17374",
+    "tsfc_sha256": "316d9e201576801d2edd2979b71fecc21e00ae351e073f505a095437020ccba4"
+  },
+  {
+    "case": "hexahedron_p8_mass_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      9,
+      9,
+      9
+    ],
+    "ffcx_sha256": "2dca62ab5cfdd50309ceef81ed1c4daff29d54dea34b61fd2da90d3f9da2bc15",
+    "tsfc_sha256": "69605cd01928900478efd0b159c737a5fc4f4af498913ec6696fb3cce32f84a6"
+  },
+  {
+    "case": "hexahedron_p8_vector_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      9,
+      9,
+      9
+    ],
+    "ffcx_sha256": "9ff00a4fd8dced96bc83df3513a92f4b70d20a962be0e051eefca741c4016f24",
+    "tsfc_sha256": "35a7031168156c45e5830ca91ae1a772443655c5f3e9b7e2ccb5ae3fbab45ece"
+  },
+  {
+    "case": "quadrilateral_p1_elasticity",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      2,
+      2
+    ],
+    "ffcx_sha256": "ac88a5dac2a1000ad9b8cb49f10de3904f9f986cc6d51c25f80e6672185535db",
+    "tsfc_sha256": "f60a8d0542fc1866ac2b62199af5b66fcf73eff2fb226711db5bf4a8a2b579b4"
+  },
+  {
+    "case": "quadrilateral_p1_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      2,
+      2
+    ],
+    "ffcx_sha256": "e221522e37290d714324c5f997144c9b33e577bc6d5b9ceb566df55b1578121b",
+    "tsfc_sha256": "82906ede64fcf5af0a48032813537b4275a3af2ec0053cf91e02ef2bb242eede"
+  },
+  {
+    "case": "quadrilateral_p1_laplace_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      2,
+      2
+    ],
+    "ffcx_sha256": "a4e4cdd9ec8884cde6fb0a0c66e057ad78a569f7f604047b83f8a8ad11d0d874",
+    "tsfc_sha256": "196dae0de3d536925ce86b1eb63336278f150a9e4917c8813878e1433a6dab9f"
+  },
+  {
+    "case": "quadrilateral_p1_mass",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      2,
+      2
+    ],
+    "ffcx_sha256": "0b507a190e681c2892e53a234503c56831af23a51c01ebb2a1c7a39dec324df4",
+    "tsfc_sha256": "14abb27bd9fdafd90c5a236c2126abe2431a540c05b22ae06383587fe78e077b"
+  },
+  {
+    "case": "quadrilateral_p1_mass_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      2,
+      2
+    ],
+    "ffcx_sha256": "6cb8936945fde8c2efa3a58b9024b40763055e723a2d85d64b05fe8202fe9132",
+    "tsfc_sha256": "b992befea633c1610ef42123cfa1072c90950ad86af4bb859d9c118ad2c49e19"
+  },
+  {
+    "case": "quadrilateral_p1_vector_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      2,
+      2
+    ],
+    "ffcx_sha256": "85d871952877b4f4eb43a2ed16ca8e8f4c047fc46496caae646fd361315f27ae",
+    "tsfc_sha256": "b1ce78ac5a51488d2d2653a9eaa20f105befd7d5823fbf034942b01eee0c231e"
+  },
+  {
+    "case": "quadrilateral_p2_elasticity",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      3,
+      3
+    ],
+    "ffcx_sha256": "18516c0a293acb30a8d9575c57b662fc641662ac45996d6e1d8fbb207aff1aa3",
+    "tsfc_sha256": "e1e6a55ed2b8637ce162855dae8b32fb2c491eb9ce29b9ed6e2fad8135851941"
+  },
+  {
+    "case": "quadrilateral_p2_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      3,
+      3
+    ],
+    "ffcx_sha256": "41ef76ca40d58825c3252fc8eba154175bc68e19e088ccf3d319410f2ae638ae",
+    "tsfc_sha256": "3ba8906c0e6a883a4a5040d0a8a651cd837dd5ae53e3d4f65da6bd2baf41c0fb"
+  },
+  {
+    "case": "quadrilateral_p2_laplace_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      3,
+      3
+    ],
+    "ffcx_sha256": "aaf4c22c041e6239fd0c1c1f3db7566eb216a2c8a5f5c64034fb6c9354292cfc",
+    "tsfc_sha256": "2d6315681734388bb29071259778870d208abf158bb4e87b385061b8c4c36725"
+  },
+  {
+    "case": "quadrilateral_p2_mass",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      3,
+      3
+    ],
+    "ffcx_sha256": "7ba5a420423fab107dd351358e6b02f2e2de7dfc2f9520ab9600e90c83108e5c",
+    "tsfc_sha256": "5841bfaee52fad9d0cd0ee25d9121d6fc8a65379ef88c964d4e9a7dc168d4308"
+  },
+  {
+    "case": "quadrilateral_p2_mass_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      3,
+      3
+    ],
+    "ffcx_sha256": "0c4f1beb8331a68c105a27b5cc15abb5c393b6f7916f5a22643cf3902955dce3",
+    "tsfc_sha256": "b3f7bf08963a95a324b851273254b80c1d1d8c682458c06a4a5f39aa6f285fa8"
+  },
+  {
+    "case": "quadrilateral_p2_vector_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      3,
+      3
+    ],
+    "ffcx_sha256": "2e27090ddca888cf4e1999b9e199b25658dad5a721ebda7949a5f7ad28e7c1a1",
+    "tsfc_sha256": "1d453566622436cf4f1742f1ca6d31ac48527a11b429d0a20d615b7730cdb25a"
+  },
+  {
+    "case": "quadrilateral_p3_elasticity",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      4,
+      4
+    ],
+    "ffcx_sha256": "65fcb33f15825ad7cf1e1ab9f48e7d62dc3e28deb7b2bd89f1d91a839679665c",
+    "tsfc_sha256": "afaa4bfb9f3947ec5ce3702396934acd7552f37bb138d266797e915337ebcc3d"
+  },
+  {
+    "case": "quadrilateral_p3_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      4,
+      4
+    ],
+    "ffcx_sha256": "ff7a184b7b32eab231b2cf5e5282dfc47ae04d91bd10e8c6a83698b789647cb1",
+    "tsfc_sha256": "73224dda6b75bdeb9b3f898834dcee769db8cc7e61bd9953089c4f332b8c2bd8"
+  },
+  {
+    "case": "quadrilateral_p3_laplace_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      4,
+      4
+    ],
+    "ffcx_sha256": "90bbb3dcd527878d3118a3e62884cf76630065c0d485dff510ddbff2d7fdac08",
+    "tsfc_sha256": "a027b233db0857da2dfbd18d1c48f8351de997a0e36dcf77f2fb8f04b7f5fa06"
+  },
+  {
+    "case": "quadrilateral_p3_mass",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      4,
+      4
+    ],
+    "ffcx_sha256": "02d277a73fb74237bfeaf7681c00a4a14a2e696e518458bffec05d97aa92f561",
+    "tsfc_sha256": "690dc49c524d6353772349a957d83d10ca5687bd7aa2d94165ebc48a8fd95d5a"
+  },
+  {
+    "case": "quadrilateral_p3_mass_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      4,
+      4
+    ],
+    "ffcx_sha256": "24663c7764f0acb3d455bcb1172dc19724a0f26167d434e68070bc2aff5dedda",
+    "tsfc_sha256": "377dd0eb4237a98289f46d5daf6e22f15696f6e2c1abd097bfa0f45052b555f6"
+  },
+  {
+    "case": "quadrilateral_p3_vector_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      4,
+      4
+    ],
+    "ffcx_sha256": "7a0ddc6e2b73a25227b92849adcc968a8c6ce70a9e5c13ff9c9d791bb0d458fd",
+    "tsfc_sha256": "a4e4ce08cbcb09e4b7d4bb118997fafab958e4b27562e3ea3b7d02e6ce569daa"
+  },
+  {
+    "case": "quadrilateral_p4_elasticity",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      5,
+      5
+    ],
+    "ffcx_sha256": "e83b7323461118b8e241cd5dc0e18fe1d2d7e560dd66ddebd338feb3956378fc",
+    "tsfc_sha256": "26041aa5509d219b00f9c595604fbc548c730ae05356c052594482b07fbeb2ca"
+  },
+  {
+    "case": "quadrilateral_p4_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      5,
+      5
+    ],
+    "ffcx_sha256": "c37f776361d6355973a5760f23dfff2366f384e5d2ce5de5588993a5d553bb4f",
+    "tsfc_sha256": "4ee5ff8fe5ec84284b54dd726a32c546ada84a908fccb915436762baee64be36"
+  },
+  {
+    "case": "quadrilateral_p4_laplace_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      5,
+      5
+    ],
+    "ffcx_sha256": "57bfe45f8e4f880c6c3817f97fdc446ce441b1f6dbb766f8e90339449f87a4f9",
+    "tsfc_sha256": "0a4769dca1c4f00775a4344977d67bcfce2ea54d297aaafa19ab46e6b2104945"
+  },
+  {
+    "case": "quadrilateral_p4_mass",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      5,
+      5
+    ],
+    "ffcx_sha256": "4d1b010cb7efba3f87f6497723b3e504bd07194a5c125919037b1bc88178cc82",
+    "tsfc_sha256": "b38699003959812a07f4b265bd53fbcc55d05a239fbbd3ed7e159e928d960b71"
+  },
+  {
+    "case": "quadrilateral_p4_mass_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      5,
+      5
+    ],
+    "ffcx_sha256": "c035b1533421b03d3796b99c7f5ce76f01b09a123e3c641d8b5fa6eda59a2978",
+    "tsfc_sha256": "4b7ef00a9015433176d395e0aa55684420abdad508dd4b0d109f023a7bbfdc63"
+  },
+  {
+    "case": "quadrilateral_p4_vector_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      5,
+      5
+    ],
+    "ffcx_sha256": "ad11f9e80bb6c09e06b166c54be7418c6dbaee43034254b143db10ce0289f4da",
+    "tsfc_sha256": "9174532575f4a45e0513b8cab055e95a16dad530024d063126fd9a0949a37ab3"
+  },
+  {
+    "case": "quadrilateral_p5_elasticity",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      6,
+      6
+    ],
+    "ffcx_sha256": "4dd4274b09ee5422fc89edc140b6df06a383aedd4150704ff2b3320fcc5edb4c",
+    "tsfc_sha256": "e62d0e7e69b6773b1968a1f55bbc716232617c3a2ea78ad3823755bd39df3c85"
+  },
+  {
+    "case": "quadrilateral_p5_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      6,
+      6
+    ],
+    "ffcx_sha256": "d70c901d5f08f127b136c7ff23f1b5d7a95bec1946e938d57cc28d409b387b8c",
+    "tsfc_sha256": "134f3220607cb78c80f090f5dcb5a8775e192e63748a7b90d23e67a34ca54d82"
+  },
+  {
+    "case": "quadrilateral_p5_laplace_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      6,
+      6
+    ],
+    "ffcx_sha256": "53c83e29d5dbdf465a6415e9db4083c24a1d0cf05af535135d00ad3ecfd29912",
+    "tsfc_sha256": "4f57f1e6cfd54412e777ae6e370783cc4819952c5c507c32db2a0601c5bec699"
+  },
+  {
+    "case": "quadrilateral_p5_mass",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      6,
+      6
+    ],
+    "ffcx_sha256": "919eaeebb32f5c57f04130f97097be5de6cdcbd1c8fe758a3b510b85823af9e4",
+    "tsfc_sha256": "5f82ea84e40bfc145e5e89c9fdf8df02d8e9684a7b4c7b23286ac9462b68a20a"
+  },
+  {
+    "case": "quadrilateral_p5_mass_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      6,
+      6
+    ],
+    "ffcx_sha256": "bd7bdf827123fa9ca65679c76b3f3bafc83c5893d851cf6f0c08fc2edbad882a",
+    "tsfc_sha256": "6b9355342edb596923a1788139a964a24e3d709090120ef098e89ba7a79fb48f"
+  },
+  {
+    "case": "quadrilateral_p5_vector_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      6,
+      6
+    ],
+    "ffcx_sha256": "f00e5933b47fc3e2dcd969026a79828ac2762d11743d030580b671550617e814",
+    "tsfc_sha256": "e2b4d638e373c40dba820a2408f6ee859ed7121eaf9739a2eb6b2c7cf64eff68"
+  },
+  {
+    "case": "quadrilateral_p6_elasticity",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      7,
+      7
+    ],
+    "ffcx_sha256": "29667e64312fb033a45e9126dc97d6ffdfc97368bb750b0070200c0f6fc149d4",
+    "tsfc_sha256": "d3298454aa9e6af326a3e68ac3c9376985f37c3869dec4628da15bb22575eb6a"
+  },
+  {
+    "case": "quadrilateral_p6_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      7,
+      7
+    ],
+    "ffcx_sha256": "7b796be27b7f3abc87d29a1ce9ed462f3814a5db6f286407702bca5467ff9d37",
+    "tsfc_sha256": "79a150fb18b62e4961fc7122a830c5942cd1f3d4ae4b3292d8237b425b06e506"
+  },
+  {
+    "case": "quadrilateral_p6_laplace_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      7,
+      7
+    ],
+    "ffcx_sha256": "af4e5998703457abb542f3b9b4dfd133413e4d79e7ca3186aa8749dc46bc1ea8",
+    "tsfc_sha256": "819425ac4fa91b51974398833ba25c85ce61bfbdc1233bcfce63ebe77cd6c717"
+  },
+  {
+    "case": "quadrilateral_p6_mass",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      7,
+      7
+    ],
+    "ffcx_sha256": "6ec08685012e4660a21dd8c5470f1b30fd8d9ffe84e85ff0735ba6aa1b9adaea",
+    "tsfc_sha256": "2f3353fb9eab8c356c5d5f6dcff727362ae0d02cf4833221ec9df31f8bf59aa9"
+  },
+  {
+    "case": "quadrilateral_p6_mass_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      7,
+      7
+    ],
+    "ffcx_sha256": "77778b3c62306d7731f30c60fd1e2d1b2cadb6f21b3f7f292176ce1c6baef20c",
+    "tsfc_sha256": "4a2e0c9c0c3ed32b85efd98d3818986f03f3b6294bd55f71dfeb9503270340fe"
+  },
+  {
+    "case": "quadrilateral_p6_vector_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      7,
+      7
+    ],
+    "ffcx_sha256": "a882dc214cfa1576027a7f828ec2915ea652fa68c22ff7e09e954193b9fb276e",
+    "tsfc_sha256": "0d33fb4e9ecf1e6ad19ca33b292d9c165d3d012177f3a46b9a8149bc0a0e027b"
+  },
+  {
+    "case": "quadrilateral_p7_elasticity",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      8,
+      8
+    ],
+    "ffcx_sha256": "e7545151d68f30e430efb8292f1a2863c97f2cc265e445511894afaa4d6845e0",
+    "tsfc_sha256": "85acdabcc7c37e656bfeaff4b4ab9029602086557461159890b91e1003d49b43"
+  },
+  {
+    "case": "quadrilateral_p7_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      8,
+      8
+    ],
+    "ffcx_sha256": "c9992a81996208e2272db0dc372254f55657c2665a73d653c63c904868579efd",
+    "tsfc_sha256": "230b5f18b87a980b36c5e73a138c902867ed985edd89d778d94d53249bd1321f"
+  },
+  {
+    "case": "quadrilateral_p7_laplace_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      8,
+      8
+    ],
+    "ffcx_sha256": "81d7a40b2f2398a6dbe9015211a84cbc05f32b98e3fb728d8f55e64a0749914d",
+    "tsfc_sha256": "ac6be6ee0e7c7988202ac1d1d49218f457f29bd500a818be88be9e0871d366c5"
+  },
+  {
+    "case": "quadrilateral_p7_mass",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      8,
+      8
+    ],
+    "ffcx_sha256": "cef9a677960acf3d899cf34423f5f9233b34435858215bb1ad8393bf0770e537",
+    "tsfc_sha256": "e1d083663430a0bb24b39ab841254a40cd59f39bee69418d2e608461c319d3d4"
+  },
+  {
+    "case": "quadrilateral_p7_mass_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      8,
+      8
+    ],
+    "ffcx_sha256": "d75a53d70e4e0b6e6d5e82bb3c019d4e16f1e3ba5f13afa48b22b394ff2203be",
+    "tsfc_sha256": "3cb4c7e9923a2b0a1d070518d6494dca66f3ac8b457d2ba7bf842211476bcfae"
+  },
+  {
+    "case": "quadrilateral_p7_vector_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      8,
+      8
+    ],
+    "ffcx_sha256": "2140e5a20dfcbd083f0bdf256a22ca9794567e91c27ef1eac16f14d8dd18ab41",
+    "tsfc_sha256": "031b359448f2b88f8fcc8178fcf5caca4b1cc8e502393a0f255c79bb33a22158"
+  },
+  {
+    "case": "quadrilateral_p8_elasticity",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      9,
+      9
+    ],
+    "ffcx_sha256": "91ef39ab99b233399ee46357c0ab5218a8f5a1157c3e25418107eff496af5d81",
+    "tsfc_sha256": "0f2b04f15d89bb2a6e573ecfa930df2f9c7f528a570dd4723919af3dfd55457b"
+  },
+  {
+    "case": "quadrilateral_p8_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      9,
+      9
+    ],
+    "ffcx_sha256": "7685a50ddf7f134ec53f17e1e06b35773c16bac5013d95efd0e88d3ebe164560",
+    "tsfc_sha256": "a0603cd88643c9ceb04034476ff5aefe6085c37a6b691b1bc56b130b2e95bf4c"
+  },
+  {
+    "case": "quadrilateral_p8_laplace_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      9,
+      9
+    ],
+    "ffcx_sha256": "cdf9f0ff01e0164b25ad0309e4873752a663a478dbd98622614740b5b6a82e7f",
+    "tsfc_sha256": "31314bff0c2f69e6bfee7dabcd29f542553bb155c02379be981982c76431f24d"
+  },
+  {
+    "case": "quadrilateral_p8_mass",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      9,
+      9
+    ],
+    "ffcx_sha256": "7d608cc4ce3cee30aac368de13d99810da7ee40abee2f91230e97b0f06c9a407",
+    "tsfc_sha256": "ad83bf9b7cd28c69fef1c904071a3f779c83f82f4a1eb3d58e16d2071aee44e4"
+  },
+  {
+    "case": "quadrilateral_p8_mass_action",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      9,
+      9
+    ],
+    "ffcx_sha256": "d04004c5124502a408fb697d587f326bc3fe55b4a41e767940c5481c650f3701",
+    "tsfc_sha256": "36c3f6b2df256c9e97c95170f6141ce4d2ab7d77aadd89cd1cc828ca2d03a236"
+  },
+  {
+    "case": "quadrilateral_p8_vector_laplace",
+    "ffcx_directional_contraction": true,
+    "tsfc_basis_index_shape": [
+      9,
+      9
+    ],
+    "ffcx_sha256": "c734a7868057db9a3aa45a97c2f909c759ccaeed373f28d50710c0e94d7adc77",
+    "tsfc_sha256": "b3f94a6f79da1a666614014f338fa50e30c731b5570782a972f5877938a0a0d4"
+  }
+]
