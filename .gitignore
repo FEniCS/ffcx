@@ -40,6 +40,8 @@ install_manifest.txt
 # Local build files
 /build
 /bench/bench.log
+# Generated benchmark datasets and manifests
+/benchmarks/**/*.json
 /doc/sphinx/build
 /doc/sphinx/source/api-doc
 

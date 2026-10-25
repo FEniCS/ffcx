@@ -37,8 +37,9 @@ Findings so far:
 - Direct triangular symmetry reuse often hurts vectorisation; it helps some
   cases substantially but regresses others. Blocked variants are the next test.
 
-The results file records completed experiments and pending validation. This is
-an investigation checkpoint, not evidence of a regression-free optimisation.
+Each run's local results file records completed experiments and pending
+validation. This is an investigation checkpoint, not evidence of a
+regression-free optimisation.
 
 Memory-traffic bound (roofline.py)
 
@@ -58,21 +59,9 @@ The driver zeroes each output record before calling the kernel. Arithmetic
 performed before a kernel first touches A largely overlaps with that traffic,
 while arithmetic interleaved with or after updates of A adds to it.
 
-Refreshed performance tables
+Generated datasets
 
-The 20 October 2026 refresh is pinned to kernel source 9e736b9f. Its streaming
-baseline is 30757e95, which already includes local block accumulation and
-point-major evaluation. The comparison therefore measures the later row-blocked
-updates and symmetric-diagonal contraction, not the complete PR versus main.
-Both streaming variants use matching dependencies, quadrature and input arrays.
-The results retain individual streaming/hot samples and numerical errors.
-benchmarks/refresh-current-results.json maps all four published tables to their
-current measurements; refresh-results.json retains the previous refresh.
-
-The release extension of that refresh re-times the six displayed P2/P3
-tetrahedral elasticity and hyperelastic rows with v0.11.0, the earlier PR
-revision and the current PR together. It uses identical quadrature and input
-arrays across revisions, with the release's own dependencies and UFCx header.
-The streaming_release run in refresh-current-results.json retains all seven
-samples per compiler and variant, source hashes, errors and the command.
-Other streaming cases retain their earlier measurements without release data.
+Benchmark JSON results and manifests are generated locally and are not tracked
+in the repository. Choose an output path outside the checkout, for example
+--output /tmp/ffcx-roofline-results.json. The drivers record timing samples,
+environment details and validation errors in their output files.
