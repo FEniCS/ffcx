@@ -8,13 +8,16 @@
 """Integral generator."""
 
 import collections
+import itertools
 import logging
+import math
 import platform
 import sys
 from numbers import Integral
 from typing import Any
 
 import basix
+import numpy as np
 import ufl
 
 import ffcx.codegeneration.lnodes as L
@@ -26,6 +29,7 @@ from ffcx.codegeneration.optimizer import (
     power_of_two_cse_statements,
     prune_dead_scalars,
     reciprocal_cse_statements,
+    referenced_names,
     scalar_declaration_names,
 )
 from ffcx.ir.elementtables import piecewise_ttypes
@@ -39,6 +43,9 @@ logger = logging.getLogger("ffcx")
 _FW_CACHE_BUDGET_BYTES = 32768
 _FW_CACHE_BYTES_PER_SCALAR = 16
 _UNSUPPORTED_VECTOR_MATH_MIN_CONTRACTION_WORK = 256
+# Stack budget for the buffers of a sum-factorised contraction: the cached
+# integrand on the whole tensor product rule plus the per-term stage arrays
+_SUM_FACTORISATION_STACK_BUDGET_BYTES = 262144
 
 # GCC can lower these calls to glibc libmvec on supported x86-64 Linux
 # targets. Other hosts commonly keep scalar libm calls, in which case a
@@ -257,14 +264,14 @@ class IntegralGenerator:
         # once
         assert not any(d for d in self.scopes.values())
 
-        parts = []
+        parts: list[L.LNode] = []
 
         # Generate the tables of quadrature points and weights
-        parts += self.generate_quadrature_tables(domain, self.ir.expression)
+        quadrature_tables = self.generate_quadrature_tables(domain, self.ir.expression)
 
         # Generate the tables of basis function values and
         # pre-integrated blocks
-        parts += self.generate_element_tables(domain)
+        element_tables = self.generate_element_tables(domain)
 
         # Generate the tables of geometry data that are needed
         parts += geometry.static_tables(
@@ -294,6 +301,25 @@ class IntegralGenerator:
         parts += all_preparts
         parts += all_quadparts
 
+        # Declare only the tables the kernel reads: a sum-factorised
+        # contraction reads weighted copies of 1D tables instead of some of
+        # the tables, and folds the quadrature weights into them
+        read = referenced_names(parts)
+        parts = (
+            L.commented_code_list(
+                [table for table in quadrature_tables if table.symbol.name in read],
+                "Quadrature rules",
+            )
+            + L.commented_code_list(
+                [table for table in element_tables if table.symbol.name in read],
+                [
+                    "Precomputed values of basis functions and precomputations",
+                    "FE* dimensions: [permutation][entities][points][dofs]",
+                ],
+            )
+            + parts
+        )
+
         # Drop every unread scalar declaration now the kernel body is whole.
         # Done on the LNode tree, before formatting, so it respects scopes
         # and is shared by all backends.
@@ -301,9 +327,11 @@ class IntegralGenerator:
 
         return L.StatementList(parts)
 
-    def generate_quadrature_tables(self, domain: basix.CellType, expression: CommonExpressionIR):
-        """Generate static tables of quadrature points and weights."""
-        parts: list[L.LNode] = []
+    def generate_quadrature_tables(
+        self, domain: basix.CellType, expression: CommonExpressionIR
+    ) -> list[L.ArrayDecl]:
+        """Generate static tables of quadrature weights."""
+        parts: list[L.ArrayDecl] = []
         # No quadrature tables for custom (given argument)
         skip = ufl.custom_integral_types
         if expression.integral_type in skip:
@@ -315,17 +343,14 @@ class IntegralGenerator:
                 # Generate quadrature weights array
                 wsym = self.backend.symbols.weights_table(quadrature_rule)
                 parts += [L.ArrayDecl(wsym, values=quadrature_rule.weights, const=True)]
-
-        # Add leading comment if there are any tables
-        parts = L.commented_code_list(parts, "Quadrature rules")
         return parts
 
-    def generate_element_tables(self, domain: basix.CellType):
+    def generate_element_tables(self, domain: basix.CellType) -> list[L.ArrayDecl]:
         """Generate static tables.
 
         With precomputed element basis function values in quadrature points.
         """
-        parts = []
+        parts: list[L.ArrayDecl] = []
         tables = self.ir.expression.unique_tables[domain]
         table_types = self.ir.expression.unique_table_types[domain]
         if self.ir.expression.integral_type in ufl.custom_integral_types:
@@ -338,18 +363,9 @@ class IntegralGenerator:
         for name in table_names:
             table = tables[name]
             parts += self.declare_table(name, table)
-
-        # Add leading comment if there are any tables
-        parts = L.commented_code_list(
-            parts,
-            [
-                "Precomputed values of basis functions and precomputations",
-                "FE* dimensions: [permutation][entities][points][dofs]",
-            ],
-        )
         return parts
 
-    def declare_table(self, name, table):
+    def declare_table(self, name, table) -> list[L.ArrayDecl]:
         """Declare a table.
 
         If the dof dimensions of the table have dof rotations, apply
@@ -364,6 +380,12 @@ class IntegralGenerator:
         """Generate quadrature loop with for this quadrature_rule."""
         # Generate varying partition
         definitions, intermediates_0 = self.generate_varying_partition(quadrature_rule, domain)
+
+        groups = self._sum_factorisation_groups(quadrature_rule, domain)
+        if groups is not None:
+            return self._sum_factorised_quadrature_loop(
+                definitions, intermediates_0, quadrature_rule, domain, groups
+            )
 
         # Generate dofblock parts, some of this will be placed before or after quadloop
         tensor_comp, intermediates_fw = self.generate_dofblock_partition(quadrature_rule, domain)
@@ -400,6 +422,321 @@ class IntegralGenerator:
             return split
 
         return [L.create_nested_for_loops([iq], code)]
+
+    @staticmethod
+    def _table_key(td, arg: int, direction: int) -> tuple[str, bool]:
+        """Identify the 1D table of an argument in a direction in a contraction.
+
+        The first argument's tables have the 1D quadrature weights folded in.
+        """
+        return (td.tensor_factors[direction].name, arg == 0)
+
+    @classmethod
+    def _tables_key(cls, tables: list, direction: int) -> tuple:
+        """Identify the 1D tables of all arguments in a direction in a contraction."""
+        return tuple(cls._table_key(td, arg, direction) for arg, td in enumerate(tables))
+
+    def _sum_factorisation_groups(
+        self, quadrature_rule: QuadratureRule, domain: basix.CellType
+    ) -> list[list[tuple[tuple, BlockDataT]]] | None:
+        """Return the blocks to contract by sum factorisation, or `None` if it doesn't apply.
+
+        Sum factorisation applies when the rule is a tensor product rule
+        (with the `sum_factorization` option) and every block's arguments
+        factorise over its directions, with buffers that fit the stack
+        budget. The blocks are grouped by their dof loops.
+        """
+        options = self.backend.access.options
+        if quadrature_rule is None or not quadrature_rule.has_tensor_factors:
+            return None
+        if self.ir.expression.integral_type in ufl.custom_integral_types:
+            return None
+        if self.ir.part == TensorPart.diagonal:
+            return None
+
+        integrand = self.ir.expression.integrand[(domain, quadrature_rule)]
+        blocks = [
+            (blockmap, blockdata)
+            for blockmap, contributions in sorted(integrand["block_contributions"].items())
+            for blockdata in contributions
+        ]
+        if not blocks:
+            return None
+
+        dim = len(quadrature_rule.tensor_factors)
+        for blockmap, blockdata in blocks:
+            if (
+                len(blockmap) == 0
+                or blockdata.transposed
+                or len(blockdata.factor_indices_comp_indices) != 1
+            ):
+                return None
+            for mad in blockdata.ma_data:
+                td = mad.tabledata
+                if (
+                    td.ttype in ("zeros", "ones")
+                    or td.tensor_factors is None
+                    or len(td.tensor_factors) != dim
+                ):
+                    return None
+
+        # Group blocks with the same dof loops, so they share one loop nest
+        groups: dict[tuple, list[tuple[tuple, BlockDataT]]] = collections.defaultdict(list)
+        for blockmap, blockdata in blocks:
+            sizes = tuple(
+                tuple(factor.values.shape[-1] for factor in mad.tabledata.tensor_factors or [])
+                for mad in blockdata.ma_data
+            )
+            groups[sizes].append((blockmap, blockdata))
+
+        # Stack use: one cache per integrand factor on the whole rule, and
+        # the stage arrays, shared by the blocks of a group contracted with
+        # the same tables (see `_sum_factorised_contraction`)
+        num_points = [w.size for _, w in quadrature_rule.tensor_factors]
+        num_scalars = math.prod(num_points) * len(
+            {bd.factor_indices_comp_indices[0][0] for _, bd in blocks}
+        )
+        for group in groups.values():
+            stages = set()
+            for _, blockdata in group:
+                tables = [mad.tabledata for mad in blockdata.ma_data]
+                stage: tuple = (blockdata.factor_indices_comp_indices[0][0],)
+                for s in range(dim - 1):
+                    stage += (self._tables_key(tables, s),)
+                    if stage not in stages:
+                        stages.add(stage)
+                        num_scalars += math.prod(num_points[s + 1 :])
+        scalar_size = np.dtype(options["scalar_type"]).itemsize
+        if num_scalars * scalar_size > _SUM_FACTORISATION_STACK_BUDGET_BYTES:
+            return None
+        return list(groups.values())
+
+    def _sum_factorised_quadrature_loop(
+        self,
+        definitions: list[L.LNode],
+        intermediates: list[L.LNode],
+        quadrature_rule: QuadratureRule,
+        domain: basix.CellType,
+        groups: list[list[tuple[tuple, BlockDataT]]],
+    ) -> list[L.LNode]:
+        """Evaluate the integrand on the tensor product rule, then contract one direction at a time.
+
+        The fused loop updates every entry of the element tensor at every
+        quadrature point, costing O(Q^d N^(rd)) for rank r and dimension d.
+        With the integrand factors f cached on the whole tensor product
+        rule, each direction can be contracted in turn: in 2D, for a
+        bilinear form with 1D weights w0 and w1,
+
+            g[iq1] = sum_iq0 f[iq0, iq1] w0[iq0] u0[iq0, i0] v0[iq0, j0]
+            A[i0 i1, j0 j1] += sum_iq1 g[iq1] w1[iq1] u1[iq1, i1] v1[iq1, j1]
+
+        which costs O(N^2 Q^2 + N^4 Q). The 1D weights are folded into the
+        1D tables of the first argument.
+        """
+        integrand = self.ir.expression.integrand[(domain, quadrature_rule)]
+        F = integrand["factorization"]
+        iq = create_quadrature_index(quadrature_rule, self.backend.symbols.quadrature_loop_index)
+        rule_id = quadrature_rule.id()
+
+        # Cache every integrand factor on the whole rule
+        caches: dict[int, L.Symbol] = {}
+        store: list[L.LNode] = []
+        for _, blockdata in itertools.chain.from_iterable(groups):
+            factor_index = blockdata.factor_indices_comp_indices[0][0]
+            if factor_index not in caches:
+                f = self.get_var(quadrature_rule, domain, F.nodes[factor_index]["expression"])
+                cache = L.Symbol(f"fq{len(caches)}_{rule_id}", dtype=L.DataType.SCALAR)
+                caches[factor_index] = cache
+                store.append(L.Assign(cache[iq.global_index], f))
+
+        inputs = []
+        for definition in definitions:
+            assert isinstance(definition, L.Section)
+            inputs += definition.output
+        evaluation = definitions + [
+            L.Section("Intermediates", intermediates + store, [], inputs, list(caches.values()))
+        ]
+        evaluation = optimize(evaluation, quadrature_rule)
+
+        # 1D tables of the first argument, scaled by the 1D quadrature
+        # weights. Directions with the same 1D rule share them.
+        weighted_tables: dict[tuple[str, bytes], L.Symbol] = {}
+        table_declarations: list[L.LNode] = []
+
+        def table(arg, td, direction, quadrature_index, dof_index):
+            """Return the access to a 1D table."""
+            if arg > 0:
+                access, _ = self.backend.access.tensor_factor_access(
+                    td, direction, quadrature_index, dof_index
+                )
+                return access
+            factor = td.tensor_factors[direction]
+            weights = quadrature_rule.tensor_factors[direction][1]
+            key = (factor.name, weights.tobytes())
+            if key not in weighted_tables:
+                name = f"{factor.name}_w{len(weighted_tables)}"
+                values = factor.values * weights.reshape(1, 1, -1, 1)
+                table_declarations.extend(self.declare_table(name, values))
+                weighted_tables[key] = self.backend.symbols.element_tables[name]
+            return weighted_tables[key][0][0][quadrature_index][dof_index]
+
+        contraction: list[L.LNode] = []
+        for group_id, group in enumerate(groups):
+            # The blocks of a group share their dof loops
+            B_indices = [
+                create_dof_index(mad.tabledata, self.backend.symbols.argument_loop_index(i))
+                for i, mad in enumerate(group[0][1].ma_data)
+            ]
+            terms = []
+            for blockmap, blockdata in group:
+                factor_index = blockdata.factor_indices_comp_indices[0][0]
+                terms.append(
+                    {
+                        "factor": factor_index,
+                        "cache": caches[factor_index],
+                        "tables": [mad.tabledata for mad in blockdata.ma_data],
+                        "A_indices": self._element_tensor_indices(blockmap, blockdata, B_indices),
+                    }
+                )
+            contraction += self._sum_factorised_contraction(terms, iq, B_indices, table, group_id)
+
+        caches_declarations: list[L.LNode] = [
+            L.ArrayDecl(cache, sizes=math.prod(iq.sizes)) for cache in caches.values()
+        ]
+        return (
+            table_declarations
+            + caches_declarations
+            + [L.create_nested_for_loops([iq], evaluation)]
+            + contraction
+        )
+
+    def _sum_factorised_contraction(
+        self,
+        terms: list[dict[str, Any]],
+        iq: L.MultiIndex,
+        B_indices: list[L.MultiIndex],
+        table,
+        group_id: int,
+    ) -> list[L.LNode]:
+        """Contract cached integrand factors with the argument 1D tables, direction by direction.
+
+        All terms share the same dof loops. Stage arrays and contributions
+        shared by several terms, such as the components of a vector
+        Laplacian, are computed once, and each element tensor entry is
+        updated once. Terms updating the same entries with the same last
+        direction tables, such as the derivative pairs of a Laplacian, have
+        their last stages summed and are contracted together, since that
+        innermost contraction runs the most often.
+        """
+        dim = iq.dim
+
+        def dof_loops(direction: int, body: list[L.LNode]) -> list[L.LNode]:
+            # Last argument innermost, so the innermost loop is contiguous in A
+            for B_index in reversed(B_indices):
+                body = [
+                    L.ForRange(B_index.local_index(direction), 0, B_index.sizes[direction], body)
+                ]
+            return body
+
+        def factors(term, direction):
+            accesses = [
+                table(arg, td, direction, iq.local_index(direction), B_index.local_index(direction))
+                for arg, (td, B_index) in enumerate(zip(term["tables"], B_indices))
+            ]
+            return accesses, self._tables_key(term["tables"], direction)
+
+        def contract(stages, accesses, direction, stride, m):
+            """Return a loop accumulating stages, summed, contracted in direction into a scalar."""
+            nonlocal num_accumulators
+            acc = L.Symbol(f"acc{group_id}_{num_accumulators}", dtype=L.DataType.SCALAR)
+            num_accumulators += 1
+            q = iq.local_index(direction)
+            index = q if m is None else q * stride + m
+            values = [stage[index] for stage in stages]
+            value = values[0] if len(values) == 1 else L.Sum(values)
+            loop = L.ForRange(
+                q,
+                0,
+                iq.sizes[direction],
+                [L.AssignAdd(acc, L.float_product([value] + accesses))],
+            )
+            return acc, [L.VariableDecl(acc, L.LiteralFloat(0.0)), loop]
+
+        # level_code[s] runs inside the dof loops of directions <= s. A
+        # stage array g_s holds a cache contracted over directions < s, on
+        # the points of directions >= s. Stage arrays and contributions are
+        # identified by the cache and the tables they were contracted with.
+        level_code: list[list[L.LNode]] = [[] for _ in range(dim)]
+        declarations: list[L.LNode] = []
+        stages: dict[tuple, L.Symbol] = {}
+        targets: dict[tuple, tuple[list[L.LExpr], dict[tuple, tuple[list, list[L.Symbol]]]]] = {}
+        num_accumulators = 0
+        for term in terms:
+            stage = term["cache"]
+            key: tuple = (term["factor"],)
+            for s in range(dim - 1):
+                accesses, names = factors(term, s)
+                key = key + (names,)
+                if key not in stages:
+                    stride = math.prod(iq.sizes[s + 1 :])
+                    next_stage = L.Symbol(
+                        f"{term['cache'].name}_{group_id}_g{s + 1}_{len(stages)}",
+                        dtype=L.DataType.SCALAR,
+                    )
+                    stages[key] = next_stage
+                    declarations.append(L.ArrayDecl(next_stage, sizes=stride))
+                    m = L.Symbol(f"iqm{s}", dtype=L.DataType.INT)
+                    acc, code = contract([stage], accesses, s, stride, m)
+                    level_code[s].append(
+                        L.ForRange(m, 0, stride, code + [L.Assign(next_stage[m], acc)])
+                    )
+                stage = stages[key]
+
+            # Terms updating the same entries with the same last direction
+            # tables are contracted once, with the sum of their stages
+            accesses, names = factors(term, dim - 1)
+            target = tuple(expr_key(index) for index in term["A_indices"])
+            merged = targets.setdefault(target, (term["A_indices"], {}))[1]
+            merged.setdefault(names, (accesses, []))[1].append(stage)
+
+        # Last direction: contract the summed stages to a scalar
+        # contribution. Summing in the contraction loop, rather than into
+        # an array outside the dof loops, keeps it vectorising well.
+        A = self.backend.symbols.element_tensor
+        contributions: dict[tuple, L.Symbol] = {}
+        updates: list[L.LNode] = []
+        for A_indices, merged in targets.values():
+            values: list[L.LExpr] = []
+            for names, (accesses, terms_stages) in merged.items():
+                key = (tuple(stage.name for stage in terms_stages), names)
+                if key not in contributions:
+                    acc, code = contract(terms_stages, accesses, dim - 1, 1, None)
+                    contributions[key] = acc
+                    level_code[dim - 1] += code
+                values.append(contributions[key])
+            A_index = L.MultiIndex(list(A_indices), self.ir.expression.tensor_shape)
+            value = values[0] if len(values) == 1 else L.Sum(values)
+            updates.append(L.AssignAdd(A[A_index], value))
+        level_code[dim - 1] += updates
+
+        body = dof_loops(dim - 1, level_code[dim - 1])
+        for s in reversed(range(dim - 1)):
+            body = dof_loops(s, level_code[s] + body)
+        return declarations + body
+
+    def _element_tensor_indices(
+        self, blockmap: tuple, blockdata: BlockDataT, B_indices: list[L.MultiIndex]
+    ) -> list[L.LExpr]:
+        """Return the indices into the element tensor of a block's argument dofs."""
+        A_indices = []
+        for i, index in enumerate(B_indices):
+            tabledata = blockdata.ma_data[i].tabledata
+            offset = tabledata.offset
+            if len(blockmap[i]) == 1:
+                A_indices.append(index.global_index + offset)
+            else:
+                A_indices.append(tabledata.block_size * index.global_index + offset)
+        return A_indices
 
     def _split_quadrature_loop(
         self,
@@ -851,16 +1188,7 @@ class IntegralGenerator:
                 B_indices = [B_indices[0]]
             B_rhs = L.float_product([fw] + arg_factors)
 
-            A_indices = []
-            for i in range(insert_rank):
-                index = B_indices[i]
-                tabledata = blockdata.ma_data[i].tabledata
-                offset = tabledata.offset
-                if len(blockmap[i]) == 1:
-                    A_indices.append(index.global_index + offset)
-                else:
-                    block_size = blockdata.ma_data[i].tabledata.block_size
-                    A_indices.append(block_size * index.global_index + offset)
+            A_indices = self._element_tensor_indices(blockmap, blockdata, B_indices[:insert_rank])
             rhs_expressions[tuple(A_indices)].append(B_rhs)
 
         # List of statements to keep in the inner loop
