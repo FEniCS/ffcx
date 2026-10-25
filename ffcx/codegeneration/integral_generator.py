@@ -1916,14 +1916,42 @@ class IntegralGenerator:
                     # axis, preserving the quadrature order of each entry.
                     width = iq.sizes[-1]
                     indices = [m * width + lane for lane in range(width)]
+                    first_point = iq.sizes[s] == 3
+                    if first_point:
+                        # Initialise a three-point reduction from its first
+                        # point, leaving a two-point loop and no zeroing pass.
+                        initial_basis = _map_expressions(
+                            basis,
+                            lambda node: (
+                                L.LiteralInt(0)
+                                if isinstance(node, L.Symbol) and node == qs
+                                else None
+                            ),
+                        )
+                        level_code[s] += [
+                            L.VariableDecl(scale, initial_basis),
+                            L.ForRange(
+                                m,
+                                0,
+                                stride // width,
+                                [
+                                    L.Assign(next_stage[index], stage[index] * scale)
+                                    for index in indices
+                                ],
+                            ),
+                        ]
+                    else:
+                        level_code[s].append(
+                            L.ForRange(m, 0, stride, [L.Assign(next_stage[m], 0.0)])
+                        )
+                    scale_assignment = L.Assign if first_point else L.VariableDecl
                     level_code[s] += [
-                        L.ForRange(m, 0, stride, [L.Assign(next_stage[m], 0.0)]),
                         L.ForRange(
                             qs,
-                            0,
+                            int(first_point),
                             iq.sizes[s],
                             [
-                                L.VariableDecl(scale, basis),
+                                scale_assignment(scale, basis),
                                 L.ForRange(
                                     m,
                                     0,
@@ -2030,6 +2058,40 @@ class IntegralGenerator:
             row_code += row_body
 
         body = pre_rows + dof_loops(last, row_code, outer_indices)
+        if num_points <= 3:
+            # Literal dof and point indices expose exact zeros and units in
+            # the small weighted tables. Remove those products here rather
+            # than relying on reassociation flags in the native compiler.
+            def fold(node):
+                if getattr(node, "dtype", None) == L.DataType.INT:
+                    return None
+                if isinstance(node, L.ArrayAccess) and node.array.name in plan.tables:
+                    try:
+                        indices = tuple(_evaluate_index(index, {}) for index in node.indices)
+                    except (KeyError, ValueError):
+                        return None
+                    value = float(plan.tables[node.array.name][indices])
+                    return L.LiteralFloat(value) if value in (-1.0, 0.0, 1.0) else None
+                if isinstance(node, (L.Mul, L.Product)):
+                    args = node.args if isinstance(node, L.Product) else [node.lhs, node.rhs]
+                    values = [_map_expressions(arg, fold) for arg in args]
+                    if any(L.is_zero_lexpr(value) for value in values):
+                        return L.LiteralFloat(0.0)
+                    if any(L.is_one_lexpr(value) for value in values):
+                        return L.float_product(values)
+                    return L.Product(values) if isinstance(node, L.Product) else L.Mul(*values)
+                if isinstance(node, (L.Add, L.Sum)):
+                    args = node.args if isinstance(node, L.Sum) else [node.lhs, node.rhs]
+                    values = [_map_expressions(arg, fold) for arg in args]
+                    values = [value for value in values if not L.is_zero_lexpr(value)]
+                    if not values:
+                        return L.LiteralFloat(0.0)
+                    if len(values) == 1:
+                        return values[0]
+                    return L.Sum(values) if isinstance(node, L.Sum) else L.Add(*values)
+                return None
+
+            body = _map_expressions(body, fold)
         for s in reversed(range(last)):
             body = dof_loops(s, level_code[s] + body, B_indices)
         # A scope per group lets the next reuse the stack of its arrays

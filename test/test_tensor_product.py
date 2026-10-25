@@ -417,6 +417,48 @@ def test_sum_factorised_contraction_complex(name, cell_type, P, compiled_forms):
     assert check_form(compiled_forms, COMPLEX_FORMS, name, P, cell_type, "complex128")
 
 
+@pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        "float32",
+        pytest.param(
+            "complex64",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+    ],
+)
+@pytest.mark.parametrize("name", ["coefficient_mass", "linear_gradient"])
+def test_sum_factorisation_three_point_low_precision(
+    name, dtype, cell_type, compile_args, tmp_path
+):
+    """Short reductions and exact basis zeros preserve single-precision accuracy."""
+    form, num_coefficients = sum_factorisation_forms(cell_type, 2)[name]
+    form = form.integrals()[0].integrand() * ufl.dx(metadata={"quadrature_degree": 4})
+    assert sum_factorised(form, dtype)
+    tensors = []
+    for enabled in (False, True):
+        kernel, module = generate_kernel(
+            [form],
+            dtype,
+            {"scalar_type": dtype, "sum_factorization": enabled},
+            compile_args,
+            tmp_path / str(enabled),
+        )
+        tensors.append(tabulate_kernel(kernel, module, form, num_coefficients, cell_type, dtype))
+    tolerance = 64 * np.finfo(tensors[0].real.dtype).eps
+    np.testing.assert_allclose(
+        tensors[1],
+        tensors[0],
+        rtol=tolerance,
+        atol=tolerance * np.max(np.abs(tensors[0])),
+    )
+
+
 @pytest.mark.parametrize("name", VECTOR_FORMS)
 @pytest.mark.parametrize("cell_type,P", cell_degrees([2, 4]))
 def test_sum_factorised_contraction_vector(name, P, cell_type, compiled_forms):
