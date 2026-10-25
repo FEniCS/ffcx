@@ -584,6 +584,12 @@ def compute_integral_ir(
             # Add tables and types for this quadrature rule to global tables dict
             unique_tables[integral_domain].update(active_tables)
             unique_table_types[integral_domain].update(active_table_types)
+
+            # Without sum factorisation, use the tensor product rule as an
+            # ordinary rule: its points and weights are already flattened
+            if plan is None and quadrature_rule.has_tensor_factors:
+                quadrature_rule = QuadratureRule(quadrature_rule.points, quadrature_rule.weights)
+
             # Build IR dict for the given expressions
             # Store final ir for this num_points
             integrand_map[(integral_domain, quadrature_rule)] = IntermediateIntegrandIR(

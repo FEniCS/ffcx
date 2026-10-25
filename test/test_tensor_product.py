@@ -253,17 +253,25 @@ def assert_matches_fused_loop(args, compile_args, tmp_path, options=None):
     assert_kernels_match(kernels, form, num_coefficients, cell_type, dtype)
 
 
-def sum_factorisation_plans(form, dtype, **options):
-    """Return the plans of the integrands of a form contracted one direction at a time."""
+def integrands(form, dtype, **options):
+    """Return the quadrature rules and IR of the integrands of a form."""
     options = ffcx.options.get_options({"scalar_type": dtype, **options})
     analysis = ffcx.analysis.analyze_ufl_objects(
         [form], dtype, do_cancel_jacobian_products=options["do_cancel_jacobian_products"]
     )
     ir = ffcx.ir.representation.compute_ir(analysis, {}, "", options, None)
     return [
-        integrand["sum_factorisation"]
+        (rule, integrand)
         for integral in ir.integrals
-        for integrand in integral.expression.integrand.values()
+        for (_, rule), integrand in integral.expression.integrand.items()
+    ]
+
+
+def sum_factorisation_plans(form, dtype, **options):
+    """Return the plans of the integrands of a form contracted one direction at a time."""
+    return [
+        integrand["sum_factorisation"]
+        for _, integrand in integrands(form, dtype, **options)
         if integrand["sum_factorisation"] is not None
     ]
 
@@ -461,6 +469,8 @@ def test_sum_factorisation_stack_limit_fallback(cell_type, compile_args, tmp_pat
     form, num_coefficients = sum_factorisation_forms(cell_type, 2)["elasticity"]
     options = {"sum_factorization_stack_limit": 256}
     assert not sum_factorised(form, "float64", **options)
+    # The tensor product rule is used as an ordinary rule
+    assert all(not rule.has_tensor_factors for rule, _ in integrands(form, "float64", **options))
     args = (form, num_coefficients, cell_type, "float64")
     assert_matches_fused_loop(args, compile_args, tmp_path, options)
 
