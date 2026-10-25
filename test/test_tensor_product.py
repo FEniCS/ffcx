@@ -5,6 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import math
+import sys
 
 import basix.ufl
 import numpy as np
@@ -258,6 +259,9 @@ def test_sum_factorised_contraction(name, P, cell_type, compile_args, tmp_path):
     assert uses_sum_factorised_contraction(form, dtype) == (name != "non_tensor_product_argument")
 
 
+@pytest.mark.xfail(
+    sys.platform.startswith("win32"), raises=NotImplementedError, reason="missing _Complex"
+)
 @pytest.mark.parametrize("name", ["coefficient_mass", "vector_laplace"])
 @pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
 def test_sum_factorised_contraction_complex(name, cell_type, compile_args, tmp_path):
