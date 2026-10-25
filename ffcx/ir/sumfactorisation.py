@@ -14,6 +14,8 @@ tables the contraction reads.
 from __future__ import annotations
 
 import collections
+import itertools
+import math
 import typing
 
 import numpy as np
@@ -51,13 +53,11 @@ def _stage_keys(factor: int, tables: list[UniqueTableReferenceT]) -> list[tuple]
 
     Key d identifies the factor contracted with the tables over directions
     < d. The last key, over all directions, identifies the contribution to
-    the element tensor. The first argument's tables have the 1D quadrature
-    weights folded in.
+    the element tensor.
     """
     keys: list[tuple] = [(factor,)]
     for direction in range(len(_factors(tables[0]))):
-        names = _names(tables, direction)
-        keys.append(keys[-1] + (tuple((name, arg == 0) for arg, name in enumerate(names)),))
+        keys.append(keys[-1] + (_names(tables, direction),))
     return keys
 
 
@@ -91,7 +91,9 @@ class ContractionGroup(typing.NamedTuple):
 class SumFactorisationPlan(typing.NamedTuple):
     """The contraction of a cell integral on a tensor product rule."""
 
-    groups: list[ContractionGroup]
+    # Batches of groups. A batch caches its integrand factors on the whole
+    # rule and contracts them, so batching bounds the space the caches take.
+    batches: list[list[ContractionGroup]]
     # Products of the 1D quadrature weights and the 1D tables of the first
     # arguments, [points][dofs of each argument], by name
     tables: dict[str, npt.NDArray[np.float64]]
@@ -105,13 +107,62 @@ class SumFactorisationPlan(typing.NamedTuple):
         return self.table_names[(direction, _names(tables, direction))]
 
 
+def _plan_group(terms: list[ContractionTerm], last: int) -> ContractionGroup:
+    """Plan the rows of blocks sharing their dof loops."""
+    rank = len(terms[0].tables)
+
+    # Contributions, and the contributions each block receives
+    contributions: dict[tuple, ContractionTerm] = {}
+    targets: dict[tuple, tuple[ContractionTerm, list[tuple]]] = {}
+    for term in terms:
+        key = term.stage_keys[-1]
+        contributions.setdefault(key, term)
+        targets.setdefault(term.blockmap, (term, []))[1].append(key)
+
+    signatures: dict[tuple, tuple[list[tuple], list[ContractionTerm]]] = {}
+    for target, keys in targets.values():
+        signatures.setdefault(tuple(sorted(keys, key=repr)), (keys, []))[1].append(target)
+
+    rows = []
+    for keys, row_targets in signatures.values():
+        by_outer_tables: dict[tuple, list[ContractionTerm]] = collections.defaultdict(list)
+        for key in keys:
+            by_outer_tables[key[-1][:-1]].append(contributions[key])
+        combined, single = [], []
+        for members in by_outer_tables.values():
+            if rank > 1 and len(members) > 1:
+                combined.append(members)
+            else:
+                single += members
+        rows.append(ContractionRow(row_targets, combined, single))
+    return ContractionGroup(terms, rows)
+
+
+def _group_size(group: ContractionGroup, num_points: list[int]) -> int:
+    """Return the number of scalars the arrays of a group's contraction take."""
+    last = len(num_points) - 1
+    stages = {key for term in group.terms for key in term.stage_keys[1 : last + 1]}
+    size = sum(math.prod(num_points[len(key) - 1 :]) for key in stages)
+    num_inner = int(_factors(group.terms[0].tables[-1])[last].values.shape[-1])
+    return size + sum(
+        len(row.combined) * num_points[last] * num_inner + num_inner for row in group.rows
+    )
+
+
 def plan_sum_factorisation(
     quadrature_rule: QuadratureRule,
     block_contributions: dict[tuple[tuple[int, ...], ...], list[BlockDataT]],
-) -> SumFactorisationPlan:
-    """Plan the contraction of the blocks of a sum-factorisable integrand."""
+    max_scalars: int | None,
+) -> SumFactorisationPlan | None:
+    """Plan the contraction of the blocks of a sum-factorisable integrand.
+
+    The integrand factors are cached and contracted in batches whose
+    arrays take at most `max_scalars` scalars. Returns `None` if a single
+    factor needs more.
+    """
     dim = len(quadrature_rule.tensor_factors)
     last = dim - 1
+    num_points = [int(weights.size) for _, weights in quadrature_rule.tensor_factors]
 
     # Group blocks with the same dof loops, so they share one loop nest
     grouped: dict[tuple, list[ContractionTerm]] = collections.defaultdict(list)
@@ -124,6 +175,32 @@ def plan_sum_factorisation(
                 tuple(factor.values.shape[-1] for factor in _factors(td)) for td in term.tables
             )
             grouped[sizes].append(term)
+
+    def plan_batch(batch: list[int]) -> list[ContractionGroup]:
+        """Plan the groups contracting some of the integrand factors."""
+        groups = []
+        for terms in grouped.values():
+            batch_terms = [term for term in terms if term.factor in batch]
+            if batch_terms:
+                groups.append(_plan_group(batch_terms, last))
+        return groups
+
+    def fits(batch: list[int]) -> bool:
+        """Whether the caches of a batch of factors and the arrays contracting them fit."""
+        if max_scalars is None:
+            return True
+        size = len(batch) * math.prod(num_points)
+        return size + max(_group_size(g, num_points) for g in plan_batch(batch)) <= max_scalars
+
+    # Add the factors, in order of use, to a batch while they fit
+    batches: list[list[int]] = [[]]
+    for factor in dict.fromkeys(t.factor for terms in grouped.values() for t in terms):
+        if batches[-1] and not fits(batches[-1] + [factor]):
+            batches.append([])
+        batches[-1].append(factor)
+    if not all(fits(batch) for batch in batches):
+        return None
+    planned = [plan_batch(batch) for batch in batches]
 
     # Directions with the same 1D rule share weighted tables
     table_names: dict[tuple[int, tuple[str, ...]], str] = {}
@@ -148,42 +225,17 @@ def plan_sum_factorisation(
             by_values[key] = name
         table_names[(direction, names)] = by_values[key]
 
-    groups = []
-    for terms in grouped.values():
-        rank = len(terms[0].tables)
-        for term in terms:
+    # The tables the contraction reads
+    for group in itertools.chain.from_iterable(planned):
+        for term in group.terms:
             for direction in range(last):
                 weight(direction, term.tables)
+        for row in group.rows:
+            for members in row.combined:
+                weight(last, members[0].tables[:1])
+                factors.update(_factors(td)[last].name for td in members[0].tables[1:-1])
+                factors.update(_factors(m.tables[-1])[last].name for m in members)
+            for term in row.single:
+                weight(last, term.tables)
 
-        # Contributions, and the contributions each block receives
-        contributions: dict[tuple, ContractionTerm] = {}
-        targets: dict[tuple, tuple[ContractionTerm, list[tuple]]] = {}
-        for term in terms:
-            key = term.stage_keys[-1]
-            contributions.setdefault(key, term)
-            targets.setdefault(term.blockmap, (term, []))[1].append(key)
-
-        signatures: dict[tuple, tuple[list[tuple], list[ContractionTerm]]] = {}
-        for target, keys in targets.values():
-            signatures.setdefault(tuple(sorted(keys, key=repr)), (keys, []))[1].append(target)
-
-        rows = []
-        for keys, row_targets in signatures.values():
-            by_outer_tables: dict[tuple, list[ContractionTerm]] = collections.defaultdict(list)
-            for key in keys:
-                by_outer_tables[key[-1][:-1]].append(contributions[key])
-            combined, single = [], []
-            for members in by_outer_tables.values():
-                if rank > 1 and len(members) > 1:
-                    combined.append(members)
-                    weight(last, members[0].tables[:1])
-                    factors.update(_factors(td)[last].name for td in members[0].tables[1:-1])
-                    factors.update(_factors(m.tables[-1])[last].name for m in members)
-                else:
-                    single += members
-                    for member in members:
-                        weight(last, member.tables)
-            rows.append(ContractionRow(row_targets, combined, single))
-        groups.append(ContractionGroup(terms, rows))
-
-    return SumFactorisationPlan(groups, values, table_names, factors)
+    return SumFactorisationPlan(planned, values, table_names, factors)

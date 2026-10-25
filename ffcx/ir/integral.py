@@ -7,6 +7,7 @@
 
 import collections
 import logging
+import math
 import typing
 from enum import Enum
 
@@ -314,7 +315,7 @@ def _compute_integral_ir(
         if tr is None or not tr.has_tensor_factorisation:
             continue
         if not (sum_factorise and (i in _argkeys or (factorises(tr, dim) and not tr.is_piecewise))):
-            v["tr"] = tr._replace(tensor_factors=None)
+            v["tr"] = _without_tensor_factors(tr)
 
     # Attach 'status' to each node: 'inactive', 'piecewise' or 'varying'
     analyse_dependencies(F, mt_table_reference)
@@ -387,7 +388,27 @@ def _compute_integral_ir(
         # Insert in expr_ir for this quadrature loop
         block_contributions[blockmap].append(blockdata)
 
-    plan = plan_sum_factorisation(quadrature_rule, block_contributions) if sum_factorise else None
+    plan = None
+    if sum_factorise:
+        max_scalars = _max_sum_factorisation_scalars(F, _argkeys, quadrature_rule, p)
+        plan = plan_sum_factorisation(quadrature_rule, block_contributions, max_scalars)
+        if plan is None:
+            # The arrays of the contraction don't fit the stack limit
+            for v in F.nodes.values():
+                if "tr" in v:
+                    v["tr"] = _without_tensor_factors(v["tr"])
+            block_contributions = {
+                blockmap: [
+                    blockdata._replace(
+                        ma_data=tuple(
+                            mad._replace(tabledata=_without_tensor_factors(mad.tabledata))
+                            for mad in blockdata.ma_data
+                        )
+                    )
+                    for blockdata in contributions
+                ]
+                for blockmap, contributions in block_contributions.items()
+            }
 
     # Figure out which table names are referenced
     active_table_names = set()
@@ -428,6 +449,45 @@ def _compute_integral_ir(
         initial_terminals,
         is_mixed_dim,
     )
+
+
+def _without_tensor_factors(tr: UniqueTableReferenceT) -> UniqueTableReferenceT:
+    """Return a table that is accessed whole."""
+    return tr._replace(tensor_factors=None) if tr.has_tensor_factorisation else tr
+
+
+def _max_sum_factorisation_scalars(
+    F: ExpressionGraph, argkeys: set[int], quadrature_rule: QuadratureRule, p: dict
+) -> int | None:
+    """Return how many scalars the arrays of a sum-factorised contraction may take.
+
+    That is the stack limit less the arrays evaluating coefficients and
+    geometry on the whole rule (not counting stages they share), or `None`
+    for no limit.
+    """
+    limit = int(p["sum_factorization_stack_limit"])
+    if limit <= 0:
+        return None
+    scalar = np.dtype(p["scalar_type"])
+    real = np.dtype(scalar.type(0).real.dtype)
+    num_points = [int(weights.size) for _, weights in quadrature_rule.tensor_factors]
+    evaluation = 0
+    for i, v in F.nodes.items():
+        tr = v.get("tr")
+        if i in argkeys or tr is None or not tr.has_tensor_factorisation:
+            continue
+        if v["status"] != "varying":
+            continue
+        assert tr.tensor_factors is not None
+        num_dofs = [int(factor.values.shape[-1]) for factor in tr.tensor_factors]
+        size = sum(
+            math.prod(num_dofs[:d]) * math.prod(num_points[d:]) for d in range(len(num_points))
+        )
+        itemsize = (
+            scalar.itemsize if isinstance(v["mt"].terminal, ufl.Coefficient) else real.itemsize
+        )
+        evaluation += size * itemsize
+    return max(limit - evaluation, 0) // int(scalar.itemsize)
 
 
 def _graph_name(name, integral_domain, quadrature_rule) -> str:

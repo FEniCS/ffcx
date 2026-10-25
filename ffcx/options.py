@@ -35,6 +35,14 @@ FFCX_DEFAULT_OPTIONS = {
         "at a cost of O(P^(2d+1)) for a bilinear form of degree P in dimension d.",
         None,
     ),
+    "sum_factorization_stack_limit": (
+        int,
+        262144,
+        "Bytes of stack the arrays of a sum-factorised kernel may take. The integrand factors are "
+        "cached and contracted in batches to stay within it, and ordinary quadrature is used if "
+        "a single factor doesn't fit. 0 for no limit.",
+        None,
+    ),
     "table_rtol": (
         float,
         1e-6,

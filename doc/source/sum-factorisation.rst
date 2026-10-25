@@ -74,6 +74,59 @@ tables without supported tensor factors, assembly of only the diagonal
 tensor-product information. These cases do not require
 disabling the option. A coefficient or geometry table without tensor
 factors can still be evaluated normally inside a supported contraction.
+FFCx also uses ordinary quadrature when a kernel's arrays would not fit the
+stack limit described below.
+
+Stack usage
+-----------
+
+A sum-factorised kernel evaluates the integrand, coefficients and geometry
+at every point of the quadrature rule and keeps these values in arrays on
+the stack. The space they take grows with the number of quadrature points,
+so cubically with the degree on hexahedra, and with the number of terms in
+the integrand. For example, an elasticity form on hexahedra takes about
+126 KiB of stack per kernel call at degree 4 and about 510 KiB at degree 8.
+
+The main thread of a program usually has 8 MiB of stack, but other threads
+can have much less: 512 KiB for secondary threads on macOS, and 128 KiB for
+threads on musl-based systems such as Alpine Linux. A kernel that exceeds
+its thread's stack crashes the program.
+
+The ``sum_factorization_stack_limit`` option bounds this space, in bytes.
+It defaults to 256 KiB. When a kernel's arrays would exceed it, FFCx splits
+the terms of the integrand into batches and evaluates and contracts one
+batch at a time, so that each batch's arrays fit. This costs some speed:
+the integrand is evaluated once per batch, and the element tensor is
+updated once per batch. If even a single term does not fit, for example
+with very large quadrature rules, FFCx uses ordinary quadrature for that
+integral. Set the option to ``0`` for no limit.
+
+With the FFCx JIT:
+
+.. code-block:: python
+
+   compiled_forms, module, code = compile_forms(
+       [a], options={"sum_factorization_stack_limit": 96 * 1024}
+   )
+
+With DOLFINx:
+
+.. code-block:: python
+
+   compiled_a = fem.form(
+       a, form_compiler_options={"sum_factorization_stack_limit": 96 * 1024}
+   )
+
+From the command line:
+
+.. code-block:: console
+
+   ffcx --sum_factorization_stack_limit 98304 forms.py
+
+Lower the limit if kernels run on threads with small stacks: about 96 KiB is
+safe for 128 KiB threads. Raise it, or set it to ``0``, if kernels only run on
+threads with large stacks, such as the main thread, and the fastest kernels
+at high degree matter more.
 
 Disabling sum factorisation
 ---------------------------

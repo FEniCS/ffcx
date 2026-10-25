@@ -8,6 +8,8 @@
 """Integral generator."""
 
 import collections
+import copy
+import itertools
 import logging
 import math
 import platform
@@ -446,17 +448,6 @@ class IntegralGenerator:
         iq = create_quadrature_index(quadrature_rule, self.backend.symbols.quadrature_loop_index)
         rule_id = quadrature_rule.id()
 
-        # Cache every integrand factor on the whole rule
-        caches: dict[int, L.Symbol] = {}
-        store: list[L.LNode] = []
-        for group in plan.groups:
-            for term in group.terms:
-                if term.factor not in caches:
-                    f = self.get_var(quadrature_rule, domain, F.nodes[term.factor]["expression"])
-                    cache = L.Symbol(f"fq{len(caches)}_{rule_id}", dtype=L.DataType.SCALAR)
-                    caches[term.factor] = cache
-                    store.append(L.Assign(cache[iq.global_index], f))
-
         prior: list[L.LNode] = []
         pointwise: list[L.Section] = []
         for definition in definitions:
@@ -466,25 +457,51 @@ class IntegralGenerator:
             else:
                 pointwise.append(definition)
         inputs = [symbol for definition in pointwise for symbol in definition.output]
-        evaluation: list[L.LNode] = [
-            *pointwise,
-            L.Section("Intermediates", intermediates + store, [], inputs, list(caches.values())),
-        ]
-        evaluation = optimize(evaluation, quadrature_rule)
 
-        contraction: list[L.LNode] = []
-        for group_id, group in enumerate(plan.groups):
-            contraction += self._sum_factorised_contraction(plan, group, iq, caches, group_id)
+        # Each batch caches its integrand factors on the whole rule, then
+        # contracts them
+        code = prior
+        caches: dict[int, L.Symbol] = {}
+        groups = itertools.count()
+        for batch_id, batch in enumerate(plan.batches):
+            store: list[L.LNode] = []
+            for group in batch:
+                for term in group.terms:
+                    if term.factor not in caches:
+                        node = F.nodes[term.factor]["expression"]
+                        f = self.get_var(quadrature_rule, domain, node)
+                        cache = L.Symbol(f"fq{len(caches)}_{rule_id}", dtype=L.DataType.SCALAR)
+                        caches[term.factor] = cache
+                        store.append(L.Assign(cache[iq.global_index], f))
+            batch_caches = [
+                caches[factor]
+                for factor in dict.fromkeys(term.factor for group in batch for term in group.terms)
+            ]
 
-        caches_declarations: list[L.LNode] = [
-            L.ArrayDecl(cache, sizes=math.prod(iq.sizes)) for cache in caches.values()
-        ]
-        return (
-            caches_declarations
-            + prior
-            + [L.create_nested_for_loops([iq], evaluation)]
-            + contraction
-        )
+            evaluation: list[L.LNode] = [
+                *pointwise,
+                L.Section("Intermediates", intermediates + store, [], inputs, batch_caches),
+            ]
+            if len(plan.batches) > 1:
+                # Batches evaluate the integrand anew, each pruned to what it caches
+                evaluation = copy.deepcopy(evaluation)
+            evaluation = optimize(evaluation, quadrature_rule)
+            if len(plan.batches) > 1:
+                evaluation = prune_dead_scalars(evaluation, scalar_declaration_names(evaluation))
+
+            batch_code: list[L.LNode] = [
+                L.ArrayDecl(cache, sizes=math.prod(iq.sizes)) for cache in batch_caches
+            ]
+            batch_code.append(L.create_nested_for_loops([iq], evaluation))
+            for group in batch:
+                batch_code += self._sum_factorised_contraction(
+                    plan, group, iq, caches, next(groups)
+                )
+            if len(plan.batches) > 1:
+                # A scope per batch lets the next reuse the stack of its arrays
+                batch_code = [L.Section(f"Sum factorisation batch {batch_id}", batch_code, [])]
+            code = code + batch_code
+        return code
 
     def _sum_factorised_contraction(
         self,
@@ -673,7 +690,8 @@ class IntegralGenerator:
         body = pre_rows + dof_loops(last, row_code, outer_indices)
         for s in reversed(range(last)):
             body = dof_loops(s, level_code[s] + body, B_indices)
-        return declarations + body
+        # A scope per group lets the next reuse the stack of its arrays
+        return [L.Section(f"Contraction group {group_id}", declarations + body, [])]
 
     def _element_tensor_indices(
         self, blockmap: tuple, blockdata: BlockDataT, B_indices: list[L.MultiIndex]
