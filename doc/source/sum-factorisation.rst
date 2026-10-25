@@ -5,10 +5,10 @@ FFCx enables sum factorisation by default wherever the elements and
 quadrature rule support it. The ``sum_factorization`` code-generation
 option defaults to ``True``; applications do not need to set it explicitly.
 
-For eligible cell integrals, FFCx evaluates coefficients and the cell
-Jacobian on the tensor-product quadrature rule, then contracts the argument
-tables one direction at a time. This reduces the work for a bilinear form
-of degree :math:`p` in dimension :math:`d` from
+For eligible cell integrals, FFCx evaluates coefficients, the spatial
+coordinate and the cell Jacobian on the tensor-product quadrature rule, then
+contracts the argument tables one direction at a time. This reduces the
+work for a bilinear form of degree :math:`p` in dimension :math:`d` from
 :math:`O(p^{3d})` to :math:`O(p^{2d+1})` when the number of quadrature points
 per direction grows proportionally to :math:`p`.
 
@@ -69,8 +69,9 @@ Automatic fallback
 
 FFCx uses ordinary quadrature when the integral cannot use directional
 contractions. This includes other cell types, facet integrals, argument
-tables without supported tensor factors, and custom or vertex quadrature
-rules without tensor-product information. These cases do not require
+tables without supported tensor factors, assembly of only the diagonal
+(``part="diagonal"``), and custom or vertex quadrature rules without
+tensor-product information. These cases do not require
 disabling the option. A coefficient or geometry table without tensor
 factors can still be evaluated normally inside a supported contraction.
 

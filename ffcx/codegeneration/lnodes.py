@@ -843,7 +843,7 @@ class Annotation(Enum):
     fuse = 1  # fuse loops in section
     unroll = 2  # unroll loop in section
     licm = 3  # loop invariant code motion
-    factorize = 4  # apply sum factorization
+    factorize = 4  # sum-factorised evaluation, run once before the quadrature loop
 
 
 class Declaration(Statement):

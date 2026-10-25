@@ -6,6 +6,7 @@
 """FFCx/UFCx specific variable definitions."""
 
 import logging
+import math
 
 import ufl
 
@@ -15,6 +16,7 @@ from ffcx.definitions import entity_types
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
+from ffcx.ir.sumfactorisation import factorises
 
 logger = logging.getLogger("ffcx")
 
@@ -160,6 +162,12 @@ class FFCXBackendDefinitions:
 
         assert begin < end
 
+        if self._sum_factorises(mt, tabledata, quadrature_rule):
+            dofs = self.symbols.coefficient_dof_access(mt.terminal, begin)
+            return self._sum_factorised_lincomb(
+                mt, tabledata, quadrature_rule, access, dofs, bs, L.DataType.SCALAR
+            )
+
         # Get access to element table
         FE, tables = self.access.table_access(tabledata, self.entity_type, mt.restriction, iq, ic)
         dof_access: L.ArrayAccess = self.symbols.coefficient_dof_access(
@@ -257,6 +265,17 @@ class FFCXBackendDefinitions:
             )
             closure_index = closure_table[perm][entity]
 
+        if closure_table is None and self._sum_factorises(mt, tabledata, quadrature_rule):
+            return self._sum_factorised_lincomb(
+                mt,
+                tabledata,
+                quadrature_rule,
+                access,
+                dof_access[begin + offset],
+                dim,
+                L.DataType.REAL,
+            )
+
         # Map a submesh-local scalar dof index to its coordinate_dofs index.
         if closure_table is None:
 
@@ -324,6 +343,127 @@ class FFCXBackendDefinitions:
         assert all(isinstance(o, L.Symbol) for o in output)
 
         return L.Section(name, code, declaration, input, output, annotations)
+
+    def _sum_factorises(
+        self,
+        mt: ModifiedTerminal,
+        tabledata: UniqueTableReferenceT,
+        quadrature_rule: QuadratureRule,
+    ) -> bool:
+        """Return whether a terminal is evaluated on the whole tensor product rule.
+
+        The IR keeps the tensor factors of tables only on the tensor product
+        rules whose integrand it sum factorises.
+        """
+        return (
+            tabledata.has_tensor_factorisation
+            and not tabledata.is_piecewise
+            and not tabledata.is_permuted
+            and mt.restriction is None
+            and factorises(tabledata, len(quadrature_rule.tensor_factors))
+        )
+
+    def _sum_factorised_lincomb(
+        self,
+        mt: ModifiedTerminal,
+        tabledata: UniqueTableReferenceT,
+        quadrature_rule: QuadratureRule,
+        access: L.Symbol,
+        dofs: L.ArrayAccess,
+        stride: int,
+        dtype: L.DataType,
+    ) -> list[L.Section]:
+        """Evaluate a linear combination of dofs on the whole tensor product rule.
+
+        Evaluated at each point, a coefficient, or the spatial coordinate or
+        Jacobian, sums over all its dofs, costing O(Q^d N^d). Contracting
+        its dofs with the 1D tables one
+        direction at a time, last direction first, costs O(N^d Q + ... +
+        Q^d N); in 2D
+
+            t[i0, q1] = sum_i1 B1[q1, i1] w[i0, i1]
+            f[q0, q1] = sum_i0 B0[q0, i0] t[i0, q1]
+
+        Returns a section evaluating f, annotated to run before the
+        quadrature loop, and a section reading f at each point.
+        """
+        iq = create_quadrature_index(quadrature_rule, self.symbols.quadrature_loop_index)
+        dim = iq.dim
+        num_dofs = create_dof_index(tabledata, self.symbols.coefficient_dof_sum_index).sizes
+        num_points = iq.sizes
+        assert tabledata.tensor_factors is not None
+        assert all(
+            factor.values.shape[2] == n for factor, n in zip(tabledata.tensor_factors, num_points)
+        )
+
+        # Contracting direction d leaves the dofs of directions < d and the
+        # points of directions >= d
+        sizes = [math.prod(num_dofs[:d]) * math.prod(num_points[d:]) for d in range(dim)]
+
+        def loop(name: str, extent: int):
+            """Return a loop index and a function wrapping a body in its loop.
+
+            A loop of one iteration is left out, its index being zero.
+            """
+            if extent == 1:
+                return L.LiteralInt(0), lambda body: body
+            index = L.Symbol(f"sfc_{name}", dtype=L.DataType.INT)
+            return index, lambda body: [L.ForRange(index, 0, extent, body)]
+
+        source, offset = dofs.array, dofs.indices[0]
+        inputs = [source]
+        name = f"{access.name}_{quadrature_rule.id()}"
+        code: list[L.LNode] = []
+        for d in reversed(range(dim)):
+            stage = L.Symbol(f"{name}_c{d}", dtype=dtype)
+            code.append(L.ArrayDecl(stage, sizes=sizes[d]))
+            inner = math.prod(num_points[d + 1 :])
+            a, a_loop = loop("a", math.prod(num_dofs[:d]))
+            q, q_loop = loop("q", num_points[d])
+            width = num_points[-1] if d < dim - 1 else 1
+            b, b_loop = loop("b", inner // width)
+
+            i = L.Symbol("sfc_i", dtype=L.DataType.INT)
+            initial, updates = [], []
+            for lane in range(width):
+                point = b * width + lane
+                out = stage[(a * num_points[d] + q) * inner + point]
+                terms = []
+                for index in (L.LiteralInt(0), i):
+                    value = source[((a * num_dofs[d] + index) * inner + point) * stride + offset]
+                    table, symbol = self.access.tensor_factor_access(tabledata, d, q, index)
+                    terms.append(value * table)
+                initial.append(L.Assign(out, terms[0]))
+                updates.append(L.AssignAdd(out, terms[1]))
+            if symbol not in inputs:
+                inputs.append(symbol)
+
+            # The first dof sets the stage, the others add to it, in a
+            # contiguous innermost loop over the points of later directions
+            body = b_loop(initial)
+            if num_dofs[d] > 1:
+                body += [L.ForRange(i, 1, num_dofs[d], b_loop(updates))]
+            code += a_loop(q_loop(body))
+            source, stride, offset = stage, 1, 0
+
+        terminal = type(mt.terminal).__name__
+        evaluation = L.Section(
+            f"{terminal} on the tensor product rule",
+            code,
+            [],
+            inputs,
+            [source],
+            [L.Annotation.factorize],
+        )
+        read = L.Section(
+            terminal,
+            [],
+            [L.VariableDecl(access, source[iq.global_index])],
+            [source],
+            [access],
+            [L.Annotation.fuse],
+        )
+        return [evaluation, read]
 
     def spatial_coordinate(
         self,

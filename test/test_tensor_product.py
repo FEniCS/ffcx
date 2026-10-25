@@ -256,6 +256,15 @@ def test_sum_factorisation_default_and_opt_out(sum_factorization, expected, cell
     assert uses_sum_factorised_contraction(form, "float64", sum_factorization) == expected
 
 
+@pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
+def test_sum_factorisation_diagonal(cell_type):
+    """Assembling only the diagonal uses ordinary quadrature."""
+    form, _ = sum_factorisation_forms(cell_type, 2)["laplace"]
+    options = ffcx.options.get_options({"part": "diagonal"})
+    code, _ = ffcx.compiler.compile_ufl_objects([form], options)
+    assert not contracts_by_direction(code)
+
+
 @pytest.mark.parametrize("rule", ["custom", "vertex"])
 @pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
 def test_sum_factorisation_unfactorised_rule(rule, cell_type, compile_args, tmp_path):

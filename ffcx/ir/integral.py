@@ -6,7 +6,6 @@
 """Main algorithm for building the integral intermediate representation."""
 
 import collections
-import itertools
 import logging
 import typing
 from enum import Enum
@@ -36,6 +35,7 @@ from ffcx.ir.elementtables import (
     table_types as _table_types,
 )
 from ffcx.ir.representationutils import QuadratureRule
+from ffcx.ir.sumfactorisation import SumFactorisationPlan, factorises, plan_sum_factorisation
 
 logger = logging.getLogger("ffcx")
 
@@ -97,6 +97,9 @@ class IntermediateIntegrandIR(typing.TypedDict):
     factorization: ExpressionGraph
     modified_arguments: list[ModifiedTerminal]
     block_contributions: dict[tuple[tuple[int, ...], ...], list[BlockDataT]]
+    # How to contract the blocks one direction at a time, if they are
+    # sum factorised
+    sum_factorisation: SumFactorisationPlan | None
 
 
 class IntermediateIntegralIR(typing.TypedDict):
@@ -153,6 +156,7 @@ def _compute_integral_ir(
     ExpressionGraph,
     list[int],
     dict[tuple[tuple[int, ...], ...], list[BlockDataT]],
+    SumFactorisationPlan | None,
     dict[int, ModifiedTerminal],
     bool,
 ]:
@@ -290,6 +294,30 @@ def _compute_integral_ir(
             if tr is not None:
                 F.nodes[i]["tr"] = tr
 
+    # Sum factorise if the rule is a tensor product rule and every block's
+    # arguments factorise over its directions. Otherwise, tables are
+    # accessed whole, so drop their tensor factors.
+    sum_factorise = (
+        quadrature_rule.has_tensor_factors
+        and integral_type not in ufl.custom_integral_types
+        and TensorPart.from_str(str(p["part"])) != TensorPart.diagonal
+        and len(argument_factorization) > 0
+        and all(
+            len(ma_indices) > 0
+            and len(fi_ci) == 1
+            and all(
+                factorises(F.nodes[ai]["tr"], len(quadrature_rule.tensor_factors))
+                for ai in ma_indices
+            )
+            for ma_indices, fi_ci in argument_factorization.items()
+        )
+    )
+    if not sum_factorise:
+        for v in F.nodes.values():
+            tr = v.get("tr")
+            if tr is not None and tr.has_tensor_factorisation:
+                v["tr"] = tr._replace(tensor_factors=None)
+
     # Attach 'status' to each node: 'inactive', 'piecewise' or 'varying'
     analyse_dependencies(F, mt_table_reference)
 
@@ -361,6 +389,12 @@ def _compute_integral_ir(
         # Insert in expr_ir for this quadrature loop
         block_contributions[blockmap].append(blockdata)
 
+    plan, weighted_tables = (
+        plan_sum_factorisation(quadrature_rule, block_contributions)
+        if sum_factorise
+        else (None, {})
+    )
+
     # Figure out which table names are referenced
     active_table_names = set()
     for i, v in F.nodes.items():
@@ -373,16 +407,14 @@ def _compute_integral_ir(
             else:
                 active_table_names.add(tr.name)
 
-    # Figure out which table names are referenced in blocks
-    for blockmap, contributions in itertools.chain(block_contributions.items()):
-        for blockdata in contributions:
-            for mad in blockdata.ma_data:
-                if mad.tabledata.has_tensor_factorisation:
-                    assert mad.tabledata.tensor_factors is not None
-                    for t in mad.tabledata.tensor_factors:
-                        active_table_names.add(t.name)
-                else:
-                    active_table_names.add(mad.tabledata.name)
+    # Figure out which table names are referenced in blocks. A sum-factorised
+    # contraction reads weighted tables instead of most argument tables.
+    if plan is not None:
+        active_table_names |= plan.factors
+    else:
+        for contributions in block_contributions.values():
+            for blockdata in contributions:
+                active_table_names.update(mad.tabledata.name for mad in blockdata.ma_data)
 
     active_tables: dict[str, npt.NDArray[np.float64]] = {}
     active_table_types: dict[str, _table_types] = {}
@@ -392,12 +424,15 @@ def _compute_integral_ir(
         if table_types[name] not in ("zeros", "ones"):
             active_tables[name] = tables[name]
             active_table_types[name] = table_types[name]
+    active_tables.update(weighted_tables)
+    active_table_types.update({name: "tensor_factor" for name in weighted_tables})
     return (
         active_tables,
         active_table_types,
         F,
         argkeys,
         block_contributions,
+        plan,
         initial_terminals,
         is_mixed_dim,
     )
@@ -462,6 +497,7 @@ def compute_integral_ir(
                 F,
                 argkeys,
                 block_contributions,
+                plan,
                 initial_terminals,
                 is_mixed_dim,
             ) = _compute_integral_ir(
@@ -486,6 +522,7 @@ def compute_integral_ir(
                 factorization=F,
                 modified_arguments=[F.nodes[i]["mt"] for i in argkeys],
                 block_contributions=block_contributions,
+                sum_factorisation=plan,
             )
 
             restrictions = [i.restriction for i in initial_terminals.values()]
