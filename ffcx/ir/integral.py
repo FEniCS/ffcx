@@ -7,7 +7,6 @@
 
 import collections
 import logging
-import math
 import typing
 from enum import Enum
 
@@ -36,7 +35,12 @@ from ffcx.ir.elementtables import (
     table_types as _table_types,
 )
 from ffcx.ir.representationutils import QuadratureRule
-from ffcx.ir.sumfactorisation import SumFactorisationPlan, factorises, plan_sum_factorisation
+from ffcx.ir.sumfactorisation import (
+    SumFactorisationPlan,
+    evaluation_stage_sizes,
+    factorises,
+    plan_sum_factorisation,
+)
 
 logger = logging.getLogger("ffcx")
 
@@ -310,12 +314,12 @@ def _compute_integral_ir(
             for ma_indices, fi_ci in argument_factorization.items()
         )
     )
-    for i, v in F.nodes.items():
-        tr = v.get("tr")
-        if tr is None or not tr.has_tensor_factorisation:
-            continue
-        if not (sum_factorise and (i in _argkeys or (factorises(tr, dim) and not tr.is_piecewise))):
-            v["tr"] = _without_tensor_factors(tr)
+    _strip_tensor_factors(
+        F,
+        lambda i, tr: (
+            sum_factorise and (i in _argkeys or (factorises(tr, dim) and not tr.is_piecewise))
+        ),
+    )
 
     # Attach 'status' to each node: 'inactive', 'piecewise' or 'varying'
     analyse_dependencies(F, mt_table_reference)
@@ -324,7 +328,74 @@ def _compute_integral_ir(
     if visualise:
         visualise_graph(F, f"{graph_name}_F.{visualise}")
 
-    # Loop over factorization terms
+    block_contributions = _block_contributions(F, argument_factorization, tables, rank, p)
+
+    plan = None
+    if sum_factorise:
+        max_scalars = _max_sum_factorisation_scalars(F, _argkeys, quadrature_rule, p)
+        plan = plan_sum_factorisation(quadrature_rule, block_contributions, max_scalars)
+        if plan is None:
+            # The arrays of the contraction don't fit the stack limit
+            _strip_tensor_factors(F)
+            block_contributions = _block_contributions(F, argument_factorization, tables, rank, p)
+
+    # Figure out which table names are referenced
+    active_table_names = set()
+    for i, v in F.nodes.items():
+        tr = v.get("tr")
+        if tr is not None and F.nodes[i]["status"] != "inactive":
+            if tr.has_tensor_factorisation:
+                assert tr.tensor_factors is not None
+                for t in tr.tensor_factors:
+                    active_table_names.add(t.name)
+            else:
+                active_table_names.add(tr.name)
+
+    # Figure out which table names are referenced in blocks. A sum-factorised
+    # contraction reads weighted tables instead of most argument tables.
+    if plan is not None:
+        active_table_names |= plan.factors
+    else:
+        for contributions in block_contributions.values():
+            for blockdata in contributions:
+                active_table_names.update(mad.tabledata.name for mad in blockdata.ma_data)
+
+    active_tables: dict[str, npt.NDArray[np.float64]] = {}
+    active_table_types: dict[str, _table_types] = {}
+
+    for name in active_table_names:
+        # Drop tables not referenced from modified terminals
+        if table_types[name] not in ("zeros", "ones"):
+            active_tables[name] = tables[name]
+            active_table_types[name] = table_types[name]
+    return (
+        active_tables,
+        active_table_types,
+        F,
+        argkeys,
+        block_contributions,
+        plan,
+        initial_terminals,
+        is_mixed_dim,
+    )
+
+
+def _strip_tensor_factors(F: ExpressionGraph, keep=lambda i, tr: False):
+    """Drop the tensor factors of the tables of nodes that are accessed whole."""
+    for i, v in F.nodes.items():
+        tr = v.get("tr")
+        if tr is not None and tr.has_tensor_factorisation and not keep(i, tr):
+            v["tr"] = tr._replace(tensor_factors=None)
+
+
+def _block_contributions(
+    F: ExpressionGraph,
+    argument_factorization: dict[tuple[int, ...], list[tuple[int, int]]],
+    tables: dict[str, npt.NDArray[np.float64]],
+    rank: int,
+    p: dict,
+) -> dict[tuple[tuple[int, ...], ...], list[BlockDataT]]:
+    """Return the blocks of the element tensor each factorisation term contributes to."""
     block_contributions: dict[tuple[tuple[int, ...], ...], list[BlockDataT]] = (
         collections.defaultdict(list)
     )
@@ -388,72 +459,7 @@ def _compute_integral_ir(
         # Insert in expr_ir for this quadrature loop
         block_contributions[blockmap].append(blockdata)
 
-    plan = None
-    if sum_factorise:
-        max_scalars = _max_sum_factorisation_scalars(F, _argkeys, quadrature_rule, p)
-        plan = plan_sum_factorisation(quadrature_rule, block_contributions, max_scalars)
-        if plan is None:
-            # The arrays of the contraction don't fit the stack limit
-            for v in F.nodes.values():
-                if "tr" in v:
-                    v["tr"] = _without_tensor_factors(v["tr"])
-            block_contributions = {
-                blockmap: [
-                    blockdata._replace(
-                        ma_data=tuple(
-                            mad._replace(tabledata=_without_tensor_factors(mad.tabledata))
-                            for mad in blockdata.ma_data
-                        )
-                    )
-                    for blockdata in contributions
-                ]
-                for blockmap, contributions in block_contributions.items()
-            }
-
-    # Figure out which table names are referenced
-    active_table_names = set()
-    for i, v in F.nodes.items():
-        tr = v.get("tr")
-        if tr is not None and F.nodes[i]["status"] != "inactive":
-            if tr.has_tensor_factorisation:
-                assert tr.tensor_factors is not None
-                for t in tr.tensor_factors:
-                    active_table_names.add(t.name)
-            else:
-                active_table_names.add(tr.name)
-
-    # Figure out which table names are referenced in blocks. A sum-factorised
-    # contraction reads weighted tables instead of most argument tables.
-    if plan is not None:
-        active_table_names |= plan.factors
-    else:
-        for contributions in block_contributions.values():
-            for blockdata in contributions:
-                active_table_names.update(mad.tabledata.name for mad in blockdata.ma_data)
-
-    active_tables: dict[str, npt.NDArray[np.float64]] = {}
-    active_table_types: dict[str, _table_types] = {}
-
-    for name in active_table_names:
-        # Drop tables not referenced from modified terminals
-        if table_types[name] not in ("zeros", "ones"):
-            active_tables[name] = tables[name]
-            active_table_types[name] = table_types[name]
-    return (
-        active_tables,
-        active_table_types,
-        F,
-        argkeys,
-        block_contributions,
-        plan,
-        initial_terminals,
-        is_mixed_dim,
-    )
-
-
-def _without_tensor_factors(tr: UniqueTableReferenceT) -> UniqueTableReferenceT:
-    """Return a table that is accessed whole."""
-    return tr._replace(tensor_factors=None) if tr.has_tensor_factorisation else tr
+    return block_contributions
 
 
 def _max_sum_factorisation_scalars(
@@ -469,8 +475,8 @@ def _max_sum_factorisation_scalars(
     if limit <= 0:
         return None
     scalar = np.dtype(p["scalar_type"])
-    real = np.dtype(scalar.type(0).real.dtype)
-    num_points = [int(weights.size) for _, weights in quadrature_rule.tensor_factors]
+    real = np.finfo(scalar).dtype
+    num_points = quadrature_rule.num_points
     evaluation = 0
     for i, v in F.nodes.items():
         tr = v.get("tr")
@@ -480,9 +486,7 @@ def _max_sum_factorisation_scalars(
             continue
         assert tr.tensor_factors is not None
         num_dofs = [int(factor.values.shape[-1]) for factor in tr.tensor_factors]
-        size = sum(
-            math.prod(num_dofs[:d]) * math.prod(num_points[d:]) for d in range(len(num_points))
-        )
+        size = sum(evaluation_stage_sizes(num_dofs, num_points))
         itemsize = (
             scalar.itemsize if isinstance(v["mt"].terminal, ufl.Coefficient) else real.itemsize
         )

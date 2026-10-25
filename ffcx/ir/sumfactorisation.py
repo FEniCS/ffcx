@@ -43,6 +43,24 @@ def _factors(td: UniqueTableReferenceT) -> list[UniqueTableReferenceT]:
     return td.tensor_factors
 
 
+def evaluation_stage_sizes(num_dofs: list[int], num_points: list[int]) -> list[int]:
+    """Return the sizes of the stages evaluating a linear combination of dofs on a rule.
+
+    The dofs are contracted one direction at a time, last direction first,
+    and contracting direction d leaves the dofs of directions < d and the
+    points of directions >= d.
+    """
+    return [math.prod(num_dofs[:d]) * math.prod(num_points[d:]) for d in range(len(num_points))]
+
+
+def contraction_stage_size(direction: int, num_points: list[int]) -> int:
+    """Return the size of a stage contracting an integrand factor over directions <= direction.
+
+    The stage holds the points of the later directions.
+    """
+    return math.prod(num_points[direction + 1 :])
+
+
 def _names(tables: list[UniqueTableReferenceT], direction: int) -> tuple[str, ...]:
     """Return the names of the 1D tables in a direction."""
     return tuple(_factors(td)[direction].name for td in tables)
@@ -107,7 +125,7 @@ class SumFactorisationPlan(typing.NamedTuple):
         return self.table_names[(direction, _names(tables, direction))]
 
 
-def _plan_group(terms: list[ContractionTerm], last: int) -> ContractionGroup:
+def _plan_group(terms: list[ContractionTerm]) -> ContractionGroup:
     """Plan the rows of blocks sharing their dof loops."""
     rank = len(terms[0].tables)
 
@@ -139,10 +157,15 @@ def _plan_group(terms: list[ContractionTerm], last: int) -> ContractionGroup:
 
 
 def _group_size(group: ContractionGroup, num_points: list[int]) -> int:
-    """Return the number of scalars the arrays of a group's contraction take."""
+    """Return the number of scalars the arrays of a group's contraction take.
+
+    See `IntegralGenerator._sum_factorised_contraction`: a stage array per
+    distinct stage, and per row an `h` array per combined set of
+    contributions and an `acc` array.
+    """
     last = len(num_points) - 1
     stages = {key for term in group.terms for key in term.stage_keys[1 : last + 1]}
-    size = sum(math.prod(num_points[len(key) - 1 :]) for key in stages)
+    size = sum(contraction_stage_size(len(key) - 2, num_points) for key in stages)
     num_inner = int(_factors(group.terms[0].tables[-1])[last].values.shape[-1])
     return size + sum(
         len(row.combined) * num_points[last] * num_inner + num_inner for row in group.rows
@@ -162,7 +185,7 @@ def plan_sum_factorisation(
     """
     dim = len(quadrature_rule.tensor_factors)
     last = dim - 1
-    num_points = [int(weights.size) for _, weights in quadrature_rule.tensor_factors]
+    num_points = quadrature_rule.num_points
 
     # Group blocks with the same dof loops, so they share one loop nest
     grouped: dict[tuple, list[ContractionTerm]] = collections.defaultdict(list)
@@ -182,7 +205,7 @@ def plan_sum_factorisation(
         for terms in grouped.values():
             batch_terms = [term for term in terms if term.factor in batch]
             if batch_terms:
-                groups.append(_plan_group(batch_terms, last))
+                groups.append(_plan_group(batch_terms))
         return groups
 
     def fits(batch: list[int]) -> bool:
@@ -193,13 +216,14 @@ def plan_sum_factorisation(
         return size + max(_group_size(g, num_points) for g in plan_batch(batch)) <= max_scalars
 
     # Add the factors, in order of use, to a batch while they fit
-    batches: list[list[int]] = [[]]
+    batches: list[list[int]] = []
     for factor in dict.fromkeys(t.factor for terms in grouped.values() for t in terms):
-        if batches[-1] and not fits(batches[-1] + [factor]):
-            batches.append([])
-        batches[-1].append(factor)
-    if not all(fits(batch) for batch in batches):
-        return None
+        if batches and fits(batches[-1] + [factor]):
+            batches[-1].append(factor)
+        elif fits([factor]):
+            batches.append([factor])
+        else:
+            return None
     planned = [plan_batch(batch) for batch in batches]
 
     # Directions with the same 1D rule share weighted tables

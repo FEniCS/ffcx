@@ -40,19 +40,24 @@ def create_tensor_product_element(cell_type, degree, variant, shape=None):
         return basix.ufl.blocked_element(uflelement, shape=shape)
 
 
-def generate_kernel(forms, dtype, options, compile_args=None, cache_dir=None):
-    """Generate kernel for given forms."""
-    if cache_dir is None:
-        # use a different cache directory for each option
-        sf = ffcx.options.get_options(options)["sum_factorization"]
-        cache_dir = f"./ffcx-cache-{sf}"
-
-    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+def jit_compile(forms, options, compile_args, cache_dir):
+    """Compile forms into a module."""
+    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
         forms, cache_dir=cache_dir, options=options, cffi_extra_compile_args=compile_args or []
     )
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
-    return cell_kernel(compiled_forms[0], module, dtype), code, module
+    return compiled_forms, module
+
+
+def generate_kernel(forms, dtype, options, compile_args=None, cache_dir=None):
+    """Generate the kernel of the first of some forms."""
+    if cache_dir is None:
+        # use a different cache directory for each option
+        sf = ffcx.options.get_options(options)["sum_factorization"]
+        cache_dir = f"./ffcx-cache-{sf}"
+    compiled_forms, module = jit_compile(forms, options, compile_args, cache_dir)
+    return cell_kernel(compiled_forms[0], module, dtype), module
 
 
 def cell_kernel(compiled_form, module, dtype):
@@ -107,7 +112,7 @@ def test_bilinear_form(dtype, P, cell_type):
 
     c_type = dtype_to_c_type(dtype)
     c_xtype = dtype_to_c_type(xdtype)
-    kernel, _code, module = generate_kernel(
+    kernel, module = generate_kernel(
         [a], dtype, options={"scalar_type": dtype, "sum_factorization": False}
     )
     ffi = module.ffi
@@ -123,7 +128,7 @@ def test_bilinear_form(dtype, P, cell_type):
 
     # Use sum factorization
     A1 = np.zeros((ndofs, ndofs), dtype=dtype)
-    kernel, _code, module = generate_kernel(
+    kernel, module = generate_kernel(
         [a], dtype, options={"scalar_type": dtype, "sum_factorization": True}
     )
     ffi = module.ffi
@@ -227,16 +232,25 @@ def assert_close(A, A_ref):
     np.testing.assert_allclose(A, A_ref, rtol=1e-12, atol=1e-12 * np.max(np.abs(A_ref)))
 
 
+def assert_kernels_match(kernels, form, num_coefficients, cell_type, dtype):
+    """Check the kernels of a cell integral, by the fused loop and by sum factorisation, match."""
+    A_ref, A = (
+        tabulate_kernel(kernel, module, form, num_coefficients, cell_type, dtype)
+        for kernel, module in kernels
+    )
+    assert_close(A, A_ref)
+
+
 def assert_matches_fused_loop(args, compile_args, tmp_path, options=None):
     """Check a cell integral tabulated with sum factorisation matches the fused loop."""
     form, num_coefficients, cell_type, dtype = args
-    A = []
-    for options, cache_dir in (({"sum_factorization": False}, "ref"), (options or {}, "sf")):
-        kernel, _, module = generate_kernel(
+    kernels = [
+        generate_kernel(
             [form], dtype, {"scalar_type": dtype, **options}, compile_args, tmp_path / cache_dir
         )
-        A.append(tabulate_kernel(kernel, module, form, num_coefficients, cell_type, dtype))
-    assert_close(A[1], A[0])
+        for options, cache_dir in (({"sum_factorization": False}, "ref"), (options or {}, "sf"))
+    ]
+    assert_kernels_match(kernels, form, num_coefficients, cell_type, dtype)
 
 
 def sum_factorisation_plans(form, dtype, **options):
@@ -306,11 +320,12 @@ def compiled_forms(tmp_path_factory, compile_args):
         key = (names, cell_type, P, dtype, sum_factorization)
         if key not in modules:
             forms = sum_factorisation_forms(cell_type, P)
-            compiled, module, _ = ffcx.codegeneration.jit.compile_forms(
+            options = {"scalar_type": dtype, "sum_factorization": sum_factorization}
+            compiled, module = jit_compile(
                 [forms[name][0] for name in names],
-                options={"scalar_type": dtype, "sum_factorization": sum_factorization},
-                cache_dir=tmp_path_factory.mktemp("forms"),
-                cffi_extra_compile_args=compile_args,
+                options,
+                compile_args,
+                tmp_path_factory.mktemp("forms"),
             )
             modules[key] = forms, compiled, module
         return modules[key]
@@ -323,13 +338,12 @@ def check_form(compiled_forms, names, name, P, cell_type, dtype):
 
     Returns whether it is contracted one direction at a time.
     """
-    A = []
+    kernels = []
     for sum_factorization in (False, True):
         forms, compiled, module = compiled_forms(names, cell_type, P, dtype, sum_factorization)
-        form, num_coefficients = forms[name]
-        kernel = cell_kernel(compiled[names.index(name)], module, dtype)
-        A.append(tabulate_kernel(kernel, module, form, num_coefficients, cell_type, dtype))
-    assert_close(A[1], A[0])
+        kernels.append((cell_kernel(compiled[names.index(name)], module, dtype), module))
+    form, num_coefficients = forms[name]
+    assert_kernels_match(kernels, form, num_coefficients, cell_type, dtype)
     return sum_factorised(form, dtype)
 
 

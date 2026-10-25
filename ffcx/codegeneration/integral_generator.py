@@ -35,7 +35,11 @@ from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT, CommonExpressionIR, TensorPart
 from ffcx.ir.representation import IntegralIR
 from ffcx.ir.representationutils import QuadratureRule
-from ffcx.ir.sumfactorisation import ContractionGroup, SumFactorisationPlan
+from ffcx.ir.sumfactorisation import (
+    ContractionGroup,
+    SumFactorisationPlan,
+    contraction_stage_size,
+)
 
 logger = logging.getLogger("ffcx")
 
@@ -459,12 +463,15 @@ class IntegralGenerator:
         inputs = [symbol for definition in pointwise for symbol in definition.output]
 
         # Each batch caches its integrand factors on the whole rule, then
-        # contracts them
-        code = prior
+        # contracts them. Batches evaluate the integrand anew, each pruned to
+        # what it caches, in a scope that lets the next reuse its stack.
+        batched = len(plan.batches) > 1
+        code = list(prior)
         caches: dict[int, L.Symbol] = {}
         groups = itertools.count()
-        for batch_id, batch in enumerate(plan.batches):
+        for batch in plan.batches:
             store: list[L.LNode] = []
+            batch_caches: list[L.Symbol] = []
             for group in batch:
                 for term in group.terms:
                     if term.factor not in caches:
@@ -472,21 +479,17 @@ class IntegralGenerator:
                         f = self.get_var(quadrature_rule, domain, node)
                         cache = L.Symbol(f"fq{len(caches)}_{rule_id}", dtype=L.DataType.SCALAR)
                         caches[term.factor] = cache
+                        batch_caches.append(cache)
                         store.append(L.Assign(cache[iq.global_index], f))
-            batch_caches = [
-                caches[factor]
-                for factor in dict.fromkeys(term.factor for group in batch for term in group.terms)
-            ]
 
             evaluation: list[L.LNode] = [
                 *pointwise,
                 L.Section("Intermediates", intermediates + store, [], inputs, batch_caches),
             ]
-            if len(plan.batches) > 1:
-                # Batches evaluate the integrand anew, each pruned to what it caches
+            if batched:
                 evaluation = copy.deepcopy(evaluation)
             evaluation = optimize(evaluation, quadrature_rule)
-            if len(plan.batches) > 1:
+            if batched:
                 evaluation = prune_dead_scalars(evaluation, scalar_declaration_names(evaluation))
 
             batch_code: list[L.LNode] = [
@@ -497,10 +500,7 @@ class IntegralGenerator:
                 batch_code += self._sum_factorised_contraction(
                     plan, group, iq, caches, next(groups)
                 )
-            if len(plan.batches) > 1:
-                # A scope per batch lets the next reuse the stack of its arrays
-                batch_code = [L.Section(f"Sum factorisation batch {batch_id}", batch_code, [])]
-            code = code + batch_code
+            code += [L.Scope(batch_code)] if batched else batch_code
         return code
 
     def _sum_factorised_contraction(
@@ -572,7 +572,7 @@ class IntegralGenerator:
             keys = term.stage_keys
             for s in range(last):
                 if keys[s + 1] not in stages:
-                    stride = math.prod(iq.sizes[s + 1 :])
+                    stride = contraction_stage_size(s, iq.sizes)
                     next_stage = L.Symbol(
                         f"{caches[term.factor].name}_{group_id}_g{s + 1}_{len(stages)}",
                         dtype=L.DataType.SCALAR,
@@ -691,7 +691,7 @@ class IntegralGenerator:
         for s in reversed(range(last)):
             body = dof_loops(s, level_code[s] + body, B_indices)
         # A scope per group lets the next reuse the stack of its arrays
-        return [L.Section(f"Contraction group {group_id}", declarations + body, [])]
+        return [L.Scope(declarations + body)]
 
     def _element_tensor_indices(
         self, blockmap: tuple, blockdata: BlockDataT, B_indices: list[L.MultiIndex]

@@ -17,6 +17,7 @@ from ffcx.definitions import entity_types
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
+from ffcx.ir.sumfactorisation import evaluation_stage_sizes
 
 logger = logging.getLogger("ffcx")
 
@@ -386,7 +387,7 @@ class FFCXBackendDefinitions:
 
         # Contracting direction d leaves the dofs of directions < d and the
         # points of directions >= d
-        sizes = [math.prod(num_dofs[:d]) * math.prod(num_points[d:]) for d in range(dim)]
+        sizes = evaluation_stage_sizes(num_dofs, num_points)
 
         def loop(name: str, extent: int):
             """Return a loop index and a function wrapping a body in its loop.
