@@ -5,6 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import math
+import sys
 
 import basix.ufl
 import numpy as np
@@ -213,11 +214,16 @@ def tabulate(form, num_coefficients, cell_type, dtype, options, compile_args, ca
     return A
 
 
+def assert_matches_fused_loop(args, compile_args, tmp_path):
+    """Check a cell integral tabulated with sum factorisation matches the default fused loop."""
+    A_ref = tabulate(*args, {}, compile_args, tmp_path / "ref")
+    A = tabulate(*args, {"sum_factorization": True}, compile_args, tmp_path / "sf")
+    np.testing.assert_allclose(A, A_ref, rtol=1e-12, atol=1e-12 * np.max(np.abs(A_ref)))
+
+
 def uses_sum_factorised_contraction(form, dtype):
     """Check if the generated code contracts one direction at a time."""
-    options = ffcx.options.get_options(
-        {"scalar_type": dtype, "sum_factorization": True, "sum_factorization_contraction": True}
-    )
+    options = ffcx.options.get_options({"scalar_type": dtype, "sum_factorization": True})
     code, _ = ffcx.compiler.compile_ufl_objects([form], options)
     return "_g1_" in "".join(code)
 
@@ -244,33 +250,22 @@ def test_sum_factorised_contraction(name, P, cell_type, compile_args, tmp_path):
     dtype = "float64"
     form, num_coefficients = sum_factorisation_forms(cell_type, P)[name]
     args = (form, num_coefficients, cell_type, dtype)
-    A_ref = tabulate(*args, {}, compile_args, tmp_path / "ref")
-    A = tabulate(
-        *args,
-        {"sum_factorization": True, "sum_factorization_contraction": True},
-        compile_args,
-        tmp_path / "sf",
-    )
-    np.testing.assert_allclose(A, A_ref, rtol=1e-12, atol=1e-12 * np.max(np.abs(A_ref)))
+    assert_matches_fused_loop(args, compile_args, tmp_path)
 
     # A table without a tensor factorisation falls back to the fused loop
     assert uses_sum_factorised_contraction(form, dtype) == (name != "non_tensor_product_argument")
 
 
+@pytest.mark.xfail(
+    sys.platform.startswith("win32"), raises=NotImplementedError, reason="missing _Complex"
+)
 @pytest.mark.parametrize("name", ["coefficient_mass", "vector_laplace"])
 @pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
 def test_sum_factorised_contraction_complex(name, cell_type, compile_args, tmp_path):
     dtype = "complex128"
     form, num_coefficients = sum_factorisation_forms(cell_type, 2)[name]
     args = (form, num_coefficients, cell_type, dtype)
-    A_ref = tabulate(*args, {}, compile_args, tmp_path / "ref")
-    A = tabulate(
-        *args,
-        {"sum_factorization": True, "sum_factorization_contraction": True},
-        compile_args,
-        tmp_path / "sf",
-    )
-    np.testing.assert_allclose(A, A_ref, rtol=1e-12, atol=1e-12 * np.max(np.abs(A_ref)))
+    assert_matches_fused_loop(args, compile_args, tmp_path)
     assert uses_sum_factorised_contraction(form, dtype)
 
 
@@ -285,14 +280,7 @@ def test_sum_factorised_contraction_vector(name, P, cell_type, compile_args, tmp
     dtype = "float64"
     form, num_coefficients = sum_factorisation_forms(cell_type, P)[name]
     args = (form, num_coefficients, cell_type, dtype)
-    A_ref = tabulate(*args, {}, compile_args, tmp_path / "ref")
-    A = tabulate(
-        *args,
-        {"sum_factorization": True, "sum_factorization_contraction": True},
-        compile_args,
-        tmp_path / "sf",
-    )
-    np.testing.assert_allclose(A, A_ref, rtol=1e-12, atol=1e-12 * np.max(np.abs(A_ref)))
+    assert_matches_fused_loop(args, compile_args, tmp_path)
     assert uses_sum_factorised_contraction(form, dtype)
 
 
@@ -317,15 +305,8 @@ def test_sum_factorised_contraction_stack_budget(quadrature_degree, dtype, expec
 
 
 @pytest.mark.parametrize("name", ["two_quadrature_degrees", "piecewise_coefficient", "linear"])
-@pytest.mark.parametrize(
-    "options",
-    [
-        {"sum_factorization": True},
-        {"sum_factorization": True, "sum_factorization_contraction": True},
-    ],
-)
 @pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
-def test_sum_factorisation_quadrature_rules(name, options, cell_type, compile_args, tmp_path):
+def test_sum_factorisation_quadrature_rules(name, cell_type, compile_args, tmp_path):
     """Integrals with several or one point rules.
 
     Each rule has its own 1D tables, and a one point rule makes the
@@ -347,6 +328,4 @@ def test_sum_factorisation_quadrature_rules(name, options, cell_type, compile_ar
         "linear": (f * v * one_point, V.ufl_element().dim),
     }[name]
     args = (form, num_coefficients, cell_type, "float64")
-    A_ref = tabulate(*args, {}, compile_args, tmp_path / "ref")
-    A = tabulate(*args, options, compile_args, tmp_path / "sf")
-    np.testing.assert_allclose(A, A_ref, rtol=1e-12, atol=1e-12 * np.max(np.abs(A_ref)))
+    assert_matches_fused_loop(args, compile_args, tmp_path)

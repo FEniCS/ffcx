@@ -341,9 +341,7 @@ def prune_dead_scalars(code: list[L.LNode], candidates: set[str]) -> list[L.LNod
     """
     candidates = set(candidates)
     while True:
-        referenced: set[str] = set()
-        _collect_referenced_names(code, referenced)
-        dead = candidates - referenced
+        dead = candidates - referenced_names(code)
         if not dead:
             return code
         code = _drop_unreferenced(code, dead)
