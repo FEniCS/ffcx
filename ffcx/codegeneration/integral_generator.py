@@ -14,7 +14,7 @@ import math
 import platform
 import sys
 from numbers import Integral
-from typing import Any
+from typing import Any, NamedTuple
 
 import basix
 import ufl
@@ -153,6 +153,14 @@ def _contraction_work(node) -> int:
             return 0
         return int(max(0, node.end.value - node.begin.value)) * _contraction_work(node.body)
     return int(isinstance(node, L.Statement))
+
+
+class _ContractionTerm(NamedTuple):
+    """A block of the element tensor to contract by sum factorisation."""
+
+    cache: L.Symbol
+    tables: list[UniqueTableReferenceT]
+    A_indices: list[L.LExpr]
 
 
 class IntegralGenerator:
@@ -429,22 +437,30 @@ class IntegralGenerator:
         """Return whether a table factorises over the directions of a tensor product rule."""
         return (
             td.ttype not in ("zeros", "ones")
-            and td.tensor_factors is not None
+            and td.has_tensor_factorisation
             and len(td.tensor_factors) == dim
         )
 
     @staticmethod
-    def _table_key(td, arg: int, direction: int) -> tuple[str, bool]:
-        """Identify the 1D table of an argument in a direction in a contraction.
+    def _tables_key(tables: list, direction: int) -> tuple:
+        """Identify the 1D tables of all arguments in a direction in a contraction.
 
         The first argument's tables have the 1D quadrature weights folded in.
         """
-        return (td.tensor_factors[direction].name, arg == 0)
+        return tuple((td.tensor_factors[direction].name, arg == 0) for arg, td in enumerate(tables))
 
-    @classmethod
-    def _tables_key(cls, tables: list, direction: int) -> tuple:
-        """Identify the 1D tables of all arguments in a direction in a contraction."""
-        return tuple(cls._table_key(td, arg, direction) for arg, td in enumerate(tables))
+    def _blocks(
+        self, quadrature_rule: QuadratureRule, domain: basix.CellType
+    ) -> list[tuple[tuple, BlockDataT]]:
+        """Return the element tensor blocks of a quadrature rule, in a fixed order."""
+        block_contributions = self.ir.expression.integrand[(domain, quadrature_rule)][
+            "block_contributions"
+        ]
+        return [
+            (blockmap, blockdata)
+            for blockmap, contributions in sorted(block_contributions.items())
+            for blockdata in contributions
+        ]
 
     def _sum_factorisation_groups(
         self, quadrature_rule: QuadratureRule, domain: basix.CellType
@@ -462,12 +478,7 @@ class IntegralGenerator:
         if self.ir.part == TensorPart.diagonal:
             return None
 
-        integrand = self.ir.expression.integrand[(domain, quadrature_rule)]
-        blocks = [
-            (blockmap, blockdata)
-            for blockmap, contributions in sorted(integrand["block_contributions"].items())
-            for blockdata in contributions
-        ]
+        blocks = self._blocks(quadrature_rule, domain)
         if not blocks:
             return None
 
@@ -486,7 +497,7 @@ class IntegralGenerator:
         groups: dict[tuple, list[tuple[tuple, BlockDataT]]] = collections.defaultdict(list)
         for blockmap, blockdata in blocks:
             sizes = tuple(
-                tuple(factor.values.shape[-1] for factor in mad.tabledata.tensor_factors or [])
+                tuple(factor.values.shape[-1] for factor in mad.tabledata.tensor_factors)
                 for mad in blockdata.ma_data
             )
             groups[sizes].append((blockmap, blockdata))
@@ -549,12 +560,11 @@ class IntegralGenerator:
         sizes = [math.prod(num_dofs[:d]) * math.prod(num_points[d:]) for d in range(dim)]
 
         stride = tabledata.block_size if is_coefficient else 3
-        offset = tabledata.offset
-        assert stride is not None and offset is not None
+        assert stride is not None and tabledata.offset is not None
         dofs = (
-            self.backend.symbols.coefficient_dof_access(mt.terminal, offset)
+            self.backend.symbols.coefficient_dof_access(mt.terminal, tabledata.offset)
             if is_coefficient
-            else self.backend.symbols.coordinate_dofs[offset]
+            else self.backend.symbols.coordinate_dofs[tabledata.offset]
         )
         source, offset = dofs.array, dofs.indices[0]
 
@@ -668,13 +678,13 @@ class IntegralGenerator:
 
         def table(arg, td, direction, quadrature_index, dof_index):
             """Return a 1D table access, weighted for the first argument."""
-            factor = td.tensor_factors[direction]
-            weights = quadrature_rule.tensor_factors[direction][1] if arg == 0 else None
-            if weights is None:
+            if arg != 0:
                 access, _ = self.backend.access.tensor_factor_access(
                     td, direction, quadrature_index, dof_index
                 )
                 return access
+            factor = td.tensor_factors[direction]
+            weights = quadrature_rule.tensor_factors[direction][1]
             key = (factor.name, weights.tobytes())
             if key not in weighted_tables:
                 name = f"{factor.name}_w{len(weighted_tables)}"
@@ -709,17 +719,14 @@ class IntegralGenerator:
                 create_dof_index(mad.tabledata, self.backend.symbols.argument_loop_index(i))
                 for i, mad in enumerate(group[0][1].ma_data)
             ]
-            terms = []
-            for blockmap, blockdata in group:
-                factor_index = blockdata.factor_indices_comp_indices[0][0]
-                terms.append(
-                    {
-                        "factor": factor_index,
-                        "cache": caches[factor_index],
-                        "tables": [mad.tabledata for mad in blockdata.ma_data],
-                        "A_indices": self._element_tensor_indices(blockmap, blockdata, B_indices),
-                    }
+            terms = [
+                _ContractionTerm(
+                    caches[blockdata.factor_indices_comp_indices[0][0]],
+                    [mad.tabledata for mad in blockdata.ma_data],
+                    self._element_tensor_indices(blockmap, blockdata, B_indices),
                 )
+                for blockmap, blockdata in group
+            ]
             contraction += self._sum_factorised_contraction(
                 terms, iq, B_indices, table, product, group_id
             )
@@ -737,7 +744,7 @@ class IntegralGenerator:
 
     def _sum_factorised_contraction(
         self,
-        terms: list[dict[str, Any]],
+        terms: list[_ContractionTerm],
         iq: L.MultiIndex,
         B_indices: list[L.MultiIndex],
         table,
@@ -775,12 +782,10 @@ class IntegralGenerator:
                 ]
             return body
 
-        num_temps = 0
+        num_temps = itertools.count(1)
 
         def temp(name: str, dtype=L.DataType.SCALAR) -> L.Symbol:
-            nonlocal num_temps
-            num_temps += 1
-            return L.Symbol(f"{name}{group_id}_{num_temps}", dtype=dtype)
+            return L.Symbol(f"{name}{group_id}_{next(num_temps)}", dtype=dtype)
 
         def total(values: list[L.LExpr]) -> L.LExpr:
             return values[0] if len(values) == 1 else L.Sum(values)
@@ -792,16 +797,18 @@ class IntegralGenerator:
         level_code: list[list[L.LNode]] = [[] for _ in range(dim)]
         declarations: list[L.LNode] = []
         stages: dict[tuple, L.Symbol] = {}
+        # The last stage of each term, and its key
+        term_stages: list[tuple[L.Symbol, tuple]] = []
         for term in terms:
-            stage = term["cache"]
-            key: tuple = (term["factor"],)
+            stage = term.cache
+            key: tuple = (term.cache.name,)
             for s in range(last):
-                names = self._tables_key(term["tables"], s)
+                names = self._tables_key(term.tables, s)
                 key = key + (names,)
                 if key not in stages:
                     stride = math.prod(iq.sizes[s + 1 :])
                     next_stage = L.Symbol(
-                        f"{term['cache'].name}_{group_id}_g{s + 1}_{len(stages)}",
+                        f"{term.cache.name}_{group_id}_g{s + 1}_{len(stages)}",
                         dtype=L.DataType.SCALAR,
                     )
                     stages[key] = next_stage
@@ -810,7 +817,7 @@ class IntegralGenerator:
                     qs = iq.local_index(s)
                     scale = temp("basis", dtype=L.DataType.REAL)
                     basis = product(
-                        term["tables"], s, qs, [index.local_index(s) for index in B_indices]
+                        term.tables, s, qs, [index.local_index(s) for index in B_indices]
                     )
                     # Accumulate independent entries along the contiguous last
                     # axis, preserving the quadrature order of each entry.
@@ -839,19 +846,19 @@ class IntegralGenerator:
                         ),
                     ]
                 stage = stages[key]
-            term["stage"], term["stage_key"] = stage, key
+            term_stages.append((stage, key))
 
         # Last direction: contributions, identified by their stage and
         # tables, and the contributions each element tensor block receives
         contributions: dict[tuple, tuple] = {}
         targets: dict[tuple, tuple[list[L.LExpr], list[tuple]]] = {}
-        for term in terms:
+        for term, (stage, stage_key) in zip(terms, term_stages):
             # The innermost dof loop reads a row of each table contiguously.
-            names = self._tables_key(term["tables"], last)
-            key = term["stage_key"] + (names,)
-            contributions.setdefault(key, (term["stage"], term["tables"], names[:-1]))
-            target = tuple(expr_key(index) for index in term["A_indices"])
-            targets.setdefault(target, (term["A_indices"], []))[1].append(key)
+            names = self._tables_key(term.tables, last)
+            key = stage_key + (names,)
+            contributions.setdefault(key, (stage, term.tables, names[:-1]))
+            target = tuple(expr_key(index) for index in term.A_indices)
+            targets.setdefault(target, (term.A_indices, []))[1].append(key)
 
         # Blocks receiving the same contributions share one accumulator
         rows: dict[tuple, tuple[list[tuple], list[list[L.LExpr]]]] = {}
@@ -927,9 +934,7 @@ class IntegralGenerator:
             row_code += row_body
 
         body = pre_rows + dof_loops(last, row_code, outer_indices)
-        if last > 0:
-            body = dof_loops(last - 1, level_code[last - 1] + body, B_indices)
-        for s in reversed(range(last - 1)):
+        for s in reversed(range(last)):
             body = dof_loops(s, level_code[s] + body, B_indices)
         return declarations + body
 
@@ -1167,15 +1172,8 @@ class IntegralGenerator:
         domain: basix.CellType,
     ):
         """Generate a dofblock partition."""
-        block_contributions = self.ir.expression.integrand[(domain, quadrature_rule)][
-            "block_contributions"
-        ]
         quadparts = []
-        blocks = [
-            (blockmap, blockdata)
-            for blockmap, contributions in sorted(block_contributions.items())
-            for blockdata in contributions
-        ]
+        blocks = self._blocks(quadrature_rule, domain)
 
         block_groups = collections.defaultdict(list)
 
