@@ -550,6 +550,7 @@ class IntegralGenerator:
         if not isinstance(mt.terminal, ufl.geometry.Jacobian):
             return False
         domain = ufl.domain.extract_unique_domain(mt.terminal)
+        assert domain is not None
         parent = self.backend.access.integration_domain_coordinate_element
         return parent is None or parent.cell.topological_dimension == domain.topological_dimension
 
