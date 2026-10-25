@@ -12,6 +12,7 @@ import ufl
 
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration import geometry
+from ffcx.codegeneration.optimizer import expr_key
 from ffcx.definitions import entity_types
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
@@ -72,6 +73,10 @@ class FFCXBackendDefinitions:
         self.entity_type = entity_type
         self.access = access
         self.options = options
+
+        # Stages of sum-factorised evaluations, by quadrature rule, dofs and
+        # the 1D tables contracted with, shared by the terminals of a kernel
+        self._stages: dict[tuple, L.Symbol] = {}
 
         # called, depending on the first argument type.
         self.handler_lookup = {
@@ -411,11 +416,21 @@ class FFCXBackendDefinitions:
             return index, lambda body: [L.ForRange(index, 0, extent, body)]
 
         source, offset = dofs.array, dofs.indices[0]
-        inputs = [source]
+        inputs: list[L.Symbol] = []
         name = f"{access.name}_{quadrature_rule.id()}"
         code: list[L.LNode] = []
+        # Terminals reading the same dofs with the same 1D tables, such as x
+        # and the derivatives of x, share their first stages
+        key: tuple = (quadrature_rule.id(), expr_key(dofs), stride)
         for d in reversed(range(dim)):
+            key += (tabledata.tensor_factors[d].name,)
+            if key in self._stages:
+                source, stride, offset = self._stages[key], 1, 0
+                continue
+            if source not in inputs:
+                inputs.append(source)
             stage = L.Symbol(f"{name}_c{d}", dtype=dtype)
+            self._stages[key] = stage
             code.append(L.ArrayDecl(stage, sizes=sizes[d]))
             inner = math.prod(num_points[d + 1 :])
             a, a_loop = loop("a", math.prod(num_dofs[:d]))

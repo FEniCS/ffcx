@@ -193,6 +193,8 @@ def sum_factorisation_forms(cell_type, P):
             W.ufl_element().dim,
         ),
         "two_coefficients": (ufl.inner(f * g, v) * ufl.dx, nf + Q.ufl_element().dim),
+        # The value and derivative of f share a stage of their evaluation
+        "coefficient_and_derivative": ((f + f.dx(0)) * v * ufl.dx, nf),
         "non_tensor_product_argument": (ufl.TrialFunction(DG0) * v * ufl.dx, 0),
     }
 
@@ -310,6 +312,7 @@ def test_sum_factorisation_unfactorised_coefficient(cell_type, compile_args, tmp
         "linear_gradient",
         "vector_coefficient_gradient",
         "two_coefficients",
+        "coefficient_and_derivative",
         "non_tensor_product_argument",
     ],
 )
