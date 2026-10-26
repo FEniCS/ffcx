@@ -244,26 +244,11 @@ class FFCXBackendDefinitions:
                 mt, tabledata, quadrature_rule, access, dofs, bs, L.DataType.SCALAR
             )
 
-        if (
-            tabledata.is_piecewise
-            and tabledata.is_uniform
-            and not tabledata.is_permuted
-            and not tabledata.has_tensor_factorisation
-            and num_dofs <= 16
-        ):
-            terms = [
-                L.float_product(
-                    [self.symbols.coefficient_dof_access(mt.terminal, k * bs + begin), value]
-                )
-                for k, value in enumerate(tabledata.values[0, 0, 0])
-                if value != 0.0
-            ]
-            return self._unrolled_coefficient(mt, access, begin, terms, [])
-
         # Expand small reductions to expose SIMD across quadrature points,
         # including the evaluation/contraction split for varying geometry.
         # Larger reductions are expanded only when some basis derivatives
-        # vanish at every point. Preserve tensor-product factorisations.
+        # vanish at every point, or the table is constant so every term
+        # folds to a literal. Preserve tensor-product factorisations.
         if (
             not tabledata.has_tensor_factorisation
             and num_dofs <= _MAX_UNROLLED_SPARSE_COEFFICIENT_DOFS
@@ -275,7 +260,8 @@ class FFCXBackendDefinitions:
                 num_dofs <= _MAX_UNROLLED_DENSE_COEFFICIENT_DOFS
                 and not domain.is_piecewise_linear_simplex_domain()
             )
-            if len(active) < num_dofs or unroll_dense:
+            constant = tabledata.is_piecewise and tabledata.is_uniform and not tabledata.is_permuted
+            if len(active) < num_dofs or unroll_dense or constant:
                 terms = []
                 tables = []
                 for k in active:
@@ -283,9 +269,8 @@ class FFCXBackendDefinitions:
                     FE, term_tables = self.access.table_access(
                         tabledata, self.entity_type, mt.restriction, iq, ic_k
                     )
-                    terms.append(
-                        self.symbols.coefficient_dof_access(mt.terminal, int(k) * bs + begin) * FE
-                    )
+                    dof = self.symbols.coefficient_dof_access(mt.terminal, int(k) * bs + begin)
+                    terms.append(L.float_product([dof, FE]))
                     tables.extend(term_tables)
                 return self._unrolled_coefficient(mt, access, begin, terms, tables)
         # Get access to element table
@@ -470,17 +455,12 @@ class FFCXBackendDefinitions:
                 else _coordinate_basis_groups(tabledata.values)
             )
             for k, members in groups:
-                if constant_table:
-                    value = tabledata.values[0, 0, 0, k]
-                    if value != 0.0:
-                        terms.append(
-                            L.float_product([dof_access[_dof(k) * dim + begin + offset], value])
-                        )
-                    continue
                 ic_k = L.MultiIndex([L.LiteralInt(k)], [num_dofs])
                 FE_k, tables_k = self.access.table_access(
                     tabledata, self.entity_type, mt.restriction, iq, ic_k
                 )
+                if L.is_zero_lexpr(FE_k):
+                    continue
                 for t in tables_k:
                     if t not in coord_tables:
                         coord_tables.append(t)
@@ -494,7 +474,7 @@ class FFCXBackendDefinitions:
                             for j, sign in members
                         ]
                     )
-                terms.append(coordinate * FE_k)
+                terms.append(L.float_product([coordinate, FE_k]))
             declaration = [L.VariableDecl(access, L.Sum(terms))]
             code = []
             input = [dof_access, *coord_tables]

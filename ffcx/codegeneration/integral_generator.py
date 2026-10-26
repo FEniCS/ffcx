@@ -2443,14 +2443,18 @@ class IntegralGenerator:
         self, blockmap: tuple, blockdata: BlockDataT, B_indices: list[L.MultiIndex]
     ) -> list[L.LExpr]:
         """Return the indices into the element tensor of a block's argument dofs."""
-        A_indices = []
+        A_indices: list[L.LExpr] = []
         for i, index in enumerate(B_indices):
             tabledata = blockdata.ma_data[i].tabledata
             offset = tabledata.offset
-            if len(blockmap[i]) == 1:
+            scale = 1 if len(blockmap[i]) == 1 else tabledata.block_size
+            if all(isinstance(s, L.LiteralInt) for s in index.symbols):
+                dof = np.ravel_multi_index([s.value for s in index.symbols], index.sizes)
+                A_indices.append(L.LiteralInt(int(scale * dof + offset)))
+            elif scale == 1:
                 A_indices.append(index.global_index + offset)
             else:
-                A_indices.append(tabledata.block_size * index.global_index + offset)
+                A_indices.append(scale * index.global_index + offset)
         return A_indices
 
     def _element_tensor_entry(
@@ -2846,7 +2850,7 @@ class IntegralGenerator:
             assert td.ttype != "zeros"
 
             if td.ttype == "ones":
-                arg_factor = 1
+                arg_factor = L.LiteralFloat(1.0)
             else:
                 # Assuming B sparsity follows element table sparsity
                 arg_factor, arg_tables = self.backend.access.table_access(
@@ -3045,22 +3049,24 @@ class IntegralGenerator:
             assert not blockdata.transposed, "Not handled yet"
 
             if unroll:
-                data = [ma.tabledata for ma in blockdata.ma_data]
-                ranges = [range(td.values.shape[-1]) for td in data]
-                for dofs in itertools.product(*ranges):
+                # Constant tables at literal dofs read as literal values
+                for dofs in itertools.product(*(range(index.sizes[0]) for index in B_indices)):
                     if self.ir.part == TensorPart.diagonal and len(dofs) == 2:
                         if dofs[0] != dofs[1]:
                             continue
-                    values = [td.values[0, 0, 0, i] for td, i in zip(data, dofs)]
-                    if any(value == 0.0 for value in values):
+                    literal = [
+                        L.MultiIndex([L.LiteralInt(i)], index.sizes)
+                        for i, index in zip(dofs, B_indices)
+                    ]
+                    arg_factors, _ = self.get_arg_factors(
+                        blockdata, block_rank, quadrature_rule, domain, iq, literal
+                    )
+                    if any(L.is_zero_lexpr(factor) for factor in arg_factors):
                         continue
-                    output_indices = []
-                    for td, i in zip(data, dofs):
-                        assert td.block_size is not None and td.offset is not None
-                        output_indices.append(L.LiteralInt(td.block_size * i + td.offset))
                     if self.ir.part == TensorPart.diagonal:
-                        output_indices = output_indices[:1]
-                    rhs_expressions[tuple(output_indices)].append(L.float_product([fw, *values]))
+                        literal = literal[:1]
+                    A_indices = self._element_tensor_indices(blockmap, blockdata, literal)
+                    rhs_expressions[tuple(A_indices)].append(L.float_product([fw, *arg_factors]))
                 continue
 
             # Fetch code to access modified arguments
