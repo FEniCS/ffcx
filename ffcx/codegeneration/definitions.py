@@ -538,12 +538,84 @@ class FFCXBackendDefinitions:
         # and the derivatives of x, share their first stages
         key: tuple = (quadrature_rule.id(), expr_key(dofs), stride)
         code += [
-            L.Comment(f"Evaluate {access.name} from dofs using one-dimensional basis tables."),
+            L.Comment(f"--- {type(mt.terminal).__name__} component: {access.name} ---"),
             L.Comment(
-                "Each stage replaces one dof index by a quadrature-point index; "
-                "point-independent directions are stored only once."
+                "Apply the one-dimensional basis tables to the dofs, "
+                "storing point-independent directions only once."
             ),
         ]
+        derivative_orders = [mt.local_derivatives.count(d) for d in range(dim)]
+        if isinstance(mt.terminal, ufl.geometry.Jacobian):
+            row, column = mt.component
+            derivative_orders[column] += 1
+            code.append(L.Comment(f"Compute J[{row},{column}] = d x{row}/d xi{column}."))
+            if mt.local_derivatives:
+                code.append(
+                    L.Comment(
+                        f"Also apply reference derivatives in directions {mt.local_derivatives}."
+                    )
+                )
+
+        contracted: set[int] = set()
+
+        def stage_comments(direction: int, stage: L.Symbol) -> list[L.LNode]:
+            """Describe logical tensor axes before and after this dof contraction."""
+
+            def layout(done: set[int]) -> str:
+                axes, shape = [], []
+                for d in range(dim):
+                    if d in done:
+                        if num_points[d] == 1:
+                            continue
+                        axes.append(f"q{d}")
+                        shape.append(num_points[d])
+                    else:
+                        axes.append(f"i{d}")
+                        shape.append(num_dofs[d])
+                indices = "".join(f"[{axis}]" for axis in axes) or "scalar"
+                return f"{indices}, shape {shape}"
+
+            done = contracted | {direction}
+            comments: list[L.LNode] = [
+                L.Comment(f"--- Direction {direction}: evaluate {stage.name} ---"),
+                L.Comment(f"Logical input layout: {layout(contracted)}."),
+                L.Comment(f"Logical output layout: {layout(done)}; last index contiguous."),
+            ]
+            assert tabledata.tensor_factors is not None
+            factor = tabledata.tensor_factors[direction]
+            if (
+                num_points[direction] == 1
+                and num_dofs[direction] == 2
+                and np.array_equal(factor.values[0, 0, 0], [-1.0, 1.0])
+            ):
+                comments.append(
+                    L.Comment(
+                        f"Subtract the i{direction}=0 slice from the i{direction}=1 slice: "
+                        "the Q1 reference derivative has weights [-1, +1]."
+                    )
+                )
+            else:
+                operation = (
+                    f"Differentiate (order {derivative_orders[direction]})"
+                    if derivative_orders[direction]
+                    else "Interpolate"
+                )
+                comments.append(
+                    L.Comment(
+                        f"{operation} in reference direction {direction}, "
+                        f"summing over its {num_dofs[direction]} dofs with the 1D basis table."
+                    )
+                )
+            independent = [f"q{d}" for d in sorted(done) if num_points[d] == 1]
+            if independent:
+                comments.append(
+                    L.Comment(
+                        f"Independent of {', '.join(independent)}; omit these axes from storage "
+                        "and reuse the values at every point in those directions."
+                    )
+                )
+            return comments
+
         directions = list(reversed(range(dim)))
         if (
             dim in (2, 3)
@@ -566,12 +638,7 @@ class FFCXBackendDefinitions:
                         if source not in inputs:
                             inputs.append(source)
                         stage = L.Symbol(f"{name}_r{d}", dtype=dtype)
-                        code.append(
-                            L.Comment(
-                                f"Contract dof direction {d} into {stage.name}; "
-                                f"tensor shape {previous} -> {shape}."
-                            )
-                        )
+                        code += stage_comments(d, stage)
                         code.append(L.ArrayDecl(stage, sizes=math.prod(shape)))
                         for node_index in itertools.product(*(range(n) for n in shape)):
                             terms = []
@@ -592,6 +659,7 @@ class FFCXBackendDefinitions:
                             code.append(L.Assign(stage[target], L.Sum(terms)))
                         self._stages[partial_key] = stage
                     source, stride, offset = self._stages[partial_key], 1, 0
+                    contracted.add(d)
                 self._stages[result_key] = source
             source = self._stages[result_key]
             directions = []
@@ -599,17 +667,14 @@ class FFCXBackendDefinitions:
             key += (tabledata.tensor_factors[d].name,)
             if key in self._stages:
                 source, stride, offset = self._stages[key], 1, 0
+                contracted.add(d)
                 continue
             if source not in inputs:
                 inputs.append(source)
             stage = L.Symbol(f"{name}_c{d}", dtype=dtype)
             self._stages[key] = stage
-            code.append(
-                L.Comment(
-                    f"Contract dof direction {d} into {stage.name}; "
-                    "earlier directions still index dofs, later directions index points."
-                )
-            )
+            code += stage_comments(d, stage)
+            contracted.add(d)
             code.append(L.ArrayDecl(stage, sizes=sizes[d]))
             inner = math.prod(num_points[d + 1 :])
             a, a_loop = loop("a", math.prod(num_dofs[:d]))

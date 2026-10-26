@@ -35,7 +35,9 @@ SECTION_DESCRIPTIONS = {
     "Jacobian": "Differentiate the coordinate mapping to obtain Jacobian components.",
     "SpatialCoordinate": "Evaluate physical coordinates from coordinate degrees of freedom.",
     "Coefficient": "Evaluate coefficient values or derivatives from their degrees of freedom.",
-    "Intermediates": "Form assembly factors (fw*) from scalar expressions and quadrature weights.",
+    "Integrand factors": (
+        "Compute scalar integrand factors independent of the argument basis tables."
+    ),
     "Tensor Computation": (
         "Contract argument basis values or derivatives and accumulate the element tensor."
     ),

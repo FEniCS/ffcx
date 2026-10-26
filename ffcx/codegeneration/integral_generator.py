@@ -662,8 +662,54 @@ class IntegralGenerator:
         # and is shared by all backends.
         parts = prune_dead_scalars(parts, scalar_declaration_names(parts))
         parts = prune_unused_tables(parts)
+        parts = self._annotate_weighted_tables(domain, parts)
 
         return L.StatementList(parts)
+
+    def _annotate_weighted_tables(
+        self, domain: basix.CellType, code: list[L.LNode]
+    ) -> list[L.LNode]:
+        """Describe surviving weighted tables using their contraction-plan metadata."""
+        descriptions: dict[str, list[L.LNode]] = {}
+        for (cell, _), integrand in self.ir.expression.integrand.items():
+            plan = integrand["sum_factorisation"]
+            if cell != domain or plan is None:
+                continue
+            uses: dict[str, list[tuple[int, tuple[str, ...]]]] = collections.defaultdict(list)
+            for (direction, factors), name in plan.table_names.items():
+                uses[name].append((direction, factors))
+            for name, references in uses.items():
+                factors = references[0][1]
+                directions = sorted({direction for direction, _ in references})
+                axes = "[q]" + "".join(f"[i{a}]" for a in range(len(factors)))
+                layout = "[1D quadrature point]" + "".join(
+                    f"[argument {a} dof]" for a in range(len(factors))
+                )
+                product = " * ".join(
+                    ["w_d[q]", *[f"{factor}[0][0][q][i{a}]" for a, factor in enumerate(factors)]]
+                )
+                descriptions[name] = [
+                    L.Comment(f"--- Weighted 1D basis product: {name} ---"),
+                    L.Comment(
+                        f"Layout: {layout}; shape {list(plan.tables[name].shape)}. "
+                        "The last dof index is contiguous; there are no permutation or entity axes."
+                    ),
+                    L.Comment(
+                        f"Used for reference directions d = {directions}; "
+                        "q and each dof index belong to that one direction, not the full cell."
+                    ),
+                    L.Comment(f"{name}{axes} = {product}."),
+                    L.Comment(
+                        "w_d is the 1D quadrature weight. Source FE_TF tables may be folded "
+                        "into this product rather than emitted separately."
+                    ),
+                ]
+        annotated = []
+        for node in code:
+            if isinstance(node, L.ArrayDecl):
+                annotated += descriptions.get(node.symbol.name, [])
+            annotated.append(node)
+        return annotated
 
     def generate_quadrature_tables(
         self, domain: basix.CellType, expression: CommonExpressionIR
@@ -696,8 +742,8 @@ class IntegralGenerator:
         parts = L.commented_code_list(
             parts,
             [
-                "Quadrature weights on the reference integration entity.",
-                "Geometry scaling is applied when assembling the tensor.",
+                "Reference quadrature weights and weighted one-dimensional basis products.",
+                "Geometry and coefficient factors are applied separately during tensor assembly.",
             ],
         )
         return parts
@@ -726,7 +772,9 @@ class IntegralGenerator:
             parts,
             [
                 "Precomputed reference basis values and derivatives.",
-                "FE* dimensions: [permutation][entities][points][dofs]",
+                "Element tables, including FE_TF*: [permutation][entity][point][dof].",
+                "For bilinear forms, argument 0 is the test function "
+                "and argument 1 is the trial function.",
             ],
         )
         return parts
@@ -1183,7 +1231,9 @@ class IntegralGenerator:
             # Computation" section that follows, outside this block's scope.
             declarations += [L.VariableDecl(fw.symbol)]
             intermediates_0 += [L.Assign(fw.symbol, fw.value)]
-        intermediates = [L.Section("Intermediates", intermediates_0, declarations, inputs, output)]
+        intermediates = [
+            L.Section("Integrand factors", intermediates_0, declarations, inputs, output)
+        ]
 
         iq_symbol = self.backend.symbols.quadrature_loop_index
         iq = create_quadrature_index(quadrature_rule, iq_symbol)
@@ -1777,6 +1827,15 @@ class IntegralGenerator:
         # what it caches, in a scope that lets the next reuse its stack.
         batched = len(plan.batches) > 1
         code = list(prior)
+        if prior:
+            code = [
+                L.Comment("=== Sum factorisation: geometry and coefficient evaluation ==="),
+                L.Comment(
+                    "Replace one dof index at a time by a quadrature-point index "
+                    "using one-dimensional contractions."
+                ),
+                *code,
+            ]
         caches: dict[int, L.Symbol] = {}
         groups = itertools.count()
         for batch in plan.batches:
@@ -1794,7 +1853,7 @@ class IntegralGenerator:
 
             evaluation: list[L.LNode] = [
                 *pointwise,
-                L.Section("Intermediates", intermediates + store, [], inputs, batch_caches),
+                L.Section("Integrand factors", intermediates + store, [], inputs, batch_caches),
             ]
             if batched:
                 evaluation = copy.deepcopy(evaluation)
@@ -1803,7 +1862,7 @@ class IntegralGenerator:
                 evaluation = prune_dead_scalars(evaluation, scalar_declaration_names(evaluation))
 
             batch_code: list[L.LNode] = [
-                L.Comment("Cache scalar integrand factors on the tensor-product quadrature grid."),
+                L.Comment("=== Cached integrand factors ==="),
                 L.Comment(
                     "fq* contains geometry and coefficient factors; argument basis tables "
                     "and one-dimensional quadrature weights enter the contractions below."
@@ -1811,7 +1870,14 @@ class IntegralGenerator:
                 L.Comment(f"Point-grid shape: {iq.sizes}; the last direction is contiguous."),
                 *[L.ArrayDecl(cache, sizes=math.prod(iq.sizes)) for cache in batch_caches],
             ]
-            batch_code.append(L.create_nested_for_loops([iq], evaluation))
+            batch_code += [
+                L.Comment("=== Pointwise geometry and integrand evaluation ==="),
+                L.Comment(
+                    "Read the evaluated fields, compute scalar integrand factors "
+                    "at each quadrature point, and store them in fq*."
+                ),
+                L.create_nested_for_loops([iq], evaluation),
+            ]
             for group in batch:
                 batch_code += self._sum_factorised_contraction(
                     plan, group, iq, caches, next(groups)
@@ -1849,6 +1915,7 @@ class IntegralGenerator:
             tables[key], constant[key] = basis_tables, axes
 
         code: list[L.LNode] = [
+            L.Comment("=== Sum factorisation: linear-form contractions ==="),
             L.Comment("Contract a linear form through point-independent basis directions first."),
             L.Comment(
                 "sf_sum* sums cached integrand values over those directions; "
@@ -1891,11 +1958,13 @@ class IntegralGenerator:
             projected[key] = values
 
         A = self.backend.symbols.element_tensor
-        code.append(
+        code += [
+            L.Comment("--- Element tensor updates ---"),
             L.Comment(
-                "Multiply by the constant-direction weighted basis factors and add the contributions to A."
-            )
-        )
+                "Multiply by the constant-direction weighted basis factors "
+                "and add the contributions to A."
+            ),
+        ]
         for row in group.rows:
             sizes = [table.shape[1] for table in tables[row.single[0].stage_keys[-1]]]
             for index in itertools.product(*(range(n) for n in sizes)):
@@ -1955,7 +2024,7 @@ class IntegralGenerator:
         ):
             return None
         code: list[L.LNode] = [
-            L.Comment("Contract Q1 argument basis products with the cached integrand factors."),
+            L.Comment("=== Sum factorisation: Q1 matrix contractions and tensor updates ==="),
             L.Comment(
                 "Each sf_projection* sums one reference direction, including its "
                 "quadrature weights and argument basis values or derivatives."
@@ -1994,8 +2063,8 @@ class IntegralGenerator:
             symbol: L.Symbol = self.new_temp_symbol("sf_projection")
             code.append(
                 L.Comment(
-                    f"{symbol.name}: contract direction {order[len(columns) - 1]} "
-                    f"of {caches[factor].name}; contraction order {order}."
+                    f"Project {caches[factor].name} over direction {order[len(columns) - 1]}; "
+                    f"stage {len(columns)} of contraction order {order}."
                 )
             )
             value = L.Sum(summands)
@@ -2054,8 +2123,8 @@ class IntegralGenerator:
                     summands = [v * L.LiteralFloat(float(n)) for v, n in contributions.items() if n]
                     code.append(
                         L.Comment(
-                            f"{value.name}: sum the form's contributions for argument dofs "
-                            f"{tuple(indices)}; add to A without overwriting existing entries."
+                            f"--- Matrix entry {tuple(indices)}: combine contributions "
+                            "and accumulate into A ---"
                         )
                     )
                     code.append(L.VariableDecl(value, L.Sum(summands)))
@@ -2333,6 +2402,7 @@ class IntegralGenerator:
                 store.append(L.AssignAdd(A[A_index], acc[j]))
             row_body.append(L.ForRange(j, 0, num_inner, store))
             row_code += [
+                L.Comment("--- Final-direction contraction and element tensor updates ---"),
                 L.Comment(
                     f"Contract the final reference direction {last} into {acc.name}; "
                     "each entry sums contributions at its quadrature points."
@@ -2382,7 +2452,19 @@ class IntegralGenerator:
         for s in reversed(range(last)):
             body = dof_loops(s, level_code[s] + body, B_indices)
         # A scope per group lets the next reuse the stack of its arrays
-        return [L.Scope(declarations + body)]
+        return [
+            L.Scope(
+                [
+                    L.Comment("=== Sum factorisation: directional contractions ==="),
+                    L.Comment(
+                        "Each stage sums one quadrature direction against its weighted "
+                        "argument basis products, retaining the remaining point indices."
+                    ),
+                    *declarations,
+                    *body,
+                ]
+            )
+        ]
 
     def _element_tensor_indices(
         self, blockmap: tuple, blockdata: BlockDataT, B_indices: list[L.MultiIndex]
