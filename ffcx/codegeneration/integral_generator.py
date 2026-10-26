@@ -30,6 +30,7 @@ from ffcx.codegeneration.definitions import (
     is_point_independent,
 )
 from ffcx.codegeneration.optimizer import (
+    children,
     expr_key,
     factor_scalar_sums,
     optimize,
@@ -176,37 +177,6 @@ def _supports_vector_math_loop_split() -> bool:
     return sys.platform.startswith("linux") and platform.machine().lower() in {"amd64", "x86_64"}
 
 
-def _children(node) -> list:
-    """Return the direct sub-nodes of a statement or expression."""
-    if isinstance(node, list):
-        return node
-    if isinstance(node, L.Section):
-        return [*node.declarations, *node.statements]
-    if isinstance(node, L.StatementList):
-        return list(node.statements)
-    if isinstance(node, L.ForRange):
-        return list(node.body.statements)
-    if isinstance(node, L.VariableDecl):
-        return [] if node.value is None else [node.value]
-    if isinstance(node, (L.ArrayDecl, L.Comment)):
-        return []
-    if isinstance(node, L.Statement):
-        return [node.expr]
-    if isinstance(node, L.ArrayAccess):
-        return [node.array, *node.indices]
-    if isinstance(node, L.MultiIndex):
-        return list(node.symbols)
-    if isinstance(node, L.BinOp):
-        return [node.lhs, node.rhs]
-    if isinstance(node, (L.NaryOp, L.MathFunction)):
-        return list(node.args)
-    if isinstance(node, L.PrefixUnaryOp):
-        return [node.arg]
-    if isinstance(node, L.Conditional):
-        return [node.condition, node.true, node.false]
-    return []
-
-
 def _flat_statements(statements) -> list[L.LNode]:
     """Flatten nested statement lists into one list of statements."""
     out: list[L.LNode] = []
@@ -222,14 +192,14 @@ def _references(node, symbol: L.Symbol) -> bool:
     """Return whether *node* refers to *symbol* anywhere."""
     if isinstance(node, L.Symbol):
         return node.name == symbol.name
-    return any(_references(child, symbol) for child in _children(node))
+    return any(_references(child, symbol) for child in children(node))
 
 
 def _writes_symbol(node, symbol: L.Symbol) -> bool:
     """Return whether *node* assigns to an entry of the array *symbol*."""
     if isinstance(node, L.AssignOp):
         return isinstance(node.lhs, L.ArrayAccess) and node.lhs.array == symbol
-    return any(_writes_symbol(child, symbol) for child in _children(node))
+    return any(_writes_symbol(child, symbol) for child in children(node))
 
 
 def _is_index(node, index: L.Symbol) -> bool:
@@ -275,7 +245,7 @@ def _tables_indexed_last_by(
                 return False
             found.add(name)
             return True
-        return all(visit(child) for child in _children(node))
+        return all(visit(child) for child in children(node))
 
     return found if all(visit(e) for e in exprs) else None
 
@@ -1694,10 +1664,10 @@ class IntegralGenerator:
             return self._value_ids[node.name]
         if isinstance(node, (L.LiteralFloat, L.LiteralInt)):
             return self._intern(("literal", node.value))
-        children = [self._value_key(c) for c in _children(node)]
+        keys = [self._value_key(c) for c in children(node)]
         if isinstance(node, (L.Sum, L.Product, L.Add, L.Mul)):
-            children.sort()
-        return self._intern((type(node).__name__, getattr(node, "function", None), *children))
+            keys.sort()
+        return self._intern((type(node).__name__, getattr(node, "function", None), *keys))
 
     def _intern(self, key: tuple) -> int:
         """Return a unique integer for a hashable key."""

@@ -109,26 +109,35 @@ def reciprocal_cse(section: L.Section) -> L.Section:
     return section
 
 
-def _referenced_symbol_names(expr: L.LExpr, out: set[str]) -> None:
-    """Collect the names of every Symbol referenced within an expression tree."""
-    if isinstance(expr, L.Symbol):
-        out.add(expr.name)
-    elif isinstance(expr, L.ArrayAccess):
-        out.add(expr.array.name)
-        for i in expr.indices:
-            _referenced_symbol_names(i, out)
-    elif isinstance(expr, L.Conditional):
-        _referenced_symbol_names(expr.condition, out)
-        _referenced_symbol_names(expr.true, out)
-        _referenced_symbol_names(expr.false, out)
-    elif isinstance(expr, L.BinOp):
-        _referenced_symbol_names(expr.lhs, out)
-        _referenced_symbol_names(expr.rhs, out)
-    elif isinstance(expr, L.PrefixUnaryOp):
-        _referenced_symbol_names(expr.arg, out)
-    elif isinstance(expr, (L.NaryOp, L.MathFunction)):
-        for a in expr.args:
-            _referenced_symbol_names(a, out)
+def children(node) -> list:
+    """Return the direct sub-nodes of a statement or expression."""
+    if isinstance(node, list):
+        return node
+    if isinstance(node, L.Section):
+        return [*node.declarations, *node.statements]
+    if isinstance(node, L.StatementList):
+        return list(node.statements)
+    if isinstance(node, L.ForRange):
+        return [node.begin, node.end, *node.body.statements]
+    if isinstance(node, L.VariableDecl):
+        return [] if node.value is None else [node.value]
+    if isinstance(node, (L.ArrayDecl, L.Comment)):
+        return []
+    if isinstance(node, L.Statement):
+        return [node.expr]
+    if isinstance(node, L.ArrayAccess):
+        return [node.array, *node.indices]
+    if isinstance(node, L.MultiIndex):
+        return list(node.symbols)
+    if isinstance(node, L.BinOp):
+        return [node.lhs, node.rhs]
+    if isinstance(node, (L.NaryOp, L.MathFunction)):
+        return list(node.args)
+    if isinstance(node, L.PrefixUnaryOp):
+        return [node.arg]
+    if isinstance(node, L.Conditional):
+        return [node.condition, node.true, node.false]
+    return []
 
 
 def power_of_two_cse_statements(
@@ -232,29 +241,10 @@ def power_of_two_cse_statements(
 
 def _collect_referenced_names(node, out: set[str]) -> None:
     """Recursively collect every symbol name read anywhere in a code tree."""
-    if isinstance(node, list):
-        for n in node:
-            _collect_referenced_names(n, out)
-    elif isinstance(node, L.VariableDecl):
-        if node.value is not None:
-            _referenced_symbol_names(node.value, out)
-    elif isinstance(node, L.ArrayDecl):
-        pass
-    elif isinstance(node, L.Section):
-        for declaration in node.declarations:
-            if isinstance(declaration, L.VariableDecl) and declaration.value is not None:
-                _referenced_symbol_names(declaration.value, out)
-        _collect_referenced_names(node.statements, out)
-    elif isinstance(node, L.StatementList):
-        _collect_referenced_names(node.statements, out)
-    elif isinstance(node, L.ForRange):
-        _referenced_symbol_names(node.begin, out)
-        _referenced_symbol_names(node.end, out)
-        _collect_referenced_names(node.body, out)
-    elif isinstance(node, L.Comment):
-        pass
-    elif isinstance(node, L.Statement):
-        _referenced_symbol_names(node.expr, out)
+    if isinstance(node, L.Symbol):
+        out.add(node.name)
+    for child in children(node):
+        _collect_referenced_names(child, out)
 
 
 def _drop_unreferenced(node, dead: set[str]):
@@ -636,14 +626,8 @@ def factor_scalar_sums(statements: list[L.LNode]) -> list[L.LNode]:
     def count(expr):
         if isinstance(expr, L.Symbol):
             uses[expr.name] += 1
-        elif isinstance(expr, L.BinOp):
-            count(expr.lhs)
-            count(expr.rhs)
-        elif isinstance(expr, L.NaryOp | L.MathFunction):
-            for arg in expr.args:
-                count(arg)
-        elif isinstance(expr, L.PrefixUnaryOp):
-            count(expr.arg)
+        for child in children(expr):
+            count(child)
 
     for stmt in statements:
         if isinstance(stmt, L.VariableDecl):
