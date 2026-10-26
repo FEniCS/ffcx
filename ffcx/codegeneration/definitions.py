@@ -5,7 +5,6 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """FFCx/UFCx specific variable definitions."""
 
-import itertools
 import logging
 import math
 from collections.abc import Sequence
@@ -20,7 +19,6 @@ from ffcx.definitions import entity_types
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
-from ffcx.ir.sumfactorisation import evaluation_stage_sizes
 
 logger = logging.getLogger("ffcx")
 
@@ -532,10 +530,6 @@ class FFCXBackendDefinitions:
             factor.values.shape[2] == n for factor, n in zip(tabledata.tensor_factors, iq.sizes)
         )
 
-        # Contracting direction d leaves the dofs of directions < d and the
-        # points of directions >= d
-        sizes = evaluation_stage_sizes(num_dofs, num_points)
-
         def loop(name: str, extent: int):
             """Return a loop index and a function wrapping a body in its loop.
 
@@ -632,55 +626,17 @@ class FFCXBackendDefinitions:
                 )
             return comments
 
-        directions = list(reversed(range(dim)))
-        if (
-            dim in (2, 3)
-            and all(n == 2 for n in num_dofs)
-            and all(n <= 3 for n in num_points)
-            and any(num_points[d] == 1 for d in range(dim - 1))
-        ):
-            # Form differences of dofs before interpolating the remaining
-            # directions when the derivative table is point-independent.
-            result_key = key + tuple(f.name for f in reversed(tabledata.tensor_factors))
-            if result_key not in self._stages:
-                order = sorted(directions, key=lambda d: num_points[d] != 1)
-                shape = list(num_dofs)
-                partial_key = key
-                for d in order:
-                    partial_key += ((d, tabledata.tensor_factors[d].name),)
-                    previous = list(shape)
-                    shape[d] = num_points[d]
-                    if partial_key not in self._stages:
-                        if source not in inputs:
-                            inputs.append(source)
-                        stage = L.Symbol(f"{name}_r{d}", dtype=dtype)
-                        code += stage_comments(d, stage)
-                        code.append(L.ArrayDecl(stage, sizes=math.prod(shape)))
-                        for node_index in itertools.product(*(range(n) for n in shape)):
-                            terms = []
-                            for dof in range(num_dofs[d]):
-                                source_index = list(node_index)
-                                source_index[d] = dof
-                                flat = L.MultiIndex(source_index, previous).global_index
-                                table = tabledata.tensor_factors[d].values[0, 0, node_index[d], dof]
-                                terms.append(
-                                    L.float_product(
-                                        [
-                                            source[flat * stride + offset],
-                                            L.LiteralFloat(float(table)),
-                                        ]
-                                    )
-                                )
-                            target = L.MultiIndex(list(node_index), shape).global_index
-                            code.append(L.Assign(stage[target], L.Sum(terms)))
-                        self._stages[partial_key] = stage
-                    source, stride, offset = self._stages[partial_key], 1, 0
-                    contracted.add(d)
-                self._stages[result_key] = source
-            source = self._stages[result_key]
-            directions = []
+        # Contract the last direction first, except that point-independent
+        # directions go first: forming their differences of dofs before
+        # interpolating the others leaves fewer values to interpolate.
+        # The stage shape holds, in each direction, the dofs or, once
+        # contracted, the points.
+        directions = sorted(reversed(range(dim)), key=lambda d: num_points[d] != 1)
+        shape = list(num_dofs)
         for d in directions:
-            key += (tabledata.tensor_factors[d].name,)
+            key += ((d, tabledata.tensor_factors[d].name),)
+            previous = list(shape)
+            shape[d] = num_points[d]
             if key in self._stages:
                 source, stride, offset = self._stages[key], 1, 0
                 contracted.add(d)
@@ -691,16 +647,18 @@ class FFCXBackendDefinitions:
             self._stages[key] = stage
             code += stage_comments(d, stage)
             contracted.add(d)
-            code.append(L.ArrayDecl(stage, sizes=sizes[d]))
-            inner = math.prod(num_points[d + 1 :])
-            a, a_loop = loop("a", math.prod(num_dofs[:d]))
+            size = math.prod(shape)
+            code.append(L.ArrayDecl(stage, sizes=size))
+            inner = math.prod(shape[d + 1 :])
+            outer = math.prod(shape[:d])
+            a, a_loop = loop("a", outer)
             q, q_loop = loop("q", num_points[d])
-            width = num_points[-1] if d < dim - 1 else 1
+            width = shape[-1] if d < dim - 1 else 1
             b, b_loop = loop("b", inner // width)
 
             unroll = num_dofs[d] <= _MAX_UNROLLED_FACTOR_SIZE
             short_rule = unroll and num_points[d] <= _MAX_UNROLLED_FACTOR_SIZE
-            expand_stage = short_rule and sizes[d] <= _MAX_UNROLLED_EVALUATION_SIZE
+            expand_stage = short_rule and size <= _MAX_UNROLLED_EVALUATION_SIZE
             points = [L.LiteralInt(k) for k in range(num_points[d])] if short_rule else [q]
             point_code: list[L.LNode] = []
             for point_index in points:
@@ -717,7 +675,7 @@ class FFCXBackendDefinitions:
                     )
                     for index in indices:
                         value = source[
-                            ((a * num_dofs[d] + index) * inner + point) * stride + offset
+                            ((a * previous[d] + index) * inner + point) * stride + offset
                         ]
                         if short_rule:
                             assert isinstance(point_index, L.LiteralInt)
@@ -752,7 +710,7 @@ class FFCXBackendDefinitions:
             if expand_stage:
                 # Literal indices let the compiler replace small temporary
                 # arrays by registers instead of vectorising tiny loops.
-                for index, extent in ((b, inner // width), (a, math.prod(num_dofs[:d]))):
+                for index, extent in ((b, inner // width), (a, outer)):
                     if isinstance(index, L.Symbol):
                         stage_code = unroll_loop(stage_code, index, extent)
             else:
