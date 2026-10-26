@@ -469,9 +469,11 @@ def _max_sum_factorisation_scalars(
 
     That is the stack limit less the arrays evaluating coefficients and
     geometry on the whole rule, counting stages shared by terminals reading
-    the same dofs with the same 1D tables once, as
-    `FFCXBackendDefinitions._sum_factorised_lincomb` does, or `None` for no
-    limit.
+    the same dofs with the same 1D tables once, or `None` for no limit.
+    The stages are counted last direction first at every point, an upper
+    bound on those of `FFCXBackendDefinitions._sum_factorised_lincomb`,
+    which contracts point-independent directions first and stores them
+    at one point.
     """
     limit = int(p["sum_factorization_stack_limit"])
     if limit <= 0:

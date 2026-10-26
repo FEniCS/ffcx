@@ -506,8 +506,8 @@ class FFCXBackendDefinitions:
 
         Evaluated at each point, a coefficient, or the spatial coordinate or
         Jacobian, sums over all its dofs, costing O(Q^d N^d). Contracting
-        its dofs with the 1D tables one
-        direction at a time, last direction first, costs O(N^d Q + ... +
+        its dofs with the 1D tables one direction at a time, last direction
+        first after any point-independent directions, costs O(N^d Q + ... +
         Q^d N); in 2D
 
             t[i0, q1] = sum_i1 B1[q1, i1] w[i0, i1]

@@ -72,6 +72,9 @@ _LOCAL_TENSOR_ALIGNMENT_BYTES = 32
 _INTEGRAND_FACTORS_DESCRIPTION = (
     "Compute scalar integrand factors independent of the argument basis tables."
 )
+_TENSOR_COMPUTATION_DESCRIPTION = (
+    "Contract argument basis values or derivatives and accumulate the element tensor."
+)
 _MAX_PREINTEGRATED_TABLE_BYTES = 65536
 _MIN_PARTIAL_PREINTEGRATION_WORK = 64
 _FW_CACHE_BYTES_PER_SCALAR = 16
@@ -1563,11 +1566,18 @@ class IntegralGenerator:
             terms = [(row_step, names[0], row), (column_step, names[1], column)]
         else:
             try:
-                base = _evaluate_index(lhs.indices, dict.fromkeys(names, 0))
-                step = _evaluate_index(lhs.indices, {**dict.fromkeys(names, 0), names[0]: 1})
+                zero = dict.fromkeys(names, 0)
+                base = _evaluate_index(lhs.indices, zero)
+                steps = [_evaluate_index(lhs.indices, {**zero, n: 1}) - base for n in names]
             except (KeyError, TypeError, ValueError):
                 return "a block of A"
-            terms = [(step - base, names[0], base)]
+            if len(names) > 1:
+                flat = " + ".join(
+                    [n if s == 1 else f"{s}*{n}" for s, n in zip(steps, names) if s]
+                    + ([str(base)] if base else [])
+                )
+                return f"flat A entries ({flat})"
+            terms = [(steps[0], names[0], base)]
 
         def affine(scale, name, offset):
             text = name if scale == 1 else f"{scale}*{name}"
@@ -3136,7 +3146,7 @@ class IntegralGenerator:
                 input,
                 output,
                 annotations,
-                "Contract argument basis values or derivatives and accumulate the element tensor.",
+                _TENSOR_COMPUTATION_DESCRIPTION,
             )
         ]
 
