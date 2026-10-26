@@ -481,8 +481,9 @@ class IntegralGenerator:
         # variables
         self.symbol_counters: dict[str, int] = collections.defaultdict(int)
 
-        # Element table name -> padded length of its final (dof) axis, for
-        # contiguous loops that read zero entries past the last dof.
+        # Table name -> padded length of its final axis, zero-filled when the
+        # table is declared: the dofs of element tables read by padded
+        # contiguous loops, and the points of weights read across padded points.
         self._padded_tables: dict[str, int] = {}
         # Symmetric local arrays contracted on and above the diagonal, in row
         # groups of one SIMD width
@@ -490,9 +491,7 @@ class IntegralGenerator:
 
         # Element table name -> padded point count of a copy with point and
         # dof axes exchanged, read by loops that vectorise across points.
-        # Weights table name -> padded point count.
         self._transposed_tables: dict[str, int] = {}
-        self._padded_weights: dict[str, int] = {}
 
         # Scalar symbol name -> id of its value, equal for symbols with
         # structurally identical definitions (see _value_key). Used to prove
@@ -572,24 +571,10 @@ class IntegralGenerator:
         # once
         assert not any(d for d in self.scopes.values())
 
-        parts: list[L.LNode] = [
-            L.Comment("Accumulate this integral into A; existing tensor entries are incremented.")
-        ]
-
-        # Generate the tables of quadrature points and weights
-        parts += self.generate_quadrature_tables(domain, self.ir.expression)
-
-        # Generate the tables of basis function values and
-        # pre-integrated blocks
-        element_tables = self.generate_element_tables(domain)
-        parts += element_tables
-
-        # Generate the tables of geometry data that are needed
-        parts += geometry.static_tables(
-            self.ir.expression.entity_type,
-            self.ir.expression.integrand.values(),
-            self.ir.expression.integration_domain_coordinate_element,
-        )
+        # Loop generation reads tables through their symbols, and records
+        # the padding and transposed copies the loops need. Tables are
+        # declared afterwards, once those are known.
+        self.register_tables(domain)
 
         # Loop generation code will produce parts to go before
         # quadloops, to define the quadloops, and to go after the
@@ -608,46 +593,28 @@ class IntegralGenerator:
                 # element tensor
                 all_quadparts += self.generate_quadrature_loop(rule, cell)
 
+        parts: list[L.LNode] = [
+            L.Comment("Accumulate this integral into A; existing tensor entries are incremented.")
+        ]
+
+        # Generate the tables of quadrature points and weights
+        parts += self.generate_quadrature_tables(domain, self.ir.expression)
+
+        # Generate the tables of basis function values and
+        # pre-integrated blocks
+        parts += self.generate_element_tables(domain)
+        parts += self.generate_transposed_tables(domain)
+
+        # Generate the tables of geometry data that are needed
+        parts += geometry.static_tables(
+            self.ir.expression.entity_type,
+            self.ir.expression.integrand.values(),
+            self.ir.expression.integration_domain_coordinate_element,
+        )
+
         # Collect parts before, during, and after quadrature loops
         parts += all_preparts
         parts += all_quadparts
-
-        # Zero-pad the dof axis of tables read by padded contiguous loops.
-        # Existing reads index real dofs only, so their values are unchanged.
-        # Weights tables read across padded points are zero-padded likewise.
-        padded = {**self._padded_tables, **self._padded_weights}
-        for decl in parts:
-            if isinstance(decl, L.ArrayDecl) and decl.symbol.name in padded:
-                values = np.asarray(decl.values)
-                pad = [(0, 0)] * (values.ndim - 1) + [
-                    (0, padded[decl.symbol.name] - values.shape[-1])
-                ]
-                decl.values = np.pad(values, pad)
-                decl.sizes = decl.values.shape
-
-        # Point-major copies of tables for loops across quadrature points.
-        # Padded points repeat the last point, so every value stays finite.
-        transposed: list[L.LNode] = []
-        unique_tables = cast(dict[str, np.ndarray], self.ir.expression.unique_tables[domain])
-        for name, points in sorted(self._transposed_tables.items()):
-            values = np.swapaxes(np.asarray(unique_tables[name]), -1, -2)
-            pad = [(0, 0)] * (values.ndim - 1) + [(0, points - values.shape[-1])]
-            symbol = L.Symbol(f"{name}_T", dtype=L.DataType.REAL)
-            transposed.append(
-                L.ArrayDecl(symbol, values=np.pad(values, pad, mode="edge"), const=True)
-            )
-        if transposed:
-            position = len(parts)
-            if element_tables:
-                position = next(k for k, p in enumerate(parts) if p is element_tables[-1]) + 1
-            parts[position:position] = L.commented_code_list(
-                transposed,
-                [
-                    "Point-major copies of tables for evaluation across points.",
-                    "FE*_T dimensions: [permutation][entities][dofs][points]; points past the",
-                    "rule repeat its last point.",
-                ],
-            )
 
         # Drop every unread scalar declaration now the kernel body is whole.
         # Done on the LNode tree, before formatting, so it respects scopes
@@ -723,7 +690,11 @@ class IntegralGenerator:
                     continue
                 # Generate quadrature weights array
                 wsym = self.backend.symbols.weights_table(quadrature_rule)
-                parts += [L.ArrayDecl(wsym, values=quadrature_rule.weights, const=True)]
+                parts += [
+                    L.ArrayDecl(
+                        wsym, values=self._padded(wsym.name, quadrature_rule.weights), const=True
+                    )
+                ]
             else:
                 # A sum-factorised contraction folds the weights into products
                 # of 1D tables, [points][dofs of each argument]
@@ -746,18 +717,9 @@ class IntegralGenerator:
         With precomputed element basis function values in quadrature points.
         """
         parts: list[L.LNode] = []
-        tables = self.ir.expression.unique_tables[domain]
-        table_types = self.ir.expression.unique_table_types[domain]
-        if self.ir.expression.integral_type in ufl.custom_integral_types:
-            # Define only piecewise tables
-            table_names = [name for name in sorted(tables) if table_types[name] in piecewise_ttypes]
-        else:
-            # Define all tables
-            table_names = sorted(tables)
-
-        for name in table_names:
-            table = tables[name]
-            parts += self.declare_table(name, table)
+        tables = cast(dict[str, np.ndarray], self.ir.expression.unique_tables[domain])
+        for name in self._element_table_names(domain):
+            parts += self.declare_table(name, tables[name])
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(
@@ -771,16 +733,59 @@ class IntegralGenerator:
         )
         return parts
 
+    def _element_table_names(self, domain: basix.CellType) -> list[str]:
+        """Return the names of the element tables to define."""
+        tables = self.ir.expression.unique_tables[domain]
+        if self.ir.expression.integral_type in ufl.custom_integral_types:
+            # Define only piecewise tables
+            table_types = self.ir.expression.unique_table_types[domain]
+            return [name for name in sorted(tables) if table_types[name] in piecewise_ttypes]
+        return sorted(tables)
+
+    def register_tables(self, domain: basix.CellType) -> None:
+        """Register the symbols of element tables and weighted 1D tables."""
+        names = self._element_table_names(domain)
+        if self.ir.expression.integral_type not in ufl.custom_integral_types:
+            for (cell, _), integrand in self.ir.expression.integrand.items():
+                if cell == domain and integrand["sum_factorisation"] is not None:
+                    names += list(integrand["sum_factorisation"].tables)
+        for name in names:
+            self.backend.symbols.element_tables[name] = L.Symbol(name, dtype=L.DataType.REAL)
+
+    def _padded(self, name: str, values) -> np.ndarray:
+        """Return table values zero-padded along the last axis as loops require."""
+        values = np.asarray(values)
+        size = self._padded_tables.get(name, values.shape[-1])
+        return np.pad(values, [(0, 0)] * (values.ndim - 1) + [(0, size - values.shape[-1])])
+
     def declare_table(self, name, table) -> list[L.ArrayDecl]:
-        """Declare a table.
+        """Declare a registered table, padded as the loops reading it require."""
+        table_symbol = self.backend.symbols.element_tables[name]
+        return [L.ArrayDecl(table_symbol, values=self._padded(name, table), const=True)]
 
-        If the dof dimensions of the table have dof rotations, apply
-        these rotations.
+    def generate_transposed_tables(self, domain: basix.CellType) -> list[L.LNode]:
+        """Declare point-major copies of tables for loops across quadrature points.
 
+        Padded points repeat the last point, so every value stays finite.
         """
-        table_symbol = L.Symbol(name, dtype=L.DataType.REAL)
-        self.backend.symbols.element_tables[name] = table_symbol
-        return [L.ArrayDecl(table_symbol, values=table, const=True)]
+        transposed: list[L.LNode] = []
+        unique_tables = cast(dict[str, np.ndarray], self.ir.expression.unique_tables[domain])
+        for name, points in sorted(self._transposed_tables.items()):
+            values = np.swapaxes(np.asarray(unique_tables[name]), -1, -2)
+            pad = [(0, 0)] * (values.ndim - 1) + [(0, points - values.shape[-1])]
+            symbol = L.Symbol(f"{name}_T", dtype=L.DataType.REAL)
+            transposed.append(
+                L.ArrayDecl(symbol, values=np.pad(values, pad, mode="edge"), const=True)
+            )
+        transposed = L.commented_code_list(
+            transposed,
+            [
+                "Point-major copies of tables for evaluation across points.",
+                "FE*_T dimensions: [permutation][entities][dofs][points]; points past the",
+                "rule repeat its last point.",
+            ],
+        )
+        return transposed
 
     def _generate_preintegrated_tensor(
         self, quadrature_rule: QuadratureRule, domain: basix.CellType
@@ -2561,7 +2566,7 @@ class IntegralGenerator:
         if tile >= num_points and paddable and transposed and affordable:
             points = padded
             weights = self.backend.symbols.weights_table(quadrature_rule)
-            self._padded_weights[weights.name] = points
+            self._padded_tables[weights.name] = points
         for name in transposed:
             self._transposed_tables[name] = max(self._transposed_tables.get(name, 0), points)
 
