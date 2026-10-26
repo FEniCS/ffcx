@@ -19,6 +19,7 @@ from ffcx.definitions import entity_types
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
+from ffcx.ir.sumfactorisation import evaluation_order
 
 logger = logging.getLogger("ffcx")
 
@@ -94,11 +95,6 @@ def _terminal_section(
         annotations,
         _TERMINAL_DESCRIPTIONS.get(terminal),
     )
-
-
-def is_point_independent(factor) -> bool:
-    """Check whether a tensor factor table has the same values at every point."""
-    return bool(np.all(factor.values == factor.values[:, :, :1, :]))
 
 
 def create_quadrature_index(quadrature_rule, quadrature_index_symbol):
@@ -520,12 +516,7 @@ class FFCXBackendDefinitions:
         dim = iq.dim
         assert tabledata.tensor_factors is not None
         num_dofs = [factor.values.shape[-1] for factor in tabledata.tensor_factors]
-        # A derivative of a low-order coordinate basis is often constant
-        # in its own direction. Store and evaluate that direction once.
-        num_points = [
-            1 if is_point_independent(factor) else n
-            for factor, n in zip(tabledata.tensor_factors, iq.sizes)
-        ]
+        directions, num_points = evaluation_order(tabledata.tensor_factors, list(iq.sizes))
         assert all(
             factor.values.shape[2] == n for factor, n in zip(tabledata.tensor_factors, iq.sizes)
         )
@@ -626,12 +617,8 @@ class FFCXBackendDefinitions:
                 )
             return comments
 
-        # Contract the last direction first, except that point-independent
-        # directions go first: forming their differences of dofs before
-        # interpolating the others leaves fewer values to interpolate.
         # The stage shape holds, in each direction, the dofs or, once
-        # contracted, the points.
-        directions = sorted(reversed(range(dim)), key=lambda d: num_points[d] != 1)
+        # contracted, the stored points.
         shape = list(num_dofs)
         for d in directions:
             key += ((d, tabledata.tensor_factors[d].name),)

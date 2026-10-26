@@ -496,7 +496,7 @@ def test_sum_factorised_contraction_large_rule(quadrature_degree, dtype):
     [
         (basix.CellType.quadrilateral, "elasticity", 2048),
         (basix.CellType.quadrilateral, "elasticity", 1024),
-        (basix.CellType.quadrilateral, "vector_laplace", 1024),
+        (basix.CellType.quadrilateral, "vector_laplace", 768),
         (basix.CellType.hexahedron, "elasticity", 16384),
     ],
 )

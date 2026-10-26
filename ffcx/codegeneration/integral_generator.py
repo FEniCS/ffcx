@@ -24,11 +24,7 @@ import ufl
 
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration import geometry
-from ffcx.codegeneration.definitions import (
-    create_dof_index,
-    create_quadrature_index,
-    is_point_independent,
-)
+from ffcx.codegeneration.definitions import create_dof_index, create_quadrature_index
 from ffcx.codegeneration.optimizer import (
     children,
     expr_key,
@@ -55,6 +51,7 @@ from ffcx.ir.sumfactorisation import (
     ContractionTerm,
     SumFactorisationPlan,
     contraction_stage_size,
+    is_point_independent,
 )
 
 logger = logging.getLogger("ffcx")

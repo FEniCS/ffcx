@@ -37,6 +37,7 @@ from ffcx.ir.elementtables import (
 from ffcx.ir.representationutils import QuadratureRule
 from ffcx.ir.sumfactorisation import (
     SumFactorisationPlan,
+    evaluation_order,
     evaluation_stage_sizes,
     factorises,
     plan_sum_factorisation,
@@ -469,11 +470,9 @@ def _max_sum_factorisation_scalars(
 
     That is the stack limit less the arrays evaluating coefficients and
     geometry on the whole rule, counting stages shared by terminals reading
-    the same dofs with the same 1D tables once, or `None` for no limit.
-    The stages are counted last direction first at every point, an upper
-    bound on those of `FFCXBackendDefinitions._sum_factorised_lincomb`,
-    which contracts point-independent directions first and stores them
-    at one point.
+    the same dofs with the same 1D tables once, as
+    `FFCXBackendDefinitions._sum_factorised_lincomb` does, or `None` for no
+    limit.
     """
     limit = int(p["sum_factorization_stack_limit"])
     if limit <= 0:
@@ -492,7 +491,8 @@ def _max_sum_factorisation_scalars(
         assert tr.tensor_factors is not None
         terminal = v["mt"].terminal
         num_dofs = [int(factor.values.shape[-1]) for factor in tr.tensor_factors]
-        sizes = evaluation_stage_sizes(num_dofs, num_points)
+        directions, points = evaluation_order(tr.tensor_factors, list(num_points))
+        sizes = evaluation_stage_sizes(num_dofs, points, directions)
         if isinstance(terminal, ufl.Coefficient):
             itemsize = scalar.itemsize
             key: tuple = (terminal, tr.offset, tr.block_size)
@@ -500,11 +500,11 @@ def _max_sum_factorisation_scalars(
             # The spatial coordinate and the Jacobian read the coordinate dofs
             itemsize = real.itemsize
             key = (ufl.domain.extract_unique_domain(terminal), tr.offset)
-        for d in reversed(range(len(sizes))):
-            key += (tr.tensor_factors[d].name,)
+        for d, size in zip(directions, sizes):
+            key += ((d, tr.tensor_factors[d].name),)
             if key not in stages:
                 stages.add(key)
-                evaluation += sizes[d] * itemsize
+                evaluation += size * itemsize
     return max(limit - evaluation, 0) // int(scalar.itemsize)
 
 
