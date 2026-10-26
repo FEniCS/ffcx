@@ -30,19 +30,6 @@ from enum import Enum
 import numpy as np
 import ufl
 
-# Human-readable descriptions shared by the source backends.
-SECTION_DESCRIPTIONS = {
-    "Jacobian": "Differentiate the coordinate mapping to obtain Jacobian components.",
-    "SpatialCoordinate": "Evaluate physical coordinates from coordinate degrees of freedom.",
-    "Coefficient": "Evaluate coefficient values or derivatives from their degrees of freedom.",
-    "Integrand factors": (
-        "Compute scalar integrand factors independent of the argument basis tables."
-    ),
-    "Tensor Computation": (
-        "Contract argument basis values or derivatives and accumulate the element tensor."
-    ),
-}
-
 
 class PRECEDENCE:
     """An enum-like class for operator precedence levels."""
@@ -889,9 +876,15 @@ class Section(LNode):
         input: list[Symbol] | None = None,
         output: list[Symbol] | None = None,
         annotations: list[Annotation] | None = None,
+        description: str | None = None,
     ):
-        """Initialise."""
+        """Initialise.
+
+        ``description`` is a human-readable summary that source backends
+        print as a comment.
+        """
         self.name = name
+        self.description = description
         self.statements = [as_statement(st) for st in statements]
         self.annotations = annotations or []
         self.input = input or []

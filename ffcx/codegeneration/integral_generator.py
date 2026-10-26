@@ -68,6 +68,9 @@ _MAX_SYMMETRIC_LOCAL_BYTES = 8192
 _MIN_SYMMETRIC_ROW_GROUPS = 4
 _MAX_SYMMETRIC_ROW_GROUPS = 16
 _LOCAL_TENSOR_ALIGNMENT_BYTES = 32
+_INTEGRAND_FACTORS_DESCRIPTION = (
+    "Compute scalar integrand factors independent of the argument basis tables."
+)
 _MAX_PREINTEGRATED_TABLE_BYTES = 65536
 _MIN_PARTIAL_PREINTEGRATION_WORK = 64
 _FW_CACHE_BYTES_PER_SCALAR = 16
@@ -1251,7 +1254,14 @@ class IntegralGenerator:
             declarations += [L.VariableDecl(fw.symbol)]
             intermediates_0 += [L.Assign(fw.symbol, fw.value)]
         intermediates = [
-            L.Section("Integrand factors", intermediates_0, declarations, inputs, output)
+            L.Section(
+                "Integrand factors",
+                intermediates_0,
+                declarations,
+                inputs,
+                output,
+                description=_INTEGRAND_FACTORS_DESCRIPTION,
+            )
         ]
 
         iq_symbol = self.backend.symbols.quadrature_loop_index
@@ -1451,6 +1461,7 @@ class IntegralGenerator:
                     section.input,
                     list(locals_.values()),
                     section.annotations,
+                    section.description,
                 )
             )
 
@@ -1529,6 +1540,7 @@ class IntegralGenerator:
                     node.input,
                     node.output,
                     node.annotations,
+                    node.description,
                 )
             out.append(node)
         return out
@@ -1876,7 +1888,14 @@ class IntegralGenerator:
 
             evaluation: list[L.LNode] = [
                 *pointwise,
-                L.Section("Integrand factors", intermediates + store, [], inputs, batch_caches),
+                L.Section(
+                    "Integrand factors",
+                    intermediates + store,
+                    [],
+                    inputs,
+                    batch_caches,
+                    description=_INTEGRAND_FACTORS_DESCRIPTION,
+                ),
             ]
             if batched:
                 evaluation = copy.deepcopy(evaluation)
@@ -3128,6 +3147,16 @@ class IntegralGenerator:
         if len(B_indices) > 1 and not unroll:
             annotations.append(L.Annotation.licm)
 
-        quadparts += [L.Section("Tensor Computation", body, [], input, output, annotations)]
+        quadparts += [
+            L.Section(
+                "Tensor Computation",
+                body,
+                [],
+                input,
+                output,
+                annotations,
+                "Contract argument basis values or derivatives and accumulate the element tensor.",
+            )
+        ]
 
         return quadparts, intermediates

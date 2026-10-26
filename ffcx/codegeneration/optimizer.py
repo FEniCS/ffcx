@@ -376,6 +376,7 @@ def fuse_sections(code: list[L.LNode], name: str) -> list[L.LNode]:
     output: list[L.Symbol] = []
     declarations: list[L.Declaration] = []
     annotations: list[L.Annotation] = []
+    description = None
 
     for i, section in enumerate(code):
         if isinstance(section, L.Section):
@@ -386,13 +387,14 @@ def fuse_sections(code: list[L.LNode], name: str) -> list[L.LNode]:
                 input.extend(section.input)
                 output.extend(section.output)
                 annotations = section.annotations
+                description = section.description
 
     # Remove duplicated inputs
     input = list(set(input))
     # Remove duplicated outputs
     output = list(set(output))
 
-    section = L.Section(name, statements, declarations, input, output, annotations)
+    section = L.Section(name, statements, declarations, input, output, annotations, description)
 
     # Replace the first section with the fused section
     code = code.copy()
@@ -425,7 +427,14 @@ def fuse_loops(code: L.Section) -> L.Section:
     for range, body in loops.items():
         output_code.append(L.ForRange(*range, body))
 
-    return L.Section(code.name, output_code, code.declarations, code.input, code.output)
+    return L.Section(
+        code.name,
+        output_code,
+        code.declarations,
+        code.input,
+        code.output,
+        description=code.description,
+    )
 
 
 def get_statements(statement: L.Statement | L.StatementList) -> list[L.LNode]:
@@ -756,6 +765,7 @@ def map_expressions(node, fn):
             node.input,
             node.output,
             node.annotations,
+            node.description,
         )
     if isinstance(node, L.StatementList):
         return L.StatementList(map_expressions(list(node.statements), fn))

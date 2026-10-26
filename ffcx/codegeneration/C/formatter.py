@@ -211,8 +211,8 @@ class Formatter(FormatterInterface):
             f"// Inputs: {', '.join(w.name for w in section.input)}\n"
             f"// Outputs: {', '.join(w.name for w in section.output)}\n"
         )
-        if description := L.SECTION_DESCRIPTIONS.get(section.name):
-            comments += f"// {description}\n"
+        if section.description:
+            comments += f"// {section.description}\n"
         declarations = "".join(self(s) for s in section.declarations)
 
         body = ""

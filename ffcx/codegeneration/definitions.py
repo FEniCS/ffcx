@@ -8,6 +8,7 @@
 import itertools
 import logging
 import math
+from collections.abc import Sequence
 
 import numpy as np
 import ufl
@@ -66,6 +67,35 @@ def _coordinate_basis_groups(values: np.ndarray) -> list[tuple[int, list[tuple[i
         else:
             groups.append((column, [(column, 1.0)]))
     return groups
+
+
+# Comments on the sections that evaluate terminals, by terminal type
+_TERMINAL_DESCRIPTIONS = {
+    ufl.Jacobian: "Differentiate the coordinate mapping to obtain Jacobian components.",
+    ufl.SpatialCoordinate: "Evaluate physical coordinates from coordinate degrees of freedom.",
+    ufl.Coefficient: "Evaluate coefficient values or derivatives from their degrees of freedom.",
+}
+
+
+def _terminal_section(
+    mt: ModifiedTerminal,
+    statements: list[L.LNode],
+    declarations: Sequence[L.Declaration],
+    input: list[L.Symbol],
+    output: list[L.Symbol],
+    annotations: list[L.Annotation] | None = None,
+) -> L.Section:
+    """Return a section evaluating a terminal, named after its type."""
+    terminal = type(mt.terminal)
+    return L.Section(
+        terminal.__name__,
+        statements,
+        declarations,
+        input,
+        output,
+        annotations,
+        _TERMINAL_DESCRIPTIONS.get(terminal),
+    )
 
 
 def is_point_independent(factor) -> bool:
@@ -268,7 +298,6 @@ class FFCXBackendDefinitions:
         body = [L.AssignAdd(access, dof_access * FE)]
         code = [L.create_nested_for_loops([ic], body)]
 
-        name = type(mt.terminal).__name__
         input = [dof_access.array, *tables]
         output = [access]
         annotations = [L.Annotation.fuse]
@@ -277,7 +306,7 @@ class FFCXBackendDefinitions:
         assert all(isinstance(i, L.Symbol) for i in input)
         assert all(isinstance(o, L.Symbol) for o in output)
 
-        return [L.Section(name, code, declaration, input, output, annotations)]
+        return [_terminal_section(mt, code, declaration, input, output, annotations)]
 
     def _unrolled_coefficient(
         self,
@@ -289,8 +318,8 @@ class FFCXBackendDefinitions:
     ) -> list[L.Section]:
         """Define a coefficient as an unrolled sum of dof terms."""
         return [
-            L.Section(
-                type(mt.terminal).__name__,
+            _terminal_section(
+                mt,
                 [],
                 [L.VariableDecl(access, L.Sum(terms))],
                 [
@@ -473,7 +502,6 @@ class FFCXBackendDefinitions:
         if closure_table is not None:
             input.append(closure_table)
 
-        name = type(mt.terminal).__name__
         output = [access]
         annotations = [L.Annotation.fuse]
 
@@ -481,7 +509,7 @@ class FFCXBackendDefinitions:
         assert all(isinstance(i, L.Symbol) for i in input)
         assert all(isinstance(o, L.Symbol) for o in output)
 
-        return [L.Section(name, code, declaration, input, output, annotations)]
+        return [_terminal_section(mt, code, declaration, input, output, annotations)]
 
     def _sum_factorised_lincomb(
         self,
@@ -761,8 +789,8 @@ class FFCXBackendDefinitions:
             [source],
             [L.Annotation.factorize],
         )
-        read = L.Section(
-            terminal,
+        read = _terminal_section(
+            mt,
             [],
             [
                 L.VariableDecl(
