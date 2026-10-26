@@ -789,3 +789,15 @@ def map_expressions(node, fn):
             map_expressions(node.false, fn),
         )
     return node
+
+
+def substitute(node, symbol: L.Symbol, value: L.LExpr):
+    """Replace every occurrence of ``symbol`` in a statement or expression tree."""
+    return map_expressions(
+        node, lambda n: value if isinstance(n, L.Symbol) and n == symbol else None
+    )
+
+
+def unroll_loop(body: list[L.LNode], index: L.Symbol, extent: int) -> list[L.LNode]:
+    """Return copies of a loop body for each literal value of its index."""
+    return [s for k in range(extent) for s in substitute(body, index, L.LiteralInt(k))]

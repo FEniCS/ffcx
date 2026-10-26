@@ -14,7 +14,7 @@ import ufl
 
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration import geometry
-from ffcx.codegeneration.optimizer import expr_key, map_expressions
+from ffcx.codegeneration.optimizer import expr_key, unroll_loop
 from ffcx.definitions import entity_types
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
@@ -66,6 +66,11 @@ def _coordinate_basis_groups(values: np.ndarray) -> list[tuple[int, list[tuple[i
         else:
             groups.append((column, [(column, 1.0)]))
     return groups
+
+
+def is_point_independent(factor) -> bool:
+    """Check whether a tensor factor table has the same values at every point."""
+    return bool(np.all(factor.values == factor.values[:, :, :1, :]))
 
 
 def create_quadrature_index(quadrature_rule, quadrature_index_symbol):
@@ -223,15 +228,7 @@ class FFCXBackendDefinitions:
                 for k, value in enumerate(tabledata.values[0, 0, 0])
                 if value != 0.0
             ]
-            return [
-                L.Section(
-                    type(mt.terminal).__name__,
-                    [],
-                    [L.VariableDecl(access, L.Sum(terms))],
-                    [self.symbols.coefficient_dof_access(mt.terminal, begin).array],
-                    [access],
-                )
-            ]
+            return self._unrolled_coefficient(mt, access, begin, terms, [])
 
         # Expand small reductions to expose SIMD across quadrature points,
         # including the evaluation/contraction split for varying geometry.
@@ -260,18 +257,7 @@ class FFCXBackendDefinitions:
                         self.symbols.coefficient_dof_access(mt.terminal, int(k) * bs + begin) * FE
                     )
                     tables.extend(term_tables)
-                return [
-                    L.Section(
-                        type(mt.terminal).__name__,
-                        [],
-                        [L.VariableDecl(access, L.Sum(terms))],
-                        [
-                            self.symbols.coefficient_dof_access(mt.terminal, begin).array,
-                            *dict.fromkeys(tables),
-                        ],
-                        [access],
-                    )
-                ]
+                return self._unrolled_coefficient(mt, access, begin, terms, tables)
         # Get access to element table
         FE, tables = self.access.table_access(tabledata, self.entity_type, mt.restriction, iq, ic)
         dof_access: L.ArrayAccess = self.symbols.coefficient_dof_access(
@@ -292,6 +278,28 @@ class FFCXBackendDefinitions:
         assert all(isinstance(o, L.Symbol) for o in output)
 
         return [L.Section(name, code, declaration, input, output, annotations)]
+
+    def _unrolled_coefficient(
+        self,
+        mt: ModifiedTerminal,
+        access: L.Symbol,
+        begin: int,
+        terms: list[L.LExpr],
+        tables: list[L.Symbol],
+    ) -> list[L.Section]:
+        """Define a coefficient as an unrolled sum of dof terms."""
+        return [
+            L.Section(
+                type(mt.terminal).__name__,
+                [],
+                [L.VariableDecl(access, L.Sum(terms))],
+                [
+                    self.symbols.coefficient_dof_access(mt.terminal, begin).array,
+                    *dict.fromkeys(tables),
+                ],
+                [access],
+            )
+        ]
 
     def _define_coordinate_dofs_lincomb(
         self,
@@ -433,7 +441,7 @@ class FFCXBackendDefinitions:
                 else _coordinate_basis_groups(tabledata.values)
             )
             for k, members in groups:
-                if tabledata.is_piecewise and tabledata.is_uniform and not tabledata.is_permuted:
+                if constant_table:
                     value = tabledata.values[0, 0, 0, k]
                     if value != 0.0:
                         terms.append(
@@ -509,7 +517,7 @@ class FFCXBackendDefinitions:
         # A derivative of a low-order coordinate basis is often constant
         # in its own direction. Store and evaluate that direction once.
         num_points = [
-            1 if np.all(factor.values == factor.values[:, :, :1, :]) else n
+            1 if is_point_independent(factor) else n
             for factor, n in zip(tabledata.tensor_factors, iq.sizes)
         ]
         assert all(
@@ -738,18 +746,7 @@ class FFCXBackendDefinitions:
                 # arrays by registers instead of vectorising tiny loops.
                 for index, extent in ((b, inner // width), (a, math.prod(num_dofs[:d]))):
                     if isinstance(index, L.Symbol):
-                        stage_code = [
-                            statement
-                            for k in range(extent)
-                            for statement in map_expressions(
-                                stage_code,
-                                lambda node: (
-                                    L.LiteralInt(k)
-                                    if isinstance(node, L.Symbol) and node == index
-                                    else None
-                                ),
-                            )
-                        ]
+                        stage_code = unroll_loop(stage_code, index, extent)
             else:
                 stage_code = a_loop(stage_code)
             code += stage_code

@@ -14,6 +14,7 @@ import logging
 import math
 import platform
 import sys
+from collections.abc import Callable
 from numbers import Integral
 from typing import Any, cast
 
@@ -23,7 +24,11 @@ import ufl
 
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration import geometry
-from ffcx.codegeneration.definitions import create_dof_index, create_quadrature_index
+from ffcx.codegeneration.definitions import (
+    create_dof_index,
+    create_quadrature_index,
+    is_point_independent,
+)
 from ffcx.codegeneration.optimizer import (
     expr_key,
     factor_scalar_sums,
@@ -34,6 +39,8 @@ from ffcx.codegeneration.optimizer import (
     reciprocal_cse_statements,
     referenced_symbol_names,
     scalar_declaration_names,
+    substitute,
+    unroll_loop,
 )
 from ffcx.codegeneration.optimizer import (
     map_expressions as _map_expressions,
@@ -44,6 +51,7 @@ from ffcx.ir.representation import IntegralIR
 from ffcx.ir.representationutils import QuadratureRule
 from ffcx.ir.sumfactorisation import (
     ContractionGroup,
+    ContractionTerm,
     SumFactorisationPlan,
     contraction_stage_size,
 )
@@ -348,6 +356,13 @@ def _evaluate_index(node, values: dict[str, int]) -> int:
     raise ValueError(f"Cannot evaluate index {node!r}.")
 
 
+def _signed_column(values) -> tuple[int, tuple[float, ...]]:
+    """Return the sign of the first nonzero value and the values scaled to make it positive."""
+    column = tuple(float(x) for x in values)
+    sign = -1 if next((v for v in column if v), 1) < 0 else 1
+    return sign, tuple(sign * v for v in column)
+
+
 def _blocked_rows(
     layouts: list[tuple[int, int, int, int]],
 ) -> tuple[int, int, dict[int, dict[int, int]]] | None:
@@ -404,31 +419,38 @@ def _mirror_lower(local: L.Symbol, indices: list[L.Symbol], n: int, width: int) 
     ]
 
 
-def _contraction_work(node) -> int:
-    """Estimate statically repeated scalar statements in a contraction tree."""
+def _repeated_work(node, work: Callable[[Any], int], declarations: bool) -> int | None:
+    """Sum the work of statements in a code tree, repeated by literal loop trip counts.
+
+    Returns None for a node that is not a list, section or loop, and 0 for
+    a loop without literal bounds.
+    """
     if isinstance(node, list):
-        return sum(_contraction_work(child) for child in node)
-    if isinstance(node, (L.Section, L.StatementList)):
-        return _contraction_work(node.statements)
+        return sum(work(child) for child in node)
+    if isinstance(node, L.Section):
+        if declarations:
+            return work(node.declarations) + work(node.statements)
+        return work(node.statements)
+    if isinstance(node, L.StatementList):
+        return work(node.statements)
     if isinstance(node, L.ForRange):
         if not isinstance(node.begin, L.LiteralInt) or not isinstance(node.end, L.LiteralInt):
             return 0
-        return int(max(0, node.end.value - node.begin.value)) * _contraction_work(node.body)
-    return int(isinstance(node, L.Statement))
+        return int(max(0, node.end.value - node.begin.value)) * work(node.body)
+    return None
+
+
+def _contraction_work(node) -> int:
+    """Estimate statically repeated scalar statements in a contraction tree."""
+    work = _repeated_work(node, _contraction_work, declarations=False)
+    return int(isinstance(node, L.Statement)) if work is None else work
 
 
 def _arithmetic_work(node) -> int:
     """Estimate scalar arithmetic in one evaluation of a generated section."""
-    if isinstance(node, list):
-        return sum(_arithmetic_work(child) for child in node)
-    if isinstance(node, L.Section):
-        return _arithmetic_work(node.declarations) + _arithmetic_work(node.statements)
-    if isinstance(node, L.StatementList):
-        return _arithmetic_work(node.statements)
-    if isinstance(node, L.ForRange):
-        if not isinstance(node.begin, L.LiteralInt) or not isinstance(node.end, L.LiteralInt):
-            return 0
-        return int(max(0, node.end.value - node.begin.value)) * _arithmetic_work(node.body)
+    work = _repeated_work(node, _arithmetic_work, declarations=True)
+    if work is not None:
+        return work
     if isinstance(node, L.VariableDecl):
         return _arithmetic_work(node.value)
     if isinstance(node, (L.ArrayDecl, L.Comment)):
@@ -489,9 +511,9 @@ class IntegralGenerator:
         # Element table name -> padded length of its final (dof) axis, for
         # contiguous loops that read zero entries past the last dof.
         self._padded_tables: dict[str, int] = {}
-        # Symmetric local arrays contracted on and above the diagonal, with the
-        # SIMD width of their row groups
-        self._upper_locals: dict[str, int] = {}
+        # Symmetric local arrays contracted on and above the diagonal, in row
+        # groups of one SIMD width
+        self._upper_locals: set[str] = set()
 
         # Element table name -> padded point count of a copy with point and
         # dof axes exchanged, read by loops that vectorise across points.
@@ -619,11 +641,14 @@ class IntegralGenerator:
 
         # Zero-pad the dof axis of tables read by padded contiguous loops.
         # Existing reads index real dofs only, so their values are unchanged.
-        for decl in element_tables:
-            if isinstance(decl, L.ArrayDecl) and decl.symbol.name in self._padded_tables:
-                size = self._padded_tables[decl.symbol.name]
+        # Weights tables read across padded points are zero-padded likewise.
+        padded = {**self._padded_tables, **self._padded_weights}
+        for decl in parts:
+            if isinstance(decl, L.ArrayDecl) and decl.symbol.name in padded:
                 values = np.asarray(decl.values)
-                pad = [(0, 0)] * (values.ndim - 1) + [(0, size - values.shape[-1])]
+                pad = [(0, 0)] * (values.ndim - 1) + [
+                    (0, padded[decl.symbol.name] - values.shape[-1])
+                ]
                 decl.values = np.pad(values, pad)
                 decl.sizes = decl.values.shape
 
@@ -650,12 +675,6 @@ class IntegralGenerator:
                     "rule repeat its last point.",
                 ],
             )
-        for decl in parts:
-            if isinstance(decl, L.ArrayDecl) and decl.symbol.name in self._padded_weights:
-                values = np.asarray(decl.values)
-                size = self._padded_weights[decl.symbol.name]
-                decl.values = np.pad(values, (0, size - values.shape[-1]))
-                decl.sizes = decl.values.shape
 
         # Drop every unread scalar declaration now the kernel body is whole.
         # Done on the LNode tree, before formatting, so it respects scopes
@@ -952,11 +971,15 @@ class IntegralGenerator:
 
         code: list[L.LNode] = []
         for sizes, body in loops.items():
+            block_updates = updates.get(sizes, [])
+            layout = None
+            if len(sizes) == 2:
+                layout = _blocked_rows([(*lay[0], *lay[1]) for lay, *_ in block_updates])
             rows = self._symmetric_blocked_contraction(
-                indices, sizes, updates.get(sizes, []), flat_table
+                indices, sizes, block_updates, layout, flat_table
             )
             if rows is None:
-                rows = self._row_blocked_contraction(indices, sizes, updates.get(sizes, []))
+                rows = self._row_blocked_contraction(indices, sizes, block_updates, layout)
             if rows is not None:
                 code.extend(rows)
                 continue
@@ -986,6 +1009,7 @@ class IntegralGenerator:
         indices: list[L.Symbol],
         sizes: tuple[int, ...],
         updates: list[tuple[tuple[tuple[Any, Any], ...], L.LExpr, list]],
+        layout: tuple[int, int, dict[int, dict[int, int]]] | None,
     ) -> list[L.LNode] | None:
         """Contract a blocked rank-two tensor one test dof at a time.
 
@@ -997,10 +1021,7 @@ class IntegralGenerator:
         fill whole contiguous row ranges of A, or if there are fewer than three
         blocks, where a strided update of A is cheaper than the row buffer.
         """
-        if len(sizes) != 2 or len(updates) < 3:
-            return None
-        layout = _blocked_rows([(*lay[0], *lay[1]) for lay, *_ in updates])
-        if layout is None:
+        if len(updates) < 3 or layout is None:
             return None
         test, trial = indices
         n0, n1 = sizes
@@ -1032,6 +1053,7 @@ class IntegralGenerator:
         indices: list[L.Symbol],
         sizes: tuple[int, ...],
         updates: list[tuple[tuple[tuple[Any, Any], ...], L.LExpr, list]],
+        layout: tuple[int, int, dict[int, dict[int, int]]] | None,
         flat_table,
     ) -> list[L.LNode] | None:
         """Contract a symmetric blocked rank-two tensor from its upper blocks.
@@ -1044,10 +1066,7 @@ class IntegralGenerator:
         three mirrored blocks whose local arrays fit in a small budget, so the
         saved arithmetic pays for the extra pass. Returns ``None`` otherwise.
         """
-        if len(sizes) != 2 or sizes[0] != sizes[1] or not updates:
-            return None
-        layout = _blocked_rows([(*lay[0], *lay[1]) for lay, *_ in updates])
-        if layout is None or layout[0] != layout[1]:
+        if layout is None or sizes[0] != sizes[1] or layout[0] != layout[1]:
             return None
         bs, _, rows = layout
         if len(rows) != bs:
@@ -1298,13 +1317,8 @@ class IntegralGenerator:
         """
         A = self.backend.symbols.element_tensor
         arguments = [self.backend.symbols.argument_loop_index(k) for k in range(2)]
-        scalar_type = np.dtype(self.backend.access.options["scalar_type"])
-        scalar_bytes = scalar_type.itemsize
-        if np.issubdtype(scalar_type, np.complexfloating):
-            real_bytes = scalar_bytes // 2
-        else:
-            real_bytes = scalar_bytes
-        width = _LOCAL_TENSOR_ALIGNMENT_BYTES // real_bytes
+        scalar_bytes = np.dtype(self.backend.access.options["scalar_type"]).itemsize
+        width = self._simd_width
 
         out: list[L.Section] = []
         prologue: list[L.LNode] = []
@@ -1350,7 +1364,7 @@ class IntegralGenerator:
             scatter: list[L.LNode] = []
             locals_: dict[int, L.Symbol] = {}
             names = [index.name for index in indices]
-            entries = [self._describe_entries(lhs, names) for lhs, _ in groups.values()]
+            entries = [self._describe_entries(lhs, indices) for lhs, _ in groups.values()]
             for g, (lhs, rhs) in enumerate(groups.values()):
                 if g in equivalent:
                     continue
@@ -1387,7 +1401,7 @@ class IntegralGenerator:
                 and _MIN_SYMMETRIC_ROW_GROUPS * width <= n <= _MAX_SYMMETRIC_ROW_GROUPS * width
             ):
                 # Split into row groups after optimisation (see _split_upper_rows)
-                self._upper_locals.update({locals_[g].name: width for g in symmetric})
+                self._upper_locals.update(locals_[g].name for g in symmetric)
                 symmetric_locals = ", ".join(locals_[g].name for g in sorted(symmetric))
                 prologue += [
                     L.Comment(f"Symmetric blocks ({symmetric_locals}) are accumulated"),
@@ -1493,7 +1507,7 @@ class IntegralGenerator:
             full = [s for s, a in zip(statements, names) if a not in self._upper_locals]
             if not upper or not isinstance(inner.end, L.LiteralInt):
                 return [node]
-            width = min(self._upper_locals[a] for a in names if a in self._upper_locals)
+            width = self._simd_width
             n, size = node.end.value, inner.end.value
             loops: list[L.LNode] = []
             for start in range(0, n, width):
@@ -1519,6 +1533,15 @@ class IntegralGenerator:
             out.append(node)
         return out
 
+    @property
+    def _simd_width(self) -> int:
+        """Real scalars in one aligned SIMD vector."""
+        scalar_type = np.dtype(self.backend.access.options["scalar_type"])
+        real_bytes = scalar_type.itemsize
+        if np.issubdtype(scalar_type, np.complexfloating):
+            real_bytes //= 2
+        return _LOCAL_TENSOR_ALIGNMENT_BYTES // int(real_bytes)
+
     def _block_layout(
         self, lhs: L.ArrayAccess, indices: list[L.Symbol]
     ) -> tuple[int, int, int, int] | None:
@@ -1543,21 +1566,21 @@ class IntegralGenerator:
         row, column = divmod(base, shape[1])
         return steps[0] // shape[1], row, steps[1], column
 
-    def _describe_entries(self, lhs: L.ArrayAccess, names: list[str]) -> str:
+    def _describe_entries(self, lhs: L.ArrayAccess, indices: list[L.Symbol]) -> str:
         """Describe the entries of A updated by a block, for code comments."""
-        shape = self.ir.expression.tensor_shape
-        try:
-            zero = dict.fromkeys(names, 0)
-            base = _evaluate_index(lhs.indices, zero)
-            steps = [_evaluate_index(lhs.indices, {**zero, n: 1}) - base for n in names]
-        except (KeyError, TypeError, ValueError):
-            return "a block of A"
+        names = [index.name for index in indices]
         # Express the flat entry as (row, column) for a rank-two tensor.
-        if len(shape) == 2 and len(names) == 2 and steps[0] % shape[1] == 0 and steps[1] < shape[1]:
-            row, column = divmod(base, shape[1])
-            terms = [(steps[0] // shape[1], names[0], row), (steps[1], names[1], column)]
+        layout = self._block_layout(lhs, indices)
+        if layout is not None:
+            row_step, row, column_step, column = layout
+            terms = [(row_step, names[0], row), (column_step, names[1], column)]
         else:
-            terms = [(steps[0], names[0], base)]
+            try:
+                base = _evaluate_index(lhs.indices, dict.fromkeys(names, 0))
+                step = _evaluate_index(lhs.indices, {**dict.fromkeys(names, 0), names[0]: 1})
+            except (KeyError, TypeError, ValueError):
+                return "a block of A"
+            terms = [(step - base, names[0], base)]
 
         def affine(scale, name, offset):
             text = name if scale == 1 else f"{scale}*{name}"
@@ -1957,7 +1980,6 @@ class IntegralGenerator:
                 values = next_values
             projected[key] = values
 
-        A = self.backend.symbols.element_tensor
         code += [
             L.Comment("--- Element tensor updates ---"),
             L.Comment(
@@ -1980,12 +2002,7 @@ class IntegralGenerator:
                 code.append(L.VariableDecl(value, L.Sum(summands)))
                 dofs = [L.MultiIndex([L.LiteralInt(i) for i in index], sizes)]
                 for target in row.targets:
-                    indices = self._element_tensor_indices(target.blockmap, target.blockdata, dofs)
-                    code.append(
-                        L.AssignAdd(
-                            A[L.MultiIndex(indices, self.ir.expression.tensor_shape)], value
-                        )
-                    )
+                    code.append(L.AssignAdd(self._element_tensor_entry(target, dofs), value))
         return [L.Scope(code)]
 
     def _sum_factorised_small_matrix(
@@ -2016,7 +2033,7 @@ class IntegralGenerator:
         # Pure value tables already work well with the loop contraction.
         if any(
             not any(
-                np.all(factor.values == factor.values[:, :, :1, :])
+                is_point_independent(factor)
                 for td in term.tables
                 for factor in (td.tensor_factors or [])
             )
@@ -2090,15 +2107,12 @@ class IntegralGenerator:
                 tables.append(table)
                 canonical = set()
                 for i, j in itertools.product(range(2), repeat=2):
-                    col = tuple(float(x) for x in table[:, i, j])
-                    sign = -1 if next((v for v in col if v), 1) < 0 else 1
-                    canonical.add(tuple(sign * v for v in col))
+                    canonical.add(_signed_column(table[:, i, j])[1])
                 counts.append(len(canonical))
             basis_tables[key] = tables
             orders[key] = tuple(sorted(range(iq.dim), key=lambda d: (counts[d], -d)))
 
         values = {}
-        A = self.backend.symbols.element_tensor
         for row in group.rows:
             terms = list(row.single) + [term for members in row.combined for term in members]
             for indices in itertools.product(*(range(math.prod(shape)) for shape in sizes)):
@@ -2109,11 +2123,8 @@ class IntegralGenerator:
                     order = orders[term.stage_keys[-1]]
                     for d in order:
                         table = basis_tables[term.stage_keys[-1]][d]
-                        column = tuple(float(x) for x in table[:, dofs[0][d], dofs[1][d]])
-                        first = next((v for v in column if v), 1)
-                        if first < 0:
-                            sign = -sign
-                            column = tuple(-v for v in column)
+                        column_sign, column = _signed_column(table[:, dofs[0][d], dofs[1][d]])
+                        sign *= column_sign
                         columns.append(column)
                     projection = project(term.factor, tuple(columns), (), order)
                     contributions[projection] += sign
@@ -2135,12 +2146,7 @@ class IntegralGenerator:
                     for dof, shape in zip(dofs, sizes)
                 ]
                 for target in row.targets:
-                    output = self._element_tensor_indices(
-                        target.blockmap, target.blockdata, B_indices
-                    )
-                    code.append(
-                        L.AssignAdd(A[L.MultiIndex(output, self.ir.expression.tensor_shape)], value)
-                    )
+                    code.append(L.AssignAdd(self._element_tensor_entry(target, B_indices), value))
         return [L.Scope(code)]
 
     def _sum_factorised_contraction(
@@ -2188,19 +2194,9 @@ class IntegralGenerator:
             # Last argument innermost, so the innermost loop is contiguous in A
             for B_index in reversed(indices):
                 if direction == last and num_points <= 3 and B_index.sizes[direction] <= 3:
-                    index = B_index.local_index(direction)
-                    body = [
-                        statement
-                        for k in range(B_index.sizes[direction])
-                        for statement in _map_expressions(
-                            body,
-                            lambda node: (
-                                L.LiteralInt(k)
-                                if isinstance(node, L.Symbol) and node == index
-                                else None
-                            ),
-                        )
-                    ]
+                    body = unroll_loop(
+                        body, B_index.local_index(direction), B_index.sizes[direction]
+                    )
                     continue
                 body = [
                     L.ForRange(B_index.local_index(direction), 0, B_index.sizes[direction], body)
@@ -2260,14 +2256,7 @@ class IntegralGenerator:
                     if first_point:
                         # Initialise a three-point reduction from its first
                         # point, leaving a two-point loop and no zeroing pass.
-                        initial_basis = _map_expressions(
-                            basis,
-                            lambda node: (
-                                L.LiteralInt(0)
-                                if isinstance(node, L.Symbol) and node == qs
-                                else None
-                            ),
-                        )
+                        initial_basis = substitute(basis, qs, L.LiteralInt(0))
                         level_code[s] += [
                             L.VariableDecl(scale, initial_basis),
                             L.ForRange(
@@ -2316,7 +2305,6 @@ class IntegralGenerator:
         # the last direction's; row_code inside those of the other arguments
         pre_rows: list[L.LNode] = []
         row_code: list[L.LNode] = []
-        A = self.backend.symbols.element_tensor
         for row in group.rows:
             single = [(last_stage(term), term.tables) for term in row.single]
             combined = []
@@ -2369,37 +2357,33 @@ class IntegralGenerator:
             declarations.append(L.ArrayDecl(acc, sizes=num_inner))
             # Each dof has an independent accumulator. Exposing the fixed-size
             # row lets the compiler pack the updates without reassociating sums.
-            row_body: list[L.LNode] = [
-                L.ForRange(j, 0, num_inner, [L.Assign(acc[j], L.LiteralFloat(0.0))]),
-                L.ForRange(
-                    q,
-                    0,
-                    num_points,
-                    [L.AssignAdd(acc[dof], update(L.LiteralInt(dof))) for dof in range(num_inner)],
-                ),
-            ]
+            row_body: list[L.LNode] = []
             if num_points <= 3:
                 # Expose short quadrature reductions so each row entry can
                 # stay in a register under ordinary optimisation flags.
-                row_body = []
                 for point in range(num_points):
                     value = L.LiteralInt(point)
                     for dof in range(num_inner):
-                        contribution = _map_expressions(
-                            update(L.LiteralInt(dof)),
-                            lambda node: (
-                                value if isinstance(node, L.Symbol) and node == q else None
-                            ),
-                        )
+                        contribution = substitute(update(L.LiteralInt(dof)), q, value)
                         assign = L.Assign if point == 0 else L.AssignAdd
                         row_body.append(assign(acc[dof], contribution))
-            store = []
-            for target in row.targets:
-                A_indices = self._element_tensor_indices(
-                    target.blockmap, target.blockdata, B_indices
-                )
-                A_index = L.MultiIndex(A_indices, self.ir.expression.tensor_shape)
-                store.append(L.AssignAdd(A[A_index], acc[j]))
+            else:
+                row_body += [
+                    L.ForRange(j, 0, num_inner, [L.Assign(acc[j], L.LiteralFloat(0.0))]),
+                    L.ForRange(
+                        q,
+                        0,
+                        num_points,
+                        [
+                            L.AssignAdd(acc[dof], update(L.LiteralInt(dof)))
+                            for dof in range(num_inner)
+                        ],
+                    ),
+                ]
+            store = [
+                L.AssignAdd(self._element_tensor_entry(target, B_indices), acc[j])
+                for target in row.targets
+            ]
             row_body.append(L.ForRange(j, 0, num_inner, store))
             row_code += [
                 L.Comment("--- Final-direction contraction and element tensor updates ---"),
@@ -2480,6 +2464,14 @@ class IntegralGenerator:
                 A_indices.append(tabledata.block_size * index.global_index + offset)
         return A_indices
 
+    def _element_tensor_entry(
+        self, target: ContractionTerm, B_indices: list[L.MultiIndex]
+    ) -> L.ArrayAccess:
+        """Return the element tensor entry updated by a block at given argument dofs."""
+        indices = self._element_tensor_indices(target.blockmap, target.blockdata, B_indices)
+        A = self.backend.symbols.element_tensor
+        return L.ArrayAccess(A, L.MultiIndex(indices, self.ir.expression.tensor_shape))
+
     def _split_quadrature_loop(
         self,
         code: list[L.LNode],
@@ -2523,38 +2515,35 @@ class IntegralGenerator:
         if not intermediates_fw:
             return None
 
+        contraction_work = _contraction_work(contraction)
         if not _contains_vectorizable_mathfunction(evaluation):
             # Separate unrolled geometry evaluation so SIMD can run across
             # points. Tiny rules, retained reductions and contractions that
             # dominate evaluation do not amortise the additional cache pass.
-            jacobians = [
-                section for section in evaluation if getattr(section, "name", None) == "Jacobian"
-            ]
             reductions = [
                 section
                 for section in evaluation
                 if getattr(section, "name", None) in ("Jacobian", "Coefficient")
             ]
+            names = {getattr(section, "name", None) for section in reductions}
+            evaluation_work = _arithmetic_work(evaluation)
             if (
-                not jacobians
+                "Jacobian" not in names
                 or quadrature_rule.weights.size < 8
                 or len(intermediates_fw) > 12
                 or any(_contraction_work(section) for section in reductions)
-                or _arithmetic_work(evaluation) < _contraction_work(contraction)
+                or evaluation_work < contraction_work
                 # A cheap coefficient evaluation followed by a tiny load
                 # does not reliably amortise the extra cache pass.
-                or (
-                    any(getattr(section, "name", None) == "Coefficient" for section in reductions)
-                    and _arithmetic_work(evaluation) < 64
-                    and _contraction_work(contraction) < 16
-                )
+                or ("Coefficient" in names and evaluation_work < 64 and contraction_work < 16)
             ):
                 return None
         # On x86-64 Linux the evaluation loop can call libmvec. Elsewhere,
         # only split when the contraction is expensive enough to amortise
         # the fw cache without that benefit.
-        if not _supports_vector_math_loop_split() and (
-            _contraction_work(contraction) < _UNSUPPORTED_VECTOR_MATH_MIN_CONTRACTION_WORK
+        if (
+            not _supports_vector_math_loop_split()
+            and contraction_work < _UNSUPPORTED_VECTOR_MATH_MIN_CONTRACTION_WORK
         ):
             return None
 
@@ -2570,11 +2559,7 @@ class IntegralGenerator:
 
         evaluation, paddable, transposed = self._point_major(evaluation, index, quadrature_rule)
         points = num_points
-        scalar_type = np.dtype(self.backend.access.options["scalar_type"])
-        real_bytes = scalar_type.itemsize
-        if np.issubdtype(scalar_type, np.complexfloating):
-            real_bytes //= 2
-        width = _LOCAL_TENSOR_ALIGNMENT_BYTES // real_bytes
+        width = self._simd_width
         padded = -(-num_points // width) * width
         # Run whole SIMD vectors across points. Factors at the padded points
         # are cached but never contracted. Limit the padding, since a loop
