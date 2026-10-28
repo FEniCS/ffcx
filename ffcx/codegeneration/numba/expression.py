@@ -47,7 +47,8 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     entity_local_index = numba.carray(_entity_local_index, ({sizes.local_index}))
     quadrature_permutation = numba.carray(_quadrature_permutation, ({sizes.permutation}))
     """
-    format = Formatter(options["scalar_type"])  # type: ignore
+    # pyrefly: ignore[bad-argument-type]
+    format = Formatter(options["scalar_type"])
     body = format(parts)
     body = "\n".join(["    " + line for line in body.split("\n")])
 

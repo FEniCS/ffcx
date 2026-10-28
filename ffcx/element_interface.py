@@ -42,9 +42,9 @@ def map_facet_points(
     points: npt.NDArray[np.float64], facet: int, cellname: str
 ) -> npt.NDArray[np.float64]:
     """Map points from a reference facet to a physical facet."""
-    geom = np.asarray(basix.geometry(_CellType[cellname]))
+    geom: npt.NDArray[np.float64] = np.asarray(basix.geometry(_CellType[cellname]))
     facet_vertices = [geom[i] for i in basix.topology(_CellType[cellname])[-2][facet]]
-    return np.asarray(
+    mapped: npt.NDArray[np.float64] = np.asarray(
         [
             facet_vertices[0]
             + sum((i - facet_vertices[0]) * j for i, j in zip(facet_vertices[1:], p))
@@ -52,18 +52,20 @@ def map_facet_points(
         ],
         dtype=np.float64,
     )
+    return mapped
 
 
 def map_edge_points(
     points: npt.NDArray[np.float64], edge: int, cellname: str
 ) -> npt.NDArray[np.float64]:
     """Map points from a reference edge to a physical edge."""
-    geom = np.asarray(basix.geometry(_CellType[cellname]))
+    geom: npt.NDArray[np.float64] = np.asarray(basix.geometry(_CellType[cellname]))
     edge_vertices = [geom[i] for i in basix.topology(_CellType[cellname])[-3][edge]]
-    return np.asarray(
+    mapped: npt.NDArray[np.float64] = np.asarray(
         [
             edge_vertices[0] + sum((i - edge_vertices[0]) * j for i, j in zip(edge_vertices[1:], p))
             for p in points
         ],
         dtype=np.float64,
     )
+    return mapped

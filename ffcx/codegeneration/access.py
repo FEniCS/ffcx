@@ -77,15 +77,15 @@ class FFCXBackendAccess:
         """Format a terminal."""
         e = mt.terminal
         # Call appropriate handler, depending on the type of e
-        handler = self.call_lookup.get(type(e), False)  # type: ignore
+        handler = self.call_lookup.get(type(e))
 
-        if not handler:
+        if handler is None:
             # Look for parent class types instead
             for k in self.call_lookup.keys():
                 if isinstance(e, k):
                     handler = self.call_lookup[k]
                     break
-        if handler:
+        if handler is not None:
             return handler(mt, tabledata, quadrature_rule)
         else:
             raise RuntimeError(f"Not handled: {type(e)}")
