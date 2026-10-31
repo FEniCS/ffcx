@@ -37,6 +37,7 @@ from ffcx.ir.elementtables import (
 from ffcx.ir.representationutils import QuadratureRule
 from ffcx.ir.sumfactorisation import (
     SumFactorisationPlan,
+    contraction_costs,
     evaluation_order,
     evaluation_stage_sizes,
     factorises,
@@ -334,9 +335,18 @@ def _compute_integral_ir(
     plan = None
     if sum_factorise:
         max_scalars = _max_sum_factorisation_scalars(F, _argkeys, quadrature_rule, p)
-        plan = plan_sum_factorisation(quadrature_rule, block_contributions, max_scalars)
+        # A bilinear form may have too few dofs for the stages to save
+        # enough work to pay for their loops. A linear form's contraction is
+        # cheap either way, and evaluating its coefficients one direction
+        # at a time pays.
+        pays = True
+        if rank > 1:
+            whole, staged = contraction_costs(quadrature_rule.num_points, block_contributions)
+            pays = whole >= float(p["sum_factorization_min_speedup"]) * staged
+        if pays:
+            plan = plan_sum_factorisation(quadrature_rule, block_contributions, max_scalars)
         if plan is None:
-            # The arrays of the contraction don't fit the stack limit
+            # The contraction doesn't pay, or its arrays don't fit the stack limit
             _strip_tensor_factors(F)
             block_contributions = _block_contributions(F, argument_factorization, tables, rank, p)
 

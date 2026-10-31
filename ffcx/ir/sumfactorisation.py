@@ -200,6 +200,40 @@ def _group_size(group: ContractionGroup, num_points: list[int]) -> int:
     )
 
 
+def contraction_costs(
+    num_points: list[int],
+    block_contributions: dict[tuple[tuple[int, ...], ...], list[BlockDataT]],
+) -> tuple[int, int]:
+    """Estimate the multiply-adds contracting the integrand factors with the argument tables.
+
+    Returns the estimates for ordinary quadrature and for contracting one
+    direction at a time. Ordinary quadrature, at each point, sums the
+    terms of each block over the dofs of all but the last argument for each
+    of its tables, then multiplies by that table. One direction at a time,
+    each distinct stage sums over its direction's points for the dofs of
+    the directions contracted so far and the points of the others.
+    """
+    whole, staged = 0, 0
+    stages: set[tuple] = set()
+    for blocks in block_contributions.values():
+        last_tables = set()
+        for blockdata in blocks:
+            factor = blockdata.factor_indices_comp_indices[0][0]
+            tables = [mad.tabledata for mad in blockdata.ma_data]
+            num_dofs = [math.prod(int(f.values.shape[-1]) for f in _factors(td)) for td in tables]
+            whole += math.prod(num_dofs[:-1])
+            last_tables.add(tables[-1].name)
+            for d, key in enumerate(_stage_keys(factor, tables)[1:]):
+                if key not in stages:
+                    stages.add(key)
+                    dofs = math.prod(
+                        int(_factors(td)[e].values.shape[-1]) for td in tables for e in range(d + 1)
+                    )
+                    staged += math.prod(num_points[d:]) * dofs
+        whole += len(last_tables) * math.prod(num_dofs)
+    return whole * math.prod(num_points), staged
+
+
 def plan_sum_factorisation(
     quadrature_rule: QuadratureRule,
     block_contributions: dict[tuple[tuple[int, ...], ...], list[BlockDataT]],

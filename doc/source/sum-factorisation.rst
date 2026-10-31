@@ -21,9 +21,13 @@ tensor-product representation and a tensor-product quadrature rule.
 FFCx constructs tensor-product rules for the supported quadrature schemes
 on these cells.
 
-FFCx preserves the supplied element's degree-of-freedom (DOF) ordering.
-Use Basix's ``create_tp_element`` to create an element with tensor-product
-DOF ordering, then wrap it for UFL:
+Lagrange and discontinuous Lagrange elements created with
+``basix.ufl.element`` are sum factorised. They number their degrees of
+freedom (DOFs) by mesh entity, so the generated kernel reorders the DOFs
+it reads into tensor-product order and maps its contributions back to the
+element's DOFs. FFCx preserves the supplied element's DOF ordering.
+Elements created with Basix's ``create_tp_element`` number their DOFs in
+tensor-product order, which avoids the reordering:
 
 .. code-block:: python
 
@@ -76,6 +80,17 @@ disabling the option. A coefficient or geometry table without tensor
 factors can still be evaluated normally inside a supported contraction.
 FFCx also uses ordinary quadrature when a kernel's arrays would not fit the
 stack limit described below.
+
+With few DOFs, contracting one direction at a time saves little work, and
+its loops cost more per operation than ordinary quadrature's. For a
+bilinear form, FFCx estimates the multiply-adds that contracting the
+argument tables takes each way, and uses sum factorisation only if it cuts
+them by at least the factor ``sum_factorization_min_speedup``, which
+defaults to ``1.5``. Low degree forms with several terms, such as a Poisson
+operator with degree 1 elements on quadrilaterals, then use ordinary
+quadrature. Linear forms are always sum factorised, since evaluating their
+coefficients one direction at a time pays even at low degree. Set the
+option to ``0`` to use sum factorisation wherever it is available.
 
 Stack usage
 -----------

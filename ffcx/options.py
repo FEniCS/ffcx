@@ -43,6 +43,15 @@ FFCX_DEFAULT_OPTIONS = {
         "a single factor doesn't fit. 0 for no limit.",
         None,
     ),
+    "sum_factorization_min_speedup": (
+        float,
+        1.5,
+        "Use sum factorization for a bilinear form only if it is estimated to cut the "
+        "multiply-adds contracting the integrand with the argument tables by at least this "
+        "factor. Its loops cost more per operation, so with few dofs ordinary quadrature is "
+        "faster. 0 to use it wherever available.",
+        None,
+    ),
     "table_rtol": (
         float,
         1e-6,

@@ -41,6 +41,15 @@ def create_tensor_product_element(cell_type, degree, variant, shape=None):
         return basix.ufl.blocked_element(uflelement, shape=shape)
 
 
+# Sum factorise whenever possible, however few the dofs, to test the contraction
+FORCE_SUM_FACTORISATION = {"sum_factorization_min_speedup": 0}
+DEFAULT_MIN_SPEEDUP = {
+    "sum_factorization_min_speedup": ffcx.options.FFCX_DEFAULT_OPTIONS[
+        "sum_factorization_min_speedup"
+    ][1]
+}
+
+
 def jit_compile(forms, options, compile_args, cache_dir):
     """Compile forms into a module."""
     compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
@@ -264,14 +273,17 @@ def assert_matches_fused_loop(args, compile_args, tmp_path, options=None):
         generate_kernel(
             [form], dtype, {"scalar_type": dtype, **options}, compile_args, tmp_path / cache_dir
         )
-        for options, cache_dir in (({"sum_factorization": False}, "ref"), (options or {}, "sf"))
+        for options, cache_dir in (
+            ({"sum_factorization": False}, "ref"),
+            ({**FORCE_SUM_FACTORISATION, **(options or {})}, "sf"),
+        )
     ]
     assert_kernels_match(kernels, form, num_coefficients, cell_type, dtype)
 
 
 def integrands(form, dtype, **options):
     """Return the quadrature rules and IR of the integrands of a form."""
-    options = ffcx.options.get_options({"scalar_type": dtype, **options})
+    options = ffcx.options.get_options({"scalar_type": dtype, **FORCE_SUM_FACTORISATION, **options})
     analysis = ffcx.analysis.analyze_ufl_objects(
         [form], dtype, do_cancel_jacobian_products=options["do_cancel_jacobian_products"]
     )
@@ -344,7 +356,11 @@ def compiled_forms(tmp_path_factory, compile_args):
         key = (names, cell_type, P, dtype, sum_factorization, entity_ordered)
         if key not in modules:
             forms = sum_factorisation_forms(cell_type, P, entity_ordered)
-            options = {"scalar_type": dtype, "sum_factorization": sum_factorization}
+            options = {
+                "scalar_type": dtype,
+                "sum_factorization": sum_factorization,
+                **FORCE_SUM_FACTORISATION,
+            }
             compiled, module = jit_compile(
                 [forms[name][0] for name in names],
                 options,
@@ -378,7 +394,18 @@ def check_form(compiled_forms, names, name, P, cell_type, dtype, entity_ordered=
 def test_sum_factorisation_default_and_opt_out(sum_factorization, expected, cell_type):
     form, _ = sum_factorisation_forms(cell_type, 2)["mass"]
     options = {} if sum_factorization is None else {"sum_factorization": sum_factorization}
-    assert sum_factorised(form, "float64", **options) == expected
+    assert sum_factorised(form, "float64", **DEFAULT_MIN_SPEEDUP, **options) == expected
+
+
+@pytest.mark.parametrize(
+    "name,P,expected",
+    [("laplace", 1, False), ("laplace", 2, True), ("mass", 1, True), ("linear", 1, True)],
+)
+def test_sum_factorisation_min_speedup(name, P, expected):
+    """Bilinear forms with too few dofs to save enough work use ordinary quadrature."""
+    form, _ = sum_factorisation_forms(basix.CellType.quadrilateral, P)[name]
+    assert sum_factorised(form, "float64", **DEFAULT_MIN_SPEEDUP) == expected
+    assert sum_factorised(form, "float64")
 
 
 @pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
