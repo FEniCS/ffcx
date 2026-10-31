@@ -161,3 +161,22 @@ def test_reciprocal_cse(dtype):
     # (possibly) wider type of r dictates the expression dtype
     assert r.symbol.dtype == dtype
     assert all(statement.value.dtype == dtype for statement in exprs_recip)
+
+
+def test_library_calls_leave_the_evaluation_loop(compile_args):
+    """A library math call moves to a loop of its own, so evaluation can vectorise."""
+    element = basix.ufl.element("Lagrange", "tetrahedron", 2, shape=(3,))
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+    space = ufl.FunctionSpace(domain, element)
+    state, test = ufl.Coefficient(space), ufl.TestFunction(space)
+    F = ufl.Identity(3) + ufl.grad(state)
+    energy = (ufl.inner(F, F) - 3) / 2 - ufl.ln(ufl.det(F)) + 0.625 * ufl.ln(ufl.det(F)) ** 2
+    residual = ufl.derivative(energy * ufl.dx(metadata={"quadrature_degree": 4}), state, test)
+
+    _, _, (_, implementation) = ffcx.codegeneration.jit.compile_forms(
+        [residual], options={"scalar_type": "float64"}, cffi_extra_compile_args=compile_args
+    )
+    calls = re.findall(r"\blog\((\w+)", implementation)
+    assert calls and all(argument.startswith("call_input") for argument in calls)
+    loop = implementation.index("Evaluate and cache weighted scalar factors")
+    assert "log(" not in implementation[loop:]

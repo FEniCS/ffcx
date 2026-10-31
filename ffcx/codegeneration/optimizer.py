@@ -752,10 +752,14 @@ def map_expressions(node, fn):
             node.description,
         )
     if isinstance(node, L.StatementList):
-        return L.StatementList(map_expressions(list(node.statements), fn))
+        return type(node)(map_expressions(list(node.statements), fn))
     if isinstance(node, L.ForRange):
         return L.ForRange(
-            node.index, node.begin, node.end, map_expressions(list(node.body.statements), fn)
+            node.index,
+            node.begin,
+            node.end,
+            map_expressions(list(node.body.statements), fn),
+            keep_rolled=node.keep_rolled,
         )
     if isinstance(node, L.VariableDecl):
         value = None if node.value is None else map_expressions(node.value, fn)

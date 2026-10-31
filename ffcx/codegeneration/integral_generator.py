@@ -172,6 +172,21 @@ def _contains_vectorizable_mathfunction(node) -> bool:
     return False
 
 
+# Math functions that remain library calls in C rather than single
+# instructions. Without -ffast-math (which declares the glibc SIMD variants
+# and drops errno), a call stops the vectorisation of its whole loop.
+_LIBRARY_MATH_FUNCTIONS = frozenset(
+    _VECTORIZABLE_MATH_FUNCTIONS | {"sqrt", "power", "atan_2", "bessel_j", "bessel_y"}
+)
+
+
+def _library_calls(node) -> list[L.MathFunction]:
+    """Return the library math calls in an expression, outermost first."""
+    if isinstance(node, L.MathFunction) and node.function in _LIBRARY_MATH_FUNCTIONS:
+        return [node]
+    return [call for child in children(node) for call in _library_calls(child)]
+
+
 def _supports_vector_math_loop_split() -> bool:
     """Return whether the current JIT host has the required vector libm ABI."""
     return sys.platform.startswith("linux") and platform.machine().lower() in {"amd64", "x86_64"}
@@ -2662,6 +2677,13 @@ class IntegralGenerator:
                 L.VariableDecl(fw.symbol, L.ArrayAccess(caches[fw.symbol.name], [index]))
                 for fw in intermediates_fw
             ]
+            prelude: list[L.LNode] = []
+            body: list[L.LNode] = [*evaluation, *store]
+            isolated = self._isolate_library_calls(evaluation, index, points)
+            if isolated is not None:
+                prelude, evaluation, loaded = isolated
+                # Values loaded only to form a call's argument are now unread
+                body = prune_dead_scalars([*evaluation, *store], loaded)
             evaluate = ["Evaluate and cache weighted scalar factors at quadrature points."]
             if points > num_points:
                 extra = (
@@ -2674,8 +2696,9 @@ class IntegralGenerator:
                     f"vectors; only the first {num_points} points are contracted below.",
                 ]
             return declarations + [
+                *prelude,
                 *[L.Comment(c) for c in evaluate],
-                L.ForRange(index, 0, points, evaluation + store),
+                L.ForRange(index, 0, points, body),
                 L.Comment("Reuse cached factors to contract argument tables."),
                 L.create_nested_for_loops([iq], load + contraction),
             ]
@@ -2715,6 +2738,157 @@ class IntegralGenerator:
             L.Comment("Tile quadrature points to bound temporary storage for weighted factors."),
             L.ForRange(tile_index, 0, num_tiles, tile_body),
         ]
+
+    def _isolate_library_calls(
+        self, evaluation: list[L.LNode], index: L.Symbol, points: int
+    ) -> tuple[list[L.LNode], list[L.LNode], set[str]] | None:
+        """Move library math calls out of a loop over quadrature points.
+
+        A call such as log(J) keeps the whole evaluation loop scalar unless
+        the native compiler may vectorise it, which for GCC needs
+        -ffast-math. Instead, a first loop evaluates each call's arguments
+        at every point, recomputing the statements they depend on, and a
+        second applies the function. The evaluation loop then reads the
+        results from an array and vectorises under any flags; only the
+        short call loop may stay scalar.
+
+        Returns the loops to place before the evaluation loop, the rewritten
+        evaluation and the scalars it now loads, which may have no reader
+        left; or ``None`` if the loop has no calls, statements other than
+        scalar definitions, or nested calls.
+        """
+        flat: list[L.LNode] = []
+
+        def walk(node):
+            if isinstance(node, list):
+                for n in node:
+                    walk(n)
+            elif isinstance(node, L.Section):
+                walk(list(node.declarations))
+                walk(list(node.statements))
+            elif isinstance(node, L.StatementList):
+                walk(list(node.statements))
+            else:
+                flat.append(node)
+
+        walk(evaluation)
+        definitions: dict[str, tuple[int, L.Symbol, L.LExpr]] = {}
+        calls: dict[tuple, tuple[int, L.MathFunction]] = {}
+        for position, node in enumerate(flat):
+            if isinstance(node, L.Comment) or (
+                isinstance(node, L.VariableDecl) and node.value is None
+            ):
+                continue
+            if isinstance(node, L.VariableDecl):
+                symbol, value = node.symbol, node.value
+            elif (
+                type(node) is L.Statement
+                and type(node.expr) is L.Assign
+                and isinstance(node.expr.lhs, L.Symbol)
+            ):
+                symbol, value = node.expr.lhs, node.expr.rhs
+            else:
+                return None
+            if symbol.name in definitions:
+                return None
+            definitions[symbol.name] = (position, symbol, value)
+            for call in _library_calls(value):
+                if any(_library_calls(arg) for arg in call.args):
+                    return None
+                calls.setdefault(expr_key(call), (position, call))
+        if not calls:
+            return None
+
+        results: dict[tuple, L.ArrayAccess] = {}
+
+        def use_results(node):
+            if isinstance(node, L.MathFunction) and expr_key(node) in results:
+                return results[expr_key(node)]
+            return None
+
+        # Values computed for the arguments are stored at each point and
+        # loaded, not recomputed, by later argument loops and the evaluation.
+        stored: dict[str, L.Symbol] = {}
+        loops: list[L.LNode] = []
+        for key, (position, call) in calls.items():
+            # The statements the arguments depend on, in program order
+            needed: set[str] = set()
+            pending = [name for arg in call.args for name in referenced_symbol_names([arg])]
+            while pending:
+                name = pending.pop()
+                if name in needed or name not in definitions:
+                    continue
+                needed.add(name)
+                if name not in stored:
+                    pending += referenced_symbol_names([definitions[name][2]])
+
+            def from_arrays(node):
+                # Argument loops read earlier values from their arrays, so
+                # they declare no scalars of their own
+                if isinstance(node, L.Symbol) and node.name in stored:
+                    return stored[node.name][index]
+                return use_results(node)
+
+            slice_: list[L.LNode] = []
+            for _, symbol, value in sorted(definitions[n] for n in needed):
+                if symbol.name in stored:
+                    continue
+                value = _map_expressions(value, from_arrays)
+                if _library_calls(value):
+                    return None
+                array = self.new_temp_symbol("call_input", dtype=symbol.dtype)
+                loops.append(L.ArrayDecl(array, sizes=points))
+                slice_.append(L.Assign(array[index], value))
+                stored[symbol.name] = array
+            arguments: list[L.LExpr] = []
+            for arg in call.args:
+                arg = _map_expressions(arg, from_arrays)
+                if isinstance(arg, L.ArrayAccess):
+                    arguments.append(arg)
+                elif isinstance(arg, (L.LiteralFloat, L.LiteralInt)):
+                    arguments.append(arg)
+                else:
+                    array = self.new_temp_symbol("call_arg", dtype=L.DataType.SCALAR)
+                    loops.append(L.ArrayDecl(array, sizes=points))
+                    slice_.append(L.Assign(array[index], arg))
+                    arguments.append(array[index])
+            value = self.new_temp_symbol("call_value", dtype=L.DataType.SCALAR)
+            loops += [
+                L.ArrayDecl(value, sizes=points),
+                L.ForRange(index, 0, points, slice_),
+                L.ForRange(
+                    index,
+                    0,
+                    points,
+                    [L.Assign(value[index], L.MathFunction(call.function, arguments))],
+                ),
+            ]
+            results[key] = value[index]
+        # Bound the stack taken by the stored values, as for the fw cache
+        if len(stored) * points * _FW_CACHE_BYTES_PER_SCALAR > _FW_CACHE_BUDGET_BYTES:
+            return None
+
+        def load(node):
+            if isinstance(node, L.VariableDecl) and node.symbol.name in stored:
+                return L.VariableDecl(node.symbol, stored[node.symbol.name][index])
+            if (
+                type(node) is L.Statement
+                and type(node.expr) is L.Assign
+                and isinstance(node.expr.lhs, L.Symbol)
+                and node.expr.lhs.name in stored
+            ):
+                return L.Statement(L.Assign(node.expr.lhs, stored[node.expr.lhs.name][index]))
+            return use_results(node)
+
+        return (
+            [
+                L.Comment("Apply library math functions in loops of their own, evaluating"),
+                L.Comment("their arguments first, so that the evaluation loop vectorises."),
+                *loops,
+            ],
+            _map_expressions(evaluation, load),
+            set(stored),
+        )
 
     def _point_major(
         self, evaluation: list[L.LNode], index: L.Symbol, quadrature_rule: QuadratureRule
