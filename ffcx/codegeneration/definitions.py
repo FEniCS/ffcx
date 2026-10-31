@@ -69,7 +69,7 @@ def _coordinate_basis_groups(values: np.ndarray) -> list[tuple[int, list[tuple[i
 
 
 # Comments on the sections that evaluate terminals, by terminal type
-_TERMINAL_DESCRIPTIONS = {
+_TERMINAL_DESCRIPTIONS: dict[type, str] = {
     ufl.Jacobian: "Differentiate the coordinate mapping to obtain Jacobian components.",
     ufl.SpatialCoordinate: "Evaluate physical coordinates from coordinate degrees of freedom.",
     ufl.Coefficient: "Evaluate coefficient values or derivatives from their degrees of freedom.",
