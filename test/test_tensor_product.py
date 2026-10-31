@@ -575,3 +575,25 @@ def test_sum_factorised_vector_loops(cell_type, quadrature_degree, padded, compi
     assert ("padded to 8 points" in source) == padded
     args = (form, num_coefficients, cell_type, "float64")
     assert_matches_fused_loop(args, compile_args, tmp_path)
+
+
+@pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
+def test_sum_factorised_flat_point_loop(cell_type, compile_args, tmp_path):
+    """Integrand factors are evaluated in one loop over all points of the rule.
+
+    With an ordinary (not tensor-product) coordinate element, the geometry
+    is tabulated at the flattened point index.
+    """
+    gdim = cell_to_gdim(cell_type)
+    mesh = ufl.Mesh(basix.ufl.element("P", cell_type, 1, shape=(gdim,)))
+    V = ufl.FunctionSpace(
+        mesh, create_tensor_product_element(cell_type, 2, basix.LagrangeVariant.gll_warped)
+    )
+    u, v, w = ufl.TrialFunction(V), ufl.TestFunction(V), ufl.Coefficient(V)
+    form = (1 + w**2) * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx(degree=4)
+    (_, source), _ = ffcx.compiler.compile_ufl_objects(
+        [form], options=ffcx.options.get_options({"scalar_type": "float64"})
+    )
+    assert f"for (int iq = 0; iq < {3**gdim}; ++iq)" in source
+    args = (form, V.ufl_element().dim, cell_type, "float64")
+    assert_matches_fused_loop(args, compile_args, tmp_path)

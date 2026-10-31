@@ -2021,7 +2021,7 @@ class IntegralGenerator:
                     "Read the evaluated fields, compute scalar integrand factors "
                     "at each quadrature point, and store them in fq*."
                 ),
-                L.create_nested_for_loops([iq], evaluation),
+                self._point_loop(iq, cache_index, evaluation),
             ]
             for group in batch:
                 batch_code += self._sum_factorised_contraction(
@@ -2034,6 +2034,43 @@ class IntegralGenerator:
         # The stack limit applies to each rule, so a scope per rule lets the
         # next reuse the stack of this one's arrays
         return [L.Scope(code)]
+
+    def _point_loop(
+        self, iq: L.MultiIndex, cache_index: L.MultiIndex, evaluation: list[L.LNode]
+    ) -> L.LNode:
+        """Loop over the points of a tensor-product rule, flattened if possible.
+
+        The evaluation usually reads its tables and stores its factors at the
+        flattened point index. Then one loop over all points replaces the
+        nest over the directions, whose innermost loop over a few points of
+        one direction is too short to vectorise. Otherwise, e.g. when the
+        cached factors are stored padded or the rule fits one SIMD vector,
+        the nest is kept.
+        """
+        nested: L.LNode = L.create_nested_for_loops([iq], evaluation)
+        if cache_index.sizes != iq.sizes or math.prod(iq.sizes) <= self._simd_width:
+            return nested
+        point = self.backend.symbols.quadrature_loop_index
+        keys = {expr_key(iq.global_index), expr_key(cache_index.global_index)}
+        directions = {iq.local_index(d).name for d in range(iq.dim)}
+
+        def flatten(node):
+            if isinstance(node, L.MultiIndex) and [
+                s.name for s in node.symbols if isinstance(s, L.Symbol)
+            ] == sorted(directions):
+                return point
+            if (
+                isinstance(node, L.LExpr)
+                and not isinstance(node, L.Symbol)
+                and expr_key(node) in keys
+            ):
+                return point
+            return None
+
+        flat = _map_expressions(evaluation, flatten)
+        if directions & referenced_symbol_names(flat):
+            return nested
+        return L.ForRange(point, 0, math.prod(iq.sizes), flat, vectorize_across=True)
 
     def _whole_vectors(self, length: int) -> bool:
         """Whether a loop of this length runs as whole SIMD vectors.
@@ -2539,6 +2576,27 @@ class IntegralGenerator:
                         contribution = substitute(update(L.LiteralInt(dof)), q, value)
                         assign = L.Assign if point == 0 else L.AssignAdd
                         row_body.append(assign(acc[dof], contribution))
+            elif num_points > self._simd_width and self._whole_vectors(num_inner):
+                # A row filling whole SIMD vectors accumulates as vectors in a
+                # loop kept rolled. Written out per entry over a quadrature
+                # loop too long to unroll, the compiler keeps scalar
+                # accumulators in memory whose stores the vector update of A
+                # then cannot forward.
+                row_body += [
+                    L.ForRange(
+                        j, 0, num_inner, [L.Assign(acc[j], L.LiteralFloat(0.0))], keep_rolled=True
+                    ),
+                    L.ForRange(
+                        q,
+                        0,
+                        num_points,
+                        [
+                            L.ForRange(
+                                j, 0, num_inner, [L.AssignAdd(acc[j], update(j))], keep_rolled=True
+                            )
+                        ],
+                    ),
+                ]
             else:
                 row_body += [
                     L.ForRange(j, 0, num_inner, [L.Assign(acc[j], L.LiteralFloat(0.0))]),
