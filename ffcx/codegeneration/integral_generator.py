@@ -51,11 +51,25 @@ from ffcx.ir.sumfactorisation import (
     ContractionGroup,
     ContractionTerm,
     SumFactorisationPlan,
+    constant_arguments,
     contraction_stage_size,
     is_point_independent,
 )
 
 logger = logging.getLogger("ffcx")
+
+
+class _Stage:
+    """A stage of a sum-factorised contraction: an array, read from an offset and maybe scaled."""
+
+    def __init__(self, array: L.Symbol, offset: L.LExpr | int = 0, scale: L.LExpr | None = None):
+        self.array, self.offset, self.scale = array, offset, scale
+
+    def __getitem__(self, index: L.LExpr | int) -> L.LExpr:
+        if not (isinstance(self.offset, int) and self.offset == 0):
+            index = self.offset + index
+        value = self.array[index]
+        return value if self.scale is None else L.Mul(self.scale, value)
 
 
 _FW_CACHE_BUDGET_BYTES = 32768
@@ -2413,36 +2427,47 @@ class IntegralGenerator:
         def total(values: list[L.LExpr]) -> L.LExpr:
             return values[0] if len(values) == 1 else L.Sum(values)
 
-        # level_code[s] runs inside the dof loops of directions <= s. A
-        # stage array g_s holds a cache contracted over directions < s, on
-        # the points of directions >= s.
+        # level_code[s] runs inside the dof loops of directions <= s, and
+        # pre_code before those of direction 0. A stage array g_s holds a
+        # cache contracted over directions < s, on the points of directions
+        # >= s. Where some arguments' tables are constant in direction s,
+        # the stage leaves them out and holds, for every dof of the other
+        # arguments, a sum that the constant tables then scale. It is
+        # contracted once, before the dof loops of direction s, rather than
+        # again for each dof of the constant arguments.
         level_code: list[list[L.LNode]] = [[] for _ in range(dim)]
+        pre_code: list[L.LNode] = []
         declarations: list[L.LNode] = []
-        stages: dict[tuple, L.Symbol] = {}
+        stages: dict[tuple, _Stage] = {}
         for term in group.terms:
-            stage = caches[term.factor]
+            stage = _Stage(caches[term.factor])
             keys = term.stage_keys
             for s in range(last):
                 if keys[s + 1] not in stages:
                     stride = contraction_stage_size(s, self._sum_factorisation_sizes)
-                    next_stage = L.Symbol(
+                    constant = constant_arguments(term.tables, s)
+                    varying = [a for a in range(len(term.tables)) if a not in constant]
+                    dof_indices = [B_indices[a].local_index(s) for a in varying]
+                    num_dofs = [B_indices[a].sizes[s] for a in varying]
+                    # Where the stage holds each varying dof's sum, the current one
+                    start: L.LExpr | int = 0
+                    if constant:
+                        for index, n in zip(dof_indices, num_dofs):
+                            start = start * n + index
+                        start = start * stride
+                    array = L.Symbol(
                         f"{caches[term.factor].name}_{group_id}_g{s + 1}_{len(stages)}",
                         dtype=L.DataType.SCALAR,
                     )
-                    stages[keys[s + 1]] = next_stage
-                    declarations.append(L.ArrayDecl(next_stage, sizes=stride))
-                    level_code[s].append(
-                        L.Comment(
-                            f"{next_stage.name}: sum {stage.name} over reference direction {s} "
-                            "with its quadrature weights and argument basis products."
+                    declarations.append(
+                        L.ArrayDecl(
+                            array, sizes=math.prod(num_dofs) * stride if constant else stride
                         )
                     )
                     m = L.Symbol(f"iqm{s}", dtype=L.DataType.INT)
                     qs = iq.local_index(s)
                     scale = self.new_temp_symbol("basis", dtype=L.DataType.REAL)
-                    basis = weighted(
-                        s, term.tables, qs, [index.local_index(s) for index in B_indices]
-                    )
+                    basis = weighted(s, [term.tables[a] for a in varying], qs, dof_indices)
                     # Accumulate independent entries along the contiguous
                     # remaining points, preserving the quadrature order of
                     # each entry. When they fill whole SIMD vectors and the
@@ -2452,36 +2477,42 @@ class IntegralGenerator:
                     rolled = self._whole_vectors(stride) and iq.sizes[s] >= self._simd_width
                     width = 1 if rolled else self._sum_factorisation_sizes[-1]
                     indices = [m * width + lane for lane in range(width)]
+                    code: list[L.LNode] = [
+                        L.Comment(
+                            f"{array.name}: sum {stage.array.name} over reference direction {s} "
+                            "with its quadrature weights and argument basis products."
+                        )
+                    ]
                     first_point = iq.sizes[s] == 3
                     if first_point:
                         # Initialise a three-point reduction from its first
                         # point, leaving a two-point loop and no zeroing pass.
                         initial_basis = substitute(basis, qs, L.LiteralInt(0))
-                        level_code[s] += [
+                        code += [
                             L.VariableDecl(scale, initial_basis),
                             L.ForRange(
                                 m,
                                 0,
                                 stride // width,
                                 [
-                                    L.Assign(next_stage[index], stage[index] * scale)
+                                    L.Assign(array[start + index], stage[index] * scale)
                                     for index in indices
                                 ],
                                 keep_rolled=rolled,
                             ),
                         ]
                     else:
-                        level_code[s].append(
+                        code.append(
                             L.ForRange(
                                 m,
                                 0,
                                 stride,
-                                [L.Assign(next_stage[m], 0.0)],
+                                [L.Assign(array[start + m], 0.0)],
                                 keep_rolled=rolled,
                             )
                         )
                     scale_assignment = L.Assign if first_point else L.VariableDecl
-                    level_code[s] += [
+                    code.append(
                         L.ForRange(
                             qs,
                             int(first_point),
@@ -2494,20 +2525,42 @@ class IntegralGenerator:
                                     stride // width,
                                     [
                                         L.AssignAdd(
-                                            next_stage[index], stage[qs * stride + index] * scale
+                                            array[start + index],
+                                            stage[qs * stride + index] * scale,
                                         )
                                         for index in indices
                                     ],
                                     keep_rolled=rolled,
                                 ),
                             ],
-                        ),
-                    ]
+                        )
+                    )
+                    if constant:
+                        code.insert(
+                            1,
+                            L.Comment(
+                                "The tables of arguments "
+                                + ", ".join(str(a) for a in constant)
+                                + " are constant in this direction; they scale the sum where it "
+                                "is read, so it is formed once for all their dofs."
+                            ),
+                        )
+                        for index, n in reversed(list(zip(dof_indices, num_dofs))):
+                            code[2:] = [L.ForRange(index, 0, n, code[2:])]
+                        (level_code[s - 1] if s > 0 else pre_code).extend(code)
+                        factors = [
+                            factor(term.tables[a], s, L.LiteralInt(0), B_indices[a].local_index(s))
+                            for a in constant
+                        ]
+                        stages[keys[s + 1]] = _Stage(array, start, L.float_product(factors))
+                    else:
+                        level_code[s].extend(code)
+                        stages[keys[s + 1]] = _Stage(array)
                 stage = stages[keys[s + 1]]
 
-        def last_stage(term) -> L.Symbol:
+        def last_stage(term) -> _Stage:
             """Return the cache of a term contracted over all but the last direction."""
-            return stages[term.stage_keys[last]] if last > 0 else caches[term.factor]
+            return stages[term.stage_keys[last]] if last > 0 else _Stage(caches[term.factor])
 
         # pre_rows runs inside the dof loops of directions < last, before
         # the last direction's; row_code inside those of the other arguments
@@ -2673,6 +2726,7 @@ class IntegralGenerator:
             body = _map_expressions(body, fold)
         for s in reversed(range(last)):
             body = dof_loops(s, level_code[s] + body, B_indices)
+        body = pre_code + body
         # A scope per group lets the next reuse the stack of its arrays
         return [
             L.Scope(

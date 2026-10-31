@@ -658,3 +658,26 @@ def test_sum_factorised_flat_point_loop(cell_type, compile_args, tmp_path):
     assert f"for (int iq = 0; iq < {3**gdim}; ++iq)" in source
     args = (form, V.ufl_element().dim, cell_type, "float64")
     assert_matches_fused_loop(args, compile_args, tmp_path)
+
+
+@pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
+def test_sum_factorised_constant_tables(cell_type, compile_args, tmp_path):
+    """A stage over a direction in which an argument's table is constant is formed once.
+
+    The derivative of a degree 1 basis is the same at every point of its
+    own direction, so it scales the stage's sum instead of being summed.
+    """
+    gdim = cell_to_gdim(cell_type)
+    mesh = ufl.Mesh(basix.ufl.element("P", cell_type, 1, shape=(gdim,)))
+    V = ufl.FunctionSpace(
+        mesh, create_tensor_product_element(cell_type, 1, basix.LagrangeVariant.gll_warped)
+    )
+    u, v, w = ufl.TrialFunction(V), ufl.TestFunction(V), ufl.Coefficient(V)
+    form = (1 + w**2) * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx(degree=4)
+    options = {"scalar_type": "float64", **FORCE_SUM_FACTORISATION}
+    (_, source), _ = ffcx.compiler.compile_ufl_objects(
+        [form], options=ffcx.options.get_options(options)
+    )
+    assert "are constant in this direction" in source
+    args = (form, V.ufl_element().dim, cell_type, "float64")
+    assert_matches_fused_loop(args, compile_args, tmp_path)

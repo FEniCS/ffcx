@@ -48,6 +48,35 @@ def is_point_independent(factor: UniqueTableReferenceT) -> bool:
     return bool(np.all(factor.values == factor.values[:, :, :1, :]))
 
 
+def constant_arguments(tables: list[UniqueTableReferenceT], direction: int) -> list[int]:
+    """Return the arguments whose 1D table in a direction has the same values at every point.
+
+    A degree 1 derivative is constant in its own direction. Contracting a
+    stage over that direction, such an argument's table leaves the sum over
+    the points, so the sum is shared by all of its dofs.
+    """
+    return [a for a, td in enumerate(tables) if is_point_independent(_factors(td)[direction])]
+
+
+def stage_size(tables: list[UniqueTableReferenceT], direction: int, num_points: list[int]) -> int:
+    """Return the size of the array of a stage contracting over a direction.
+
+    It holds the points of the later directions. A stage leaving out
+    constant tables (see `constant_arguments`) holds them for each dof in
+    that direction of the arguments whose tables vary, as it is contracted
+    before the dof loops of that direction.
+    """
+    constant = constant_arguments(tables, direction)
+    if not constant:
+        return contraction_stage_size(direction, num_points)
+    dofs = math.prod(
+        int(_factors(td)[direction].values.shape[-1])
+        for a, td in enumerate(tables)
+        if a not in constant
+    )
+    return dofs * contraction_stage_size(direction, num_points)
+
+
 def evaluation_order(
     factors: list[UniqueTableReferenceT], num_points: list[int]
 ) -> tuple[list[int], list[int]]:
@@ -141,7 +170,8 @@ class SumFactorisationPlan(typing.NamedTuple):
     # rule and contracts them, so batching bounds the space the caches take.
     batches: list[list[ContractionGroup]]
     # Products of the 1D quadrature weights and the 1D tables of the first
-    # arguments, [points][dofs of each argument], by name
+    # arguments, or of those arguments whose tables vary in a direction
+    # (see `constant_arguments`), [points][dofs of each argument], by name
     tables: dict[str, npt.NDArray[np.float64]]
     # Names of the products, by direction and 1D table names
     table_names: dict[tuple[int, tuple[str, ...]], str]
@@ -192,8 +222,8 @@ def _group_size(group: ContractionGroup, num_points: list[int]) -> int:
     contributions and an `acc` array.
     """
     last = len(num_points) - 1
-    stages = {key for term in group.terms for key in term.stage_keys[1 : last + 1]}
-    size = sum(contraction_stage_size(len(key) - 2, num_points) for key in stages)
+    stages = {key: term.tables for term in group.terms for key in term.stage_keys[1 : last + 1]}
+    size = sum(stage_size(tables, len(key) - 2, num_points) for key, tables in stages.items())
     num_inner = int(_factors(group.terms[0].tables[-1])[last].values.shape[-1])
     return size + sum(
         len(row.combined) * num_points[last] * num_inner + num_inner for row in group.rows
@@ -212,6 +242,10 @@ def contraction_costs(
     of its tables, then multiplies by that table. One direction at a time,
     each distinct stage sums over its direction's points for the dofs of
     the directions contracted so far and the points of the others.
+    Stages leaving out arguments whose tables are constant (see
+    `constant_arguments`) are counted in full. Counted as reduced, degree 1
+    Laplace-type forms on quadrilaterals would be estimated to pay, but
+    timing shows ordinary quadrature is still as fast or faster for them.
     """
     whole, staged = 0, 0
     stages: set[tuple] = set()
@@ -311,11 +345,17 @@ def plan_sum_factorisation(
             by_values[key] = name
         table_names[(direction, names)] = by_values[key]
 
-    # The tables the contraction reads
+    # The tables the contraction reads. A stage over a direction in which
+    # some arguments' tables are constant reads the weighted product of the
+    # others, and those constant tables unweighted.
     for group in itertools.chain.from_iterable(planned):
         for term in group.terms:
             for direction in range(last):
                 weight(direction, term.tables)
+                constant = constant_arguments(term.tables, direction)
+                if constant:
+                    weight(direction, [td for a, td in enumerate(term.tables) if a not in constant])
+                    factors.update(_factors(term.tables[a])[direction].name for a in constant)
         for row in group.rows:
             for members in row.combined:
                 weight(last, members[0].tables[:1])
