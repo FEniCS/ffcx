@@ -163,8 +163,12 @@ def test_reciprocal_cse(dtype):
     assert all(statement.value.dtype == dtype for statement in exprs_recip)
 
 
-def test_library_calls_leave_the_evaluation_loop(compile_args):
+def test_library_calls_leave_the_evaluation_loop(compile_args, monkeypatch):
     """A library math call moves to a loop of its own, so evaluation can vectorise."""
+    # The evaluation loop of this small contraction is only split on a host
+    # whose compiler can call vector math functions
+    monkeypatch.setattr(integral_generator.sys, "platform", "linux")
+    monkeypatch.setattr(integral_generator.platform, "machine", lambda: "x86_64")
     element = basix.ufl.element("Lagrange", "tetrahedron", 2, shape=(3,))
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
     space = ufl.FunctionSpace(domain, element)
