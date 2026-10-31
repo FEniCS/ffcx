@@ -212,7 +212,7 @@ def _compute_integral_ir(
         entity_type,
         initial_terminals.values(),
         existing_tables,
-        use_sum_factorization=p["sum_factorization"],
+        use_sum_factorization=p["sum_factorization"] != "never",
         is_mixed_dim=is_mixed_dim,
         rtol=p["table_rtol"],
         atol=p["table_atol"],
@@ -335,12 +335,12 @@ def _compute_integral_ir(
     plan = None
     if sum_factorise:
         max_scalars = _max_sum_factorisation_scalars(F, _argkeys, quadrature_rule, p)
-        # A bilinear form may have too few dofs for the stages to save
-        # enough work to pay for their loops. A linear form's contraction is
-        # cheap either way, and evaluating its coefficients one direction
-        # at a time pays.
+        # Unless sum factorisation is requested, check that a bilinear form
+        # has enough dofs for the stages to save enough work to pay for
+        # their loops. A linear form's contraction is cheap either way, and
+        # evaluating its coefficients one direction at a time pays.
         pays = True
-        if rank > 1:
+        if rank > 1 and p["sum_factorization"] == "auto":
             whole, staged = contraction_costs(quadrature_rule.num_points, block_contributions)
             pays = whole >= float(p["sum_factorization_min_speedup"]) * staged
         if pays:

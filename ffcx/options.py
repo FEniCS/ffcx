@@ -28,12 +28,14 @@ FFCX_DEFAULT_OPTIONS = {
         ("float32", "float64", "complex64", "complex128"),
     ),
     "sum_factorization": (
-        bool,
-        True,
-        "Use sum factorization where available for cell integrals of tensor product elements: "
-        "tabulate on a tensor product quadrature rule and contract one direction at a time, "
-        "at a cost of O(P^(2d+1)) for a bilinear form of degree P in dimension d.",
-        None,
+        str,
+        "auto",
+        "When to use sum factorization for cell integrals of tensor product elements: tabulate "
+        "on a tensor product quadrature rule and contract one direction at a time, at a cost of "
+        "O(P^(2d+1)) for a bilinear form of degree P in dimension d. 'always' uses it wherever "
+        "available, 'never' never, and 'auto' where available and, for a bilinear form, "
+        "estimated to pay (see sum_factorization_min_speedup).",
+        ("auto", "always", "never"),
     ),
     "sum_factorization_stack_limit": (
         int,
@@ -45,11 +47,11 @@ FFCX_DEFAULT_OPTIONS = {
     ),
     "sum_factorization_min_speedup": (
         float,
-        1.5,
-        "Use sum factorization for a bilinear form only if it is estimated to cut the "
-        "multiply-adds contracting the integrand with the argument tables by at least this "
-        "factor. Its loops cost more per operation, so with few dofs ordinary quadrature is "
-        "faster. 0 to use it wherever available.",
+        1.33,
+        "With sum_factorization 'auto', use sum factorization for a bilinear form only if it is "
+        "estimated to cut the multiply-adds contracting the integrand with the argument tables "
+        "by at least this factor. Its loops cost more per operation, so with few dofs ordinary "
+        "quadrature is faster.",
         None,
     ),
     "table_rtol": (

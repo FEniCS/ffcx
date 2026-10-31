@@ -42,12 +42,7 @@ def create_tensor_product_element(cell_type, degree, variant, shape=None):
 
 
 # Sum factorise whenever possible, however few the dofs, to test the contraction
-FORCE_SUM_FACTORISATION = {"sum_factorization_min_speedup": 0}
-DEFAULT_MIN_SPEEDUP = {
-    "sum_factorization_min_speedup": ffcx.options.FFCX_DEFAULT_OPTIONS[
-        "sum_factorization_min_speedup"
-    ][1]
-}
+FORCE_SUM_FACTORISATION = {"sum_factorization": "always"}
 
 
 def jit_compile(forms, options, compile_args, cache_dir):
@@ -123,7 +118,7 @@ def test_bilinear_form(dtype, P, cell_type):
     c_type = dtype_to_c_type(dtype)
     c_xtype = dtype_to_c_type(xdtype)
     kernel, module = generate_kernel(
-        [a], dtype, options={"scalar_type": dtype, "sum_factorization": False}
+        [a], dtype, options={"scalar_type": dtype, "sum_factorization": "never"}
     )
     ffi = module.ffi
     kernel(
@@ -139,7 +134,7 @@ def test_bilinear_form(dtype, P, cell_type):
     # Use sum factorization
     A1 = np.zeros((ndofs, ndofs), dtype=dtype)
     kernel, module = generate_kernel(
-        [a], dtype, options={"scalar_type": dtype, "sum_factorization": True}
+        [a], dtype, options={"scalar_type": dtype, "sum_factorization": "always"}
     )
     ffi = module.ffi
     kernel(
@@ -274,7 +269,7 @@ def assert_matches_fused_loop(args, compile_args, tmp_path, options=None):
             [form], dtype, {"scalar_type": dtype, **options}, compile_args, tmp_path / cache_dir
         )
         for options, cache_dir in (
-            ({"sum_factorization": False}, "ref"),
+            ({"sum_factorization": "never"}, "ref"),
             ({**FORCE_SUM_FACTORISATION, **(options or {})}, "sf"),
         )
     ]
@@ -356,11 +351,7 @@ def compiled_forms(tmp_path_factory, compile_args):
         key = (names, cell_type, P, dtype, sum_factorization, entity_ordered)
         if key not in modules:
             forms = sum_factorisation_forms(cell_type, P, entity_ordered)
-            options = {
-                "scalar_type": dtype,
-                "sum_factorization": sum_factorization,
-                **FORCE_SUM_FACTORISATION,
-            }
+            options = {"scalar_type": dtype, "sum_factorization": sum_factorization}
             compiled, module = jit_compile(
                 [forms[name][0] for name in names],
                 options,
@@ -379,7 +370,7 @@ def check_form(compiled_forms, names, name, P, cell_type, dtype, entity_ordered=
     Returns whether it is contracted one direction at a time.
     """
     kernels = []
-    for sum_factorization in (False, True):
+    for sum_factorization in ("never", "always"):
         forms, compiled, module = compiled_forms(
             names, cell_type, P, dtype, sum_factorization, entity_ordered
         )
@@ -389,12 +380,21 @@ def check_form(compiled_forms, names, name, P, cell_type, dtype, entity_ordered=
     return sum_factorised(form, dtype)
 
 
-@pytest.mark.parametrize("sum_factorization,expected", [(None, True), (True, True), (False, False)])
+@pytest.mark.parametrize(
+    "sum_factorization,expected", [("auto", True), ("always", True), ("never", False)]
+)
 @pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
 def test_sum_factorisation_default_and_opt_out(sum_factorization, expected, cell_type):
+    assert ffcx.options.get_options()["sum_factorization"] == "auto"
     form, _ = sum_factorisation_forms(cell_type, 2)["mass"]
-    options = {} if sum_factorization is None else {"sum_factorization": sum_factorization}
-    assert sum_factorised(form, "float64", **DEFAULT_MIN_SPEEDUP, **options) == expected
+    assert sum_factorised(form, "float64", sum_factorization=sum_factorization) == expected
+
+
+@pytest.mark.parametrize("sum_factorization", [True, "on", None])
+def test_sum_factorisation_unknown_value(sum_factorization):
+    form, _ = sum_factorisation_forms(basix.CellType.quadrilateral, 2)["mass"]
+    with pytest.raises(ValueError, match="sum_factorization"):
+        sum_factorised(form, "float64", sum_factorization=sum_factorization)
 
 
 @pytest.mark.parametrize(
@@ -402,10 +402,13 @@ def test_sum_factorisation_default_and_opt_out(sum_factorization, expected, cell
     [("laplace", 1, False), ("laplace", 2, True), ("mass", 1, True), ("linear", 1, True)],
 )
 def test_sum_factorisation_min_speedup(name, P, expected):
-    """Bilinear forms with too few dofs to save enough work use ordinary quadrature."""
+    """With 'auto', bilinear forms with too few dofs to save enough work use ordinary quadrature.
+
+    'always' uses sum factorisation whatever the estimated cost.
+    """
     form, _ = sum_factorisation_forms(basix.CellType.quadrilateral, P)[name]
-    assert sum_factorised(form, "float64", **DEFAULT_MIN_SPEEDUP) == expected
-    assert sum_factorised(form, "float64")
+    assert sum_factorised(form, "float64", sum_factorization="auto") == expected
+    assert sum_factorised(form, "float64", sum_factorization="always")
 
 
 @pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
@@ -505,7 +508,7 @@ def test_sum_factorisation_short_rules_low_precision(
     )
     assert sum_factorised(form, dtype)
     tensors = []
-    for enabled in (False, True):
+    for enabled in ("never", "always"):
         kernel, module = generate_kernel(
             [form],
             dtype,

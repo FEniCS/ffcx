@@ -1,9 +1,17 @@
 Sum factorisation
 =================
 
-FFCx enables sum factorisation by default wherever the elements and
-quadrature rule support it. The ``sum_factorization`` code-generation
-option defaults to ``True``; applications do not need to set it explicitly.
+FFCx uses sum factorisation by default wherever the elements and
+quadrature rule support it and it is estimated to pay. The
+``sum_factorization`` code-generation option takes three values:
+
+- ``"auto"`` (the default): use sum factorisation where it is supported,
+  except for bilinear forms with too few DOFs for it to pay (see
+  `Automatic fallback`_).
+- ``"always"``: use sum factorisation wherever it is supported.
+- ``"never"``: always use ordinary quadrature.
+
+Applications do not need to set it explicitly.
 
 For eligible cell integrals, FFCx evaluates coefficients, the spatial
 coordinate and the cell Jacobian on the tensor-product quadrature rule, then
@@ -83,14 +91,15 @@ stack limit described below.
 
 With few DOFs, contracting one direction at a time saves little work, and
 its loops cost more per operation than ordinary quadrature's. For a
-bilinear form, FFCx estimates the multiply-adds that contracting the
-argument tables takes each way, and uses sum factorisation only if it cuts
-them by at least the factor ``sum_factorization_min_speedup``, which
-defaults to ``1.5``. Low degree forms with several terms, such as a Poisson
-operator with degree 1 elements on quadrilaterals, then use ordinary
-quadrature. Linear forms are always sum factorised, since evaluating their
-coefficients one direction at a time pays even at low degree. Set the
-option to ``0`` to use sum factorisation wherever it is available.
+bilinear form, and with ``sum_factorization`` left at ``"auto"``, FFCx
+estimates the multiply-adds that contracting the argument tables takes each
+way, and uses sum factorisation only if it cuts them by at least the factor
+``sum_factorization_min_speedup``, which defaults to ``1.33``. Low degree
+forms with several terms, such as a Poisson operator with degree 1 elements
+on quadrilaterals, then use ordinary quadrature. Linear forms are always sum factorised, since evaluating their
+coefficients one direction at a time pays even at low degree. Set
+``sum_factorization`` to ``"always"`` to use sum factorisation wherever it
+is available.
 
 Stack usage
 -----------
@@ -143,15 +152,15 @@ safe for 128 KiB threads. Raise it, or set it to ``0``, if kernels only run on
 threads with large stacks, such as the main thread, and the fastest kernels
 at high degree matter more.
 
-Disabling sum factorisation
----------------------------
+Requiring or disabling sum factorisation
+----------------------------------------
 
 To use ordinary quadrature explicitly with the FFCx JIT:
 
 .. code-block:: python
 
    compiled_forms, module, code = compile_forms(
-       [a], options={"sum_factorization": False}
+       [a], options={"sum_factorization": "never"}
    )
 
 With DOLFINx, set the corresponding form compiler option:
@@ -159,14 +168,17 @@ With DOLFINx, set the corresponding form compiler option:
 .. code-block:: python
 
    compiled_a = fem.form(
-       a, form_compiler_options={"sum_factorization": False}
+       a, form_compiler_options={"sum_factorization": "never"}
    )
 
 From the command line:
 
 .. code-block:: console
 
-   ffcx --no-sum_factorization forms.py
+   ffcx --sum_factorization never forms.py
+
+Pass ``"always"`` in place of ``"never"`` to use sum factorisation wherever
+it is supported, whatever the estimated cost.
 
 This option controls kernel generation. C compiler flags are configured
 separately; see :doc:`compiler-flags` for suggested optimization and FMA
