@@ -187,6 +187,87 @@ def _library_calls(node) -> list[L.MathFunction]:
     return [call for child in children(node) for call in _library_calls(child)]
 
 
+def _strided_update(outer: L.ForRange, inner: L.ForRange, tensor: str) -> bool:
+    """Whether ``inner`` updates ``tensor`` at a stride along both loop indices.
+
+    Then vectorising either loop accesses the tensor at a stride, and the
+    inner loop, with the shorter stride, is the better choice.
+    """
+    if not (isinstance(outer.index, L.Symbol) and isinstance(inner.index, L.Symbol)):
+        return False
+    loop_names = [inner.index.name, outer.index.name]
+    for statement in _flat_statements(inner.body.statements):
+        expr = statement.expr if type(statement) is L.Statement else statement
+        if not (
+            isinstance(expr, L.AssignAdd)
+            and isinstance(expr.lhs, L.ArrayAccess)
+            and expr.lhs.array.name == tensor
+        ):
+            continue
+        indices, names = expr.lhs.indices, referenced_symbol_names(list(expr.lhs.indices))
+        try:
+            strides = [
+                abs(
+                    _evaluate_index(indices, {n: int(n == name) for n in names})
+                    - _evaluate_index(indices, dict.fromkeys(names, 0))
+                )
+                for name in loop_names
+            ]
+        except (KeyError, TypeError, ValueError):
+            continue
+        if all(stride > 1 for stride in strides):
+            return True
+    return False
+
+
+def _keep_outer_loops_scalar(node, indices: frozenset[str], min_inner: int, tensor: str) -> int:
+    """Mark loops whose inner loops should vectorise instead of themselves.
+
+    Clang may vectorise a loop across its inner loops. That suits short
+    inner loops, but turns long contiguous ones into gathers and scatters.
+    A loop over ``indices`` (quadrature points) is marked when it contains a
+    loop of at least ``min_inner`` iterations, and any loop is marked when
+    an inner loop updates ``tensor`` at a stride along both of their
+    indices (see _strided_update). Loops marked as vectorising across
+    their inner loops are exempt. Returns the longest constant trip count
+    of the loops in ``node``.
+    """
+    if isinstance(node, list):
+        return max(
+            [_keep_outer_loops_scalar(n, indices, min_inner, tensor) for n in node], default=0
+        )
+    if isinstance(node, L.ForRange):
+        inner = _keep_outer_loops_scalar(node.body.statements, indices, min_inner, tensor)
+        name = getattr(node.index, "name", None)
+        strided = any(
+            isinstance(child, L.ForRange) and _strided_update(node, child, tensor)
+            for child in _flat_statements(node.body.statements)
+        )
+        if not node.vectorize_across and (strided or (inner >= min_inner and name in indices)):
+            node.no_vectorize = True
+        trips = 0
+        if isinstance(node.begin, L.LiteralInt) and isinstance(node.end, L.LiteralInt):
+            trips = int(node.end.value - node.begin.value)
+        return max(inner, trips)
+    if isinstance(node, (L.Section, L.StatementList)):
+        return _keep_outer_loops_scalar(list(node.statements), indices, min_inner, tensor)
+    return 0
+
+
+def _allow_vectorizing_across(node) -> None:
+    """Exempt every loop in a code tree from _keep_outer_loops_scalar."""
+    if isinstance(node, list):
+        for n in node:
+            _allow_vectorizing_across(n)
+    elif isinstance(node, L.ForRange):
+        node.vectorize_across = True
+        _allow_vectorizing_across(list(node.body.statements))
+    elif isinstance(node, L.Section):
+        _allow_vectorizing_across(list(node.statements))
+    elif isinstance(node, L.StatementList):
+        _allow_vectorizing_across(list(node.statements))
+
+
 def _supports_vector_math_loop_split() -> bool:
     """Return whether the current JIT host has the required vector libm ABI."""
     return sys.platform.startswith("linux") and platform.machine().lower() in {"amd64", "x86_64"}
@@ -636,6 +717,12 @@ class IntegralGenerator:
         # and is shared by all backends.
         parts = prune_dead_scalars(parts, scalar_declaration_names(parts))
         parts = prune_unused_tables(parts)
+        _keep_outer_loops_scalar(
+            parts,
+            frozenset({self.backend.symbols.quadrature_loop_index.name}),
+            3 * self._simd_width,
+            self.backend.symbols.element_tensor.name,
+        )
         parts = self._annotate_weighted_tables(domain, parts)
 
         return L.StatementList(parts)
@@ -1941,6 +2028,9 @@ class IntegralGenerator:
                     plan, group, iq, caches, next(groups)
                 )
             code += [L.Scope(batch_code)] if batched else batch_code
+        # Clang's vectorisation of loops across their inner loops is left to
+        # its own judgement here: it helps as often as it hurts
+        _allow_vectorizing_across(code)
         # The stack limit applies to each rule, so a scope per rule lets the
         # next reuse the stack of this one's arrays
         return [L.Scope(code)]
@@ -2698,7 +2788,7 @@ class IntegralGenerator:
             return declarations + [
                 *prelude,
                 *[L.Comment(c) for c in evaluate],
-                L.ForRange(index, 0, points, body),
+                L.ForRange(index, 0, points, body, vectorize_across=True),
                 L.Comment("Reuse cached factors to contract argument tables."),
                 L.create_nested_for_loops([iq], load + contraction),
             ]
@@ -2730,7 +2820,7 @@ class IntegralGenerator:
 
         tile_body = setup + [
             L.Comment("Evaluate weighted scalar factors for the current tile of points."),
-            L.ForRange(index, tile_base, tile_end, evaluation + store),
+            L.ForRange(index, tile_base, tile_end, evaluation + store, vectorize_across=True),
             L.Comment("Reuse the tile cache to contract argument tables."),
             L.ForRange(index, tile_base, tile_end, load + contraction),
         ]
@@ -2855,12 +2945,13 @@ class IntegralGenerator:
             value = self.new_temp_symbol("call_value", dtype=L.DataType.SCALAR)
             loops += [
                 L.ArrayDecl(value, sizes=points),
-                L.ForRange(index, 0, points, slice_),
+                L.ForRange(index, 0, points, slice_, vectorize_across=True),
                 L.ForRange(
                     index,
                     0,
                     points,
                     [L.Assign(value[index], L.MathFunction(call.function, arguments))],
+                    vectorize_across=True,
                 ),
             ]
             results[key] = value[index]

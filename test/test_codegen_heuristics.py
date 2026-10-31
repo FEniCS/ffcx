@@ -180,3 +180,25 @@ def test_library_calls_leave_the_evaluation_loop(compile_args):
     assert calls and all(argument.startswith("call_input") for argument in calls)
     loop = implementation.index("Evaluate and cache weighted scalar factors")
     assert "log(" not in implementation[loop:]
+
+
+def test_outer_loops_keep_long_inner_loops_vectorised(compile_args):
+    """Clang is told not to vectorise a quadrature loop across long inner loops."""
+    element = basix.ufl.element("Lagrange", "tetrahedron", 3)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+    space = ufl.FunctionSpace(domain, element)
+    f, v = ufl.Coefficient(space), ufl.TestFunction(space)
+    short = ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", "tetrahedron", 1))
+    g, w = ufl.Coefficient(short), ufl.TestFunction(short)
+
+    def source(form):
+        _, _, (_, implementation) = ffcx.codegeneration.jit.compile_forms(
+            [form], options={"scalar_type": "float64"}, cffi_extra_compile_args=compile_args
+        )
+        body = implementation[implementation.index("void tabulate_tensor") :]
+        return re.sub(r"\n\s*", "\n", body)
+
+    # Twenty dofs: the point loop stays scalar so the dof loops vectorise
+    assert "FFCX_NO_VECTORIZE\nfor (int iq" in source(f * v * ufl.dx)
+    # Four dofs: vectorising across points remains Clang's choice
+    assert "FFCX_NO_VECTORIZE" not in source(g * w * ufl.dx)

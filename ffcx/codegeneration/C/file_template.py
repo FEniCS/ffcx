@@ -75,6 +75,18 @@ implementation_pre = """
 #endif
 #endif
 
+// Keep an outer loop scalar. Clang may vectorise a loop across its inner
+// loops, e.g. over quadrature points or test functions, turning contiguous
+// inner accesses into gathers and scatters; the inner loops vectorise
+// instead. GCC does not do this, and other compilers ignore the hint.
+#ifndef FFCX_NO_VECTORIZE
+#if defined(__clang__)
+#define FFCX_NO_VECTORIZE _Pragma("clang loop vectorize(disable)")
+#else
+#define FFCX_NO_VECTORIZE
+#endif
+#endif
+
 """
 
 

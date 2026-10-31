@@ -760,6 +760,8 @@ def map_expressions(node, fn):
             node.end,
             map_expressions(list(node.body.statements), fn),
             keep_rolled=node.keep_rolled,
+            no_vectorize=node.no_vectorize,
+            vectorize_across=node.vectorize_across,
         )
     if isinstance(node, L.VariableDecl):
         value = None if node.value is None else map_expressions(node.value, fn)

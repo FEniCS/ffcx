@@ -1052,11 +1052,23 @@ def depth(code) -> int:
 class ForRange(Statement):
     """Slightly higher-level for loop assuming incrementing an index over a range."""
 
-    def __init__(self, index, begin, end, body, keep_rolled: bool = False):
+    def __init__(
+        self,
+        index,
+        begin,
+        end,
+        body,
+        keep_rolled: bool = False,
+        no_vectorize: bool = False,
+        vectorize_across: bool = False,
+    ):
         """Initialise.
 
         keep_rolled asks the native compiler not to unroll the loop
-        completely, so that it can vectorise it instead.
+        completely, so that it can vectorise it instead. no_vectorize asks
+        it not to vectorise this loop itself, e.g. an outer loop whose inner
+        loops should vectorise instead. vectorize_across marks a loop that may
+        vectorise across its inner loops, such as one over quadrature points.
         """
         assert isinstance(index, Symbol) or isinstance(index, MultiIndex)
         self.index = index
@@ -1065,6 +1077,8 @@ class ForRange(Statement):
         assert isinstance(body, list)
         self.body = StatementList(body)
         self.keep_rolled = keep_rolled
+        self.no_vectorize = no_vectorize
+        self.vectorize_across = vectorize_across
 
     def as_tuple(self):
         """Convert to a tuple."""

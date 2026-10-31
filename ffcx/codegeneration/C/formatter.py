@@ -328,7 +328,8 @@ class Formatter(FormatterInterface):
         begin = self(r.begin)
         end = self(r.end)
         index = self(r.index)
-        output = "FFCX_KEEP_ROLLED\n" if getattr(r, "keep_rolled", False) else ""
+        output = "FFCX_NO_VECTORIZE\n" if getattr(r, "no_vectorize", False) else ""
+        output += "FFCX_KEEP_ROLLED\n" if getattr(r, "keep_rolled", False) else ""
         output += f"for (int {index} = {begin}; {index} < {end}; ++{index})\n"
         output += "{\n"
         body = self(r.body)
