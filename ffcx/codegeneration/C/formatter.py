@@ -328,7 +328,8 @@ class Formatter(FormatterInterface):
         begin = self(r.begin)
         end = self(r.end)
         index = self(r.index)
-        output = f"for (int {index} = {begin}; {index} < {end}; ++{index})\n"
+        output = "FFCX_KEEP_ROLLED\n" if getattr(r, "keep_rolled", False) else ""
+        output += f"for (int {index} = {begin}; {index} < {end}; ++{index})\n"
         output += "{\n"
         body = self(r.body)
         for line in body.split("\n"):

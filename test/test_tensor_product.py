@@ -14,6 +14,7 @@ import ufl
 
 import ffcx.analysis
 import ffcx.codegeneration.jit
+import ffcx.compiler
 import ffcx.ir.representation
 import ffcx.options
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
@@ -552,5 +553,25 @@ def test_sum_factorisation_quadrature_rules(name, cell_type, compile_args, tmp_p
         "piecewise_coefficient": (f * u * v * one_point, V.ufl_element().dim),
         "linear": (f * v * one_point, V.ufl_element().dim),
     }[name]
+    args = (form, num_coefficients, cell_type, "float64")
+    assert_matches_fused_loop(args, compile_args, tmp_path)
+
+
+@pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
+@pytest.mark.parametrize("quadrature_degree,padded", [(6, False), (12, True)])
+def test_sum_factorised_vector_loops(cell_type, quadrature_degree, padded, compile_args, tmp_path):
+    """Contractions filling whole SIMD vectors keep their loops rolled.
+
+    A four-point rule fills a vector of doubles; a seven-point rule is
+    stored padded to eight points, with the padding never reaching A.
+    """
+    form, num_coefficients = sum_factorisation_forms(cell_type, 3)["coefficient_mass"]
+    integrand = form.integrals()[0].integrand()
+    form = integrand * ufl.dx(metadata={"quadrature_degree": quadrature_degree})
+    (_, source), _ = ffcx.compiler.compile_ufl_objects(
+        [form], options=ffcx.options.get_options({"scalar_type": "float64"})
+    )
+    assert "FFCX_KEEP_ROLLED\nfor" in source.replace("  ", "")
+    assert ("padded to 8 points" in source) == padded
     args = (form, num_coefficients, cell_type, "float64")
     assert_matches_fused_loop(args, compile_args, tmp_path)

@@ -1854,6 +1854,11 @@ class IntegralGenerator:
                 *code,
             ]
         caches: dict[int, L.Symbol] = {}
+        # Caches and stage arrays store the last direction padded to whole
+        # SIMD vectors (see _padded_point_sizes); padding entries stay zero.
+        padded = self._padded_point_sizes(iq.sizes)
+        self._sum_factorisation_sizes = padded
+        cache_index = L.MultiIndex([iq.local_index(d) for d in range(iq.dim)], padded)
         groups = itertools.count()
         for batch in plan.batches:
             store: list[L.LNode] = []
@@ -1866,7 +1871,7 @@ class IntegralGenerator:
                         cache = L.Symbol(f"fq{len(caches)}_{rule_id}", dtype=L.DataType.SCALAR)
                         caches[term.factor] = cache
                         batch_caches.append(cache)
-                        store.append(L.Assign(cache[iq.global_index], f))
+                        store.append(L.Assign(cache[cache_index.global_index], f))
 
             evaluation: list[L.LNode] = [
                 *pointwise,
@@ -1892,7 +1897,21 @@ class IntegralGenerator:
                     "and one-dimensional quadrature weights enter the contractions below."
                 ),
                 L.Comment(f"Point-grid shape: {iq.sizes}; the last direction is contiguous."),
-                *[L.ArrayDecl(cache, sizes=math.prod(iq.sizes)) for cache in batch_caches],
+            ]
+            if padded != iq.sizes:
+                batch_code.append(
+                    L.Comment(
+                        f"Stored with the last direction padded to {padded[-1]} points, "
+                        "zero beyond the rule, so contractions run over whole SIMD vectors."
+                    )
+                )
+            batch_code += [
+                L.ArrayDecl(
+                    cache,
+                    sizes=math.prod(padded),
+                    values=np.zeros((1,)) if padded != iq.sizes else None,
+                )
+                for cache in batch_caches
             ]
             batch_code += [
                 L.Comment("=== Pointwise geometry and integrand evaluation ==="),
@@ -1910,6 +1929,31 @@ class IntegralGenerator:
         # The stack limit applies to each rule, so a scope per rule lets the
         # next reuse the stack of this one's arrays
         return [L.Scope(code)]
+
+    def _whole_vectors(self, length: int) -> bool:
+        """Whether a loop of this length runs as whole SIMD vectors.
+
+        Such loops are kept rolled: unrolled completely, the compiler may
+        leave them scalar, while shorter or ragged ones gain nothing from it.
+        """
+        return length % self._simd_width == 0
+
+    def _padded_point_sizes(self, sizes: list[int]) -> list[int]:
+        """Pad the contiguous last direction of a point grid to whole SIMD vectors.
+
+        Contractions loop over the stored points of the later directions; a
+        last direction of, say, 7 points leaves a scalar remainder in every
+        such loop. Padding is applied when the last direction already
+        exceeds one vector and costs at most a quarter more storage.
+        """
+        width = self._simd_width
+        n = sizes[-1]
+        if len(sizes) < 2 or n <= width or n % width == 0:
+            return list(sizes)
+        padded = n + width - n % width
+        if 4 * (padded - n) > n:
+            return list(sizes)
+        return [*sizes[:-1], padded]
 
     def _sum_factorised_constant_direction(
         self,
@@ -2230,7 +2274,7 @@ class IntegralGenerator:
             keys = term.stage_keys
             for s in range(last):
                 if keys[s + 1] not in stages:
-                    stride = contraction_stage_size(s, iq.sizes)
+                    stride = contraction_stage_size(s, self._sum_factorisation_sizes)
                     next_stage = L.Symbol(
                         f"{caches[term.factor].name}_{group_id}_g{s + 1}_{len(stages)}",
                         dtype=L.DataType.SCALAR,
@@ -2249,9 +2293,14 @@ class IntegralGenerator:
                     basis = weighted(
                         s, term.tables, qs, [index.local_index(s) for index in B_indices]
                     )
-                    # Accumulate independent entries along the contiguous last
-                    # axis, preserving the quadrature order of each entry.
-                    width = iq.sizes[-1]
+                    # Accumulate independent entries along the contiguous
+                    # remaining points, preserving the quadrature order of
+                    # each entry. When they fill whole SIMD vectors and the
+                    # direction has a vector's worth of points, one plain
+                    # loop kept rolled vectorises whole; otherwise the
+                    # entries of each last-direction row are written out.
+                    rolled = self._whole_vectors(stride) and iq.sizes[s] >= self._simd_width
+                    width = 1 if rolled else self._sum_factorisation_sizes[-1]
                     indices = [m * width + lane for lane in range(width)]
                     first_point = iq.sizes[s] == 3
                     if first_point:
@@ -2268,11 +2317,18 @@ class IntegralGenerator:
                                     L.Assign(next_stage[index], stage[index] * scale)
                                     for index in indices
                                 ],
+                                keep_rolled=rolled,
                             ),
                         ]
                     else:
                         level_code[s].append(
-                            L.ForRange(m, 0, stride, [L.Assign(next_stage[m], 0.0)])
+                            L.ForRange(
+                                m,
+                                0,
+                                stride,
+                                [L.Assign(next_stage[m], 0.0)],
+                                keep_rolled=rolled,
+                            )
                         )
                     scale_assignment = L.Assign if first_point else L.VariableDecl
                     level_code[s] += [
@@ -2292,6 +2348,7 @@ class IntegralGenerator:
                                         )
                                         for index in indices
                                     ],
+                                    keep_rolled=rolled,
                                 ),
                             ],
                         ),
@@ -2338,7 +2395,16 @@ class IntegralGenerator:
                         q,
                         0,
                         num_points,
-                        [L.ForRange(j, 0, num_inner, [L.Assign(h[q * num_inner + j], value)])],
+                        [
+                            L.ForRange(
+                                j,
+                                0,
+                                num_inner,
+                                [L.Assign(h[q * num_inner + j], value)],
+                                keep_rolled=self._whole_vectors(num_inner)
+                                and num_points >= self._simd_width,
+                            )
+                        ],
                     )
                 )
                 combined.append((outer, h))

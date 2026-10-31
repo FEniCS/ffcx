@@ -1052,14 +1052,19 @@ def depth(code) -> int:
 class ForRange(Statement):
     """Slightly higher-level for loop assuming incrementing an index over a range."""
 
-    def __init__(self, index, begin, end, body):
-        """Initialise."""
+    def __init__(self, index, begin, end, body, keep_rolled: bool = False):
+        """Initialise.
+
+        keep_rolled asks the native compiler not to unroll the loop
+        completely, so that it can vectorise it instead.
+        """
         assert isinstance(index, Symbol) or isinstance(index, MultiIndex)
         self.index = index
         self.begin = as_lexpr(begin)
         self.end = as_lexpr(end)
         assert isinstance(body, list)
         self.body = StatementList(body)
+        self.keep_rolled = keep_rolled
 
     def as_tuple(self):
         """Convert to a tuple."""
