@@ -211,6 +211,8 @@ class Formatter(FormatterInterface):
             f"// Inputs: {', '.join(w.name for w in section.input)}\n"
             f"// Outputs: {', '.join(w.name for w in section.output)}\n"
         )
+        if section.description:
+            comments += f"// {section.description}\n"
         declarations = "".join(self(s) for s in section.declarations)
 
         body = ""
@@ -326,7 +328,9 @@ class Formatter(FormatterInterface):
         begin = self(r.begin)
         end = self(r.end)
         index = self(r.index)
-        output = f"for (int {index} = {begin}; {index} < {end}; ++{index})\n"
+        output = "FFCX_NO_VECTORIZE\n" if getattr(r, "no_vectorize", False) else ""
+        output += "FFCX_KEEP_ROLLED\n" if getattr(r, "keep_rolled", False) else ""
+        output += f"for (int {index} = {begin}; {index} < {end}; ++{index})\n"
         output += "{\n"
         body = self(r.body)
         for line in body.split("\n"):

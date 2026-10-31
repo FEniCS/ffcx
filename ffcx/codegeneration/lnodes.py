@@ -876,9 +876,15 @@ class Section(LNode):
         input: list[Symbol] | None = None,
         output: list[Symbol] | None = None,
         annotations: list[Annotation] | None = None,
+        description: str | None = None,
     ):
-        """Initialise."""
+        """Initialise.
+
+        ``description`` is a human-readable summary that source backends
+        print as a comment.
+        """
         self.name = name
+        self.description = description
         self.statements = [as_statement(st) for st in statements]
         self.annotations = annotations or []
         self.input = input or []
@@ -1046,14 +1052,33 @@ def depth(code) -> int:
 class ForRange(Statement):
     """Slightly higher-level for loop assuming incrementing an index over a range."""
 
-    def __init__(self, index, begin, end, body):
-        """Initialise."""
+    def __init__(
+        self,
+        index,
+        begin,
+        end,
+        body,
+        keep_rolled: bool = False,
+        no_vectorize: bool = False,
+        vectorize_across: bool = False,
+    ):
+        """Initialise.
+
+        keep_rolled asks the native compiler not to unroll the loop
+        completely, so that it can vectorise it instead. no_vectorize asks
+        it not to vectorise this loop itself, e.g. an outer loop whose inner
+        loops should vectorise instead. vectorize_across marks a loop that may
+        vectorise across its inner loops, such as one over quadrature points.
+        """
         assert isinstance(index, Symbol) or isinstance(index, MultiIndex)
         self.index = index
         self.begin = as_lexpr(begin)
         self.end = as_lexpr(end)
         assert isinstance(body, list)
         self.body = StatementList(body)
+        self.keep_rolled = keep_rolled
+        self.no_vectorize = no_vectorize
+        self.vectorize_across = vectorize_across
 
     def as_tuple(self):
         """Convert to a tuple."""

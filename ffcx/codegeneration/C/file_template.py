@@ -61,6 +61,32 @@ implementation_pre = """
 #define yn(n, x) _yn((n), (x))
 #endif
 
+// Keep a short loop rolled. GCC and Clang otherwise unroll small constant
+// loops completely before loop vectorisation, which can leave contractions
+// over a few quadrature points as scalar code; kept as a loop, each runs as
+// whole SIMD vectors. Other compilers ignore the hint.
+#ifndef FFCX_KEEP_ROLLED
+#if defined(__clang__)
+#define FFCX_KEEP_ROLLED _Pragma("clang loop unroll(disable)")
+#elif defined(__GNUC__) && __GNUC__ >= 8
+#define FFCX_KEEP_ROLLED _Pragma("GCC unroll 1")
+#else
+#define FFCX_KEEP_ROLLED
+#endif
+#endif
+
+// Keep an outer loop scalar. Clang may vectorise a loop across its inner
+// loops, e.g. over quadrature points or test functions, turning contiguous
+// inner accesses into gathers and scatters; the inner loops vectorise
+// instead. GCC does not do this, and other compilers ignore the hint.
+#ifndef FFCX_NO_VECTORIZE
+#if defined(__clang__)
+#define FFCX_NO_VECTORIZE _Pragma("clang loop vectorize(disable)")
+#else
+#define FFCX_NO_VECTORIZE
+#endif
+#endif
+
 """
 
 

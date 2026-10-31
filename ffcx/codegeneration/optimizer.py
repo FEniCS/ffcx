@@ -1,7 +1,7 @@
 """Optimizer."""
 
 import math
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 import ffcx.codegeneration.lnodes as L
 from ffcx.ir.representationutils import QuadratureRule
@@ -109,26 +109,35 @@ def reciprocal_cse(section: L.Section) -> L.Section:
     return section
 
 
-def _referenced_symbol_names(expr: L.LExpr, out: set[str]) -> None:
-    """Collect the names of every Symbol referenced within an expression tree."""
-    if isinstance(expr, L.Symbol):
-        out.add(expr.name)
-    elif isinstance(expr, L.ArrayAccess):
-        out.add(expr.array.name)
-        for i in expr.indices:
-            _referenced_symbol_names(i, out)
-    elif isinstance(expr, L.Conditional):
-        _referenced_symbol_names(expr.condition, out)
-        _referenced_symbol_names(expr.true, out)
-        _referenced_symbol_names(expr.false, out)
-    elif isinstance(expr, L.BinOp):
-        _referenced_symbol_names(expr.lhs, out)
-        _referenced_symbol_names(expr.rhs, out)
-    elif isinstance(expr, L.PrefixUnaryOp):
-        _referenced_symbol_names(expr.arg, out)
-    elif isinstance(expr, (L.NaryOp, L.MathFunction)):
-        for a in expr.args:
-            _referenced_symbol_names(a, out)
+def children(node) -> list:
+    """Return the direct sub-nodes of a statement or expression."""
+    if isinstance(node, list):
+        return node
+    if isinstance(node, L.Section):
+        return [*node.declarations, *node.statements]
+    if isinstance(node, L.StatementList):
+        return list(node.statements)
+    if isinstance(node, L.ForRange):
+        return [node.begin, node.end, *node.body.statements]
+    if isinstance(node, L.VariableDecl):
+        return [] if node.value is None else [node.value]
+    if isinstance(node, (L.ArrayDecl, L.Comment)):
+        return []
+    if isinstance(node, L.Statement):
+        return [node.expr]
+    if isinstance(node, L.ArrayAccess):
+        return [node.array, *node.indices]
+    if isinstance(node, L.MultiIndex):
+        return list(node.symbols)
+    if isinstance(node, L.BinOp):
+        return [node.lhs, node.rhs]
+    if isinstance(node, (L.NaryOp, L.MathFunction)):
+        return list(node.args)
+    if isinstance(node, L.PrefixUnaryOp):
+        return [node.arg]
+    if isinstance(node, L.Conditional):
+        return [node.condition, node.true, node.false]
+    return []
 
 
 def power_of_two_cse_statements(
@@ -232,29 +241,10 @@ def power_of_two_cse_statements(
 
 def _collect_referenced_names(node, out: set[str]) -> None:
     """Recursively collect every symbol name read anywhere in a code tree."""
-    if isinstance(node, list):
-        for n in node:
-            _collect_referenced_names(n, out)
-    elif isinstance(node, L.VariableDecl):
-        if node.value is not None:
-            _referenced_symbol_names(node.value, out)
-    elif isinstance(node, L.ArrayDecl):
-        pass
-    elif isinstance(node, L.Section):
-        for declaration in node.declarations:
-            if isinstance(declaration, L.VariableDecl) and declaration.value is not None:
-                _referenced_symbol_names(declaration.value, out)
-        _collect_referenced_names(node.statements, out)
-    elif isinstance(node, L.StatementList):
-        _collect_referenced_names(node.statements, out)
-    elif isinstance(node, L.ForRange):
-        _referenced_symbol_names(node.begin, out)
-        _referenced_symbol_names(node.end, out)
-        _collect_referenced_names(node.body, out)
-    elif isinstance(node, L.Comment):
-        pass
-    elif isinstance(node, L.Statement):
-        _referenced_symbol_names(node.expr, out)
+    if isinstance(node, L.Symbol):
+        out.add(node.name)
+    for child in children(node):
+        _collect_referenced_names(child, out)
 
 
 def _drop_unreferenced(node, dead: set[str]):
@@ -312,6 +302,23 @@ def scalar_declaration_names(code: list[L.LNode]) -> set[str]:
     return names
 
 
+def referenced_symbol_names(code: list[L.LNode]) -> set[str]:
+    """Return the symbols read in a code tree."""
+    referenced: set[str] = set()
+    _collect_referenced_names(code, referenced)
+    return referenced
+
+
+def prune_unused_tables(code: list[L.LNode]) -> list[L.LNode]:
+    """Remove top-level constant tables without any remaining accesses."""
+    referenced = referenced_symbol_names(code)
+    return [
+        node
+        for node in code
+        if not (isinstance(node, L.ArrayDecl) and node.const and node.symbol.name not in referenced)
+    ]
+
+
 def prune_dead_scalars(code: list[L.LNode], candidates: set[str]) -> list[L.LNode]:
     """Remove scalar declarations in `candidates` that end up with no reader.
 
@@ -359,6 +366,7 @@ def fuse_sections(code: list[L.LNode], name: str) -> list[L.LNode]:
     output: list[L.Symbol] = []
     declarations: list[L.Declaration] = []
     annotations: list[L.Annotation] = []
+    description = None
 
     for i, section in enumerate(code):
         if isinstance(section, L.Section):
@@ -369,13 +377,14 @@ def fuse_sections(code: list[L.LNode], name: str) -> list[L.LNode]:
                 input.extend(section.input)
                 output.extend(section.output)
                 annotations = section.annotations
+                description = section.description
 
     # Remove duplicated inputs
     input = list(set(input))
     # Remove duplicated outputs
     output = list(set(output))
 
-    section = L.Section(name, statements, declarations, input, output, annotations)
+    section = L.Section(name, statements, declarations, input, output, annotations, description)
 
     # Replace the first section with the fused section
     code = code.copy()
@@ -408,7 +417,14 @@ def fuse_loops(code: L.Section) -> L.Section:
     for range, body in loops.items():
         output_code.append(L.ForRange(*range, body))
 
-    return L.Section(code.name, output_code, code.declarations, code.input, code.output)
+    return L.Section(
+        code.name,
+        output_code,
+        code.declarations,
+        code.input,
+        code.output,
+        description=code.description,
+    )
 
 
 def get_statements(statement: L.Statement | L.StatementList) -> list[L.LNode]:
@@ -476,6 +492,8 @@ def expr_key(expr) -> tuple:
         # PrefixUnaryOp (Neg, Not) has no __repr__ override, so it would
         # otherwise fall through to the identity-based default below.
         return (type(expr).__name__, expr_key(expr.arg))
+    elif isinstance(expr, L.MathFunction):
+        return ("math", expr.function, *(expr_key(arg) for arg in expr.args))
     args = getattr(expr, "args", None)
     if args is not None:
         return (type(expr).__name__, *(expr_key(a) for a in args))
@@ -585,3 +603,201 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
     section.statements = pre_loop + [new_outer] + section.statements[1:]
 
     return section
+
+
+def factor_scalar_sums(statements: list[L.LNode]) -> list[L.LNode]:
+    """Factor bounded scalar polynomials and reuse equivalent expressions.
+
+    Expand single-use arithmetic temporaries and short products, then extract
+    the most frequent factor from each sum. Shared sums stay as symbols, and
+    expansion stops at 32 terms to bound work on large differentiated forms.
+    Prefer factors used elsewhere when frequencies tie, exposing shared
+    subexpressions to the native compiler. Sorted monomials make this
+    independent of Python's hash seed.
+
+    Like reciprocal CSE, this reassociates floating-point arithmetic and can
+    change rounding. Calls, array accesses and nonliteral divisors are opaque.
+    The caller must prune scalar declarations after assembling the whole body.
+    """
+    max_terms = 32
+    max_factors = 8
+    uses: Counter[str] = Counter()
+
+    def count(expr):
+        if isinstance(expr, L.Symbol):
+            uses[expr.name] += 1
+        for child in children(expr):
+            count(child)
+
+    for stmt in statements:
+        if isinstance(stmt, L.VariableDecl):
+            count(stmt.value)
+
+    # A polynomial maps a sorted tuple of atomic factor keys to a coefficient.
+    expanded: dict[str, dict[tuple, complex | float | int]] = {}
+    atoms: dict[tuple, L.LExpr] = {}
+    output: list[L.LNode] = []
+    seen: dict[tuple, L.Symbol] = {}
+
+    def atom(expr):
+        key = expr_key(expr)
+        atoms[key] = expr
+        return {(key,): 1}
+
+    def polynomial(expr):
+        if isinstance(expr, L.Symbol):
+            return expanded[expr.name] if expr.name in expanded else atom(expr)
+        if isinstance(expr, L.LiteralInt | L.LiteralFloat):
+            return {(): expr.value}
+        if isinstance(expr, L.Neg):
+            return {key: -value for key, value in polynomial(expr.arg).items()}
+        if isinstance(expr, L.Add):
+            result = polynomial(expr.lhs).copy()
+            for key, value in polynomial(expr.rhs).items():
+                result[key] = result.get(key, 0) + value
+            if len(result) > max_terms:
+                return atom(expr)
+            return {key: value for key, value in result.items() if value != 0}
+        if isinstance(expr, L.Mul):
+            lhs, rhs = polynomial(expr.lhs), polynomial(expr.rhs)
+            if len(lhs) * len(rhs) > max_terms:
+                return atom(expr)
+            result = {}
+            for lk, lv in lhs.items():
+                for rk, rv in rhs.items():
+                    key = tuple(sorted(lk + rk, key=repr))
+                    result[key] = result.get(key, 0) + lv * rv
+            return {key: value for key, value in result.items() if value != 0}
+        if isinstance(expr, L.Div) and isinstance(expr.rhs, L.LiteralInt | L.LiteralFloat):
+            return {key: value / expr.rhs.value for key, value in polynomial(expr.lhs).items()}
+        return atom(expr)
+
+    def literal(value):
+        return L.LiteralFloat(value) if isinstance(value, complex) else L.as_lexpr(value)
+
+    def product(args):
+        return L.as_lexpr(L.float_product(args))
+
+    def build(terms):
+        if not terms:
+            return L.LiteralFloat(0.0)
+        if len(terms) == 1:
+            ((key, value),) = terms.items()
+            return product([literal(value), *[atoms[arg] for arg in key]])
+        counts = Counter(arg for key in terms for arg in sorted(set(key), key=repr))
+
+        def priority(key):
+            reuse = uses[atoms[key].name] if isinstance(atoms[key], L.Symbol) else 0
+            return counts[key], reuse
+
+        best = max(counts, key=priority, default=None)
+        if best is not None and counts[best] > 1:
+            group, rest = {}, {}
+            for key, value in terms.items():
+                if best in key:
+                    factors = list(key)
+                    factors.remove(best)
+                    group[tuple(factors)] = value
+                else:
+                    rest[key] = value
+            term = product([atoms[best], build(group)])
+            return L.Sum([term, build(rest)]) if rest else term
+        return L.Sum(
+            [
+                product([literal(value), *[atoms[arg] for arg in key]])
+                for key, value in terms.items()
+            ]
+        )
+
+    for stmt in statements:
+        if not isinstance(stmt, L.VariableDecl) or not isinstance(
+            stmt.value, L.Add | L.Mul | L.Neg | L.Div
+        ):
+            output.append(stmt)
+            continue
+        terms = polynomial(stmt.value)
+        value = build(terms)
+        key = expr_key(value)
+        if key in seen:
+            value = seen[key]
+        else:
+            seen[key] = stmt.symbol
+        output.append(L.VariableDecl(stmt.symbol, value))
+        if (uses[stmt.symbol.name] == 1 and len(terms) <= max_terms) or (
+            len(terms) == 1 and len(next(iter(terms))) <= max_factors
+        ):
+            expanded[stmt.symbol.name] = terms
+    return output
+
+
+def map_expressions(node, fn):
+    """Rebuild a statement or expression tree, replacing nodes with ``fn``.
+
+    ``fn`` returns a replacement for a node or ``None`` to keep it and
+    rebuild its operands.
+    """
+    if isinstance(node, list):
+        return [map_expressions(n, fn) for n in node]
+    replacement = fn(node)
+    if replacement is not None:
+        return replacement
+    if isinstance(node, L.Section):
+        return L.Section(
+            node.name,
+            map_expressions(list(node.statements), fn),
+            map_expressions(list(node.declarations), fn),
+            node.input,
+            node.output,
+            node.annotations,
+            node.description,
+        )
+    if isinstance(node, L.StatementList):
+        return type(node)(map_expressions(list(node.statements), fn))
+    if isinstance(node, L.ForRange):
+        return L.ForRange(
+            node.index,
+            node.begin,
+            node.end,
+            map_expressions(list(node.body.statements), fn),
+            keep_rolled=node.keep_rolled,
+            no_vectorize=node.no_vectorize,
+            vectorize_across=node.vectorize_across,
+        )
+    if isinstance(node, L.VariableDecl):
+        value = None if node.value is None else map_expressions(node.value, fn)
+        return L.VariableDecl(node.symbol, value)
+    if isinstance(node, (L.ArrayDecl, L.Comment)):
+        return node
+    if isinstance(node, L.Statement):
+        return L.Statement(map_expressions(node.expr, fn))
+    if isinstance(node, L.MultiIndex):
+        return L.MultiIndex([map_expressions(i, fn) for i in node.symbols], node.sizes)
+    if isinstance(node, L.ArrayAccess):
+        return L.ArrayAccess(node.array, [map_expressions(i, fn) for i in node.indices])
+    if isinstance(node, L.MathFunction):
+        return L.MathFunction(node.function, [map_expressions(a, fn) for a in node.args])
+    if isinstance(node, L.NaryOp):
+        return type(node)([map_expressions(a, fn) for a in node.args])
+    if isinstance(node, L.BinOp):
+        return type(node)(map_expressions(node.lhs, fn), map_expressions(node.rhs, fn))
+    if isinstance(node, L.PrefixUnaryOp):
+        return type(node)(map_expressions(node.arg, fn))
+    if isinstance(node, L.Conditional):
+        return L.Conditional(
+            map_expressions(node.condition, fn),
+            map_expressions(node.true, fn),
+            map_expressions(node.false, fn),
+        )
+    return node
+
+
+def substitute(node, symbol: L.Symbol, value: L.LExpr):
+    """Replace every occurrence of ``symbol`` in a statement or expression tree."""
+    return map_expressions(
+        node, lambda n: value if isinstance(n, L.Symbol) and n == symbol else None
+    )
+
+
+def unroll_loop(body: list[L.LNode], index: L.Symbol, extent: int) -> list[L.LNode]:
+    """Return copies of a loop body for each literal value of its index."""
+    return [s for k in range(extent) for s in substitute(body, index, L.LiteralInt(k))]

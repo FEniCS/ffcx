@@ -7,17 +7,19 @@
 
 import logging
 import math
+from collections.abc import Sequence
 
+import numpy as np
 import ufl
 
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration import geometry
-from ffcx.codegeneration.optimizer import expr_key
+from ffcx.codegeneration.optimizer import expr_key, unroll_loop
 from ffcx.definitions import entity_types
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
-from ffcx.ir.sumfactorisation import evaluation_stage_sizes
+from ffcx.ir.sumfactorisation import evaluation_order
 
 logger = logging.getLogger("ffcx")
 
@@ -25,11 +27,74 @@ logger = logging.getLogger("ffcx")
 # Cap on unrolling, so a curved high-order simplex doesn't blow up compile
 # time. Tensor-product geometry always keeps the loop path regardless.
 _MAX_UNROLLED_COORDINATE_DOFS = 16
+_MAX_UNROLLED_DENSE_COEFFICIENT_DOFS = 8
+_MAX_UNROLLED_SPARSE_COEFFICIENT_DOFS = 20
+# Expose small 1D reductions and at most one Q2 hex's worth of stage entries.
+_MAX_UNROLLED_FACTOR_SIZE = 3
+_MAX_UNROLLED_EVALUATION_SIZE = 27
 
 
 def _should_unroll_coordinate_dofs(num_dofs: int, has_tensor_factorisation: bool) -> bool:
     """Return whether a coordinate-dof linear combination should be unrolled."""
     return not has_tensor_factorisation and num_dofs <= _MAX_UNROLLED_COORDINATE_DOFS
+
+
+def _coordinate_basis_groups(values: np.ndarray) -> list[tuple[int, list[tuple[int, float]]]]:
+    """Group coordinate-basis columns equal up to sign and tabulation round-off.
+
+    Moving the sign into the coordinate combination lets the C compiler hoist
+    coordinate differences out of the quadrature loop. Compare all points,
+    entities and permutations, with a tolerance at the scale of tabulation
+    round-off rather than the looser table-reuse tolerance.
+    """
+    groups: list[tuple[int, list[tuple[int, float]]]] = []
+    roundoff = 16 * np.finfo(values.dtype).eps
+    for column in range(values.shape[-1]):
+        data = values[..., column]
+        scale = np.max(np.abs(data))
+        if scale == 0:
+            continue
+        for representative, members in groups:
+            other = values[..., representative]
+            tolerance = roundoff * max(scale, np.max(np.abs(other)))
+            if np.max(np.abs(data - other)) <= tolerance:
+                members.append((column, 1.0))
+                break
+            if np.max(np.abs(data + other)) <= tolerance:
+                members.append((column, -1.0))
+                break
+        else:
+            groups.append((column, [(column, 1.0)]))
+    return groups
+
+
+# Comments on the sections that evaluate terminals, by terminal type
+_TERMINAL_DESCRIPTIONS: dict[type, str] = {
+    ufl.Jacobian: "Differentiate the coordinate mapping to obtain Jacobian components.",
+    ufl.SpatialCoordinate: "Evaluate physical coordinates from coordinate degrees of freedom.",
+    ufl.Coefficient: "Evaluate coefficient values or derivatives from their degrees of freedom.",
+}
+
+
+def _terminal_section(
+    mt: ModifiedTerminal,
+    statements: list[L.LNode],
+    declarations: Sequence[L.Declaration],
+    input: list[L.Symbol],
+    output: list[L.Symbol],
+    annotations: list[L.Annotation] | None = None,
+) -> L.Section:
+    """Return a section evaluating a terminal, named after its type."""
+    terminal = type(mt.terminal)
+    return L.Section(
+        terminal.__name__,
+        statements,
+        declarations,
+        input,
+        output,
+        annotations,
+        _TERMINAL_DESCRIPTIONS.get(terminal),
+    )
 
 
 def create_quadrature_index(quadrature_rule, quadrature_index_symbol):
@@ -173,6 +238,35 @@ class FFCXBackendDefinitions:
                 mt, tabledata, quadrature_rule, access, dofs, bs, L.DataType.SCALAR
             )
 
+        # Expand small reductions to expose SIMD across quadrature points,
+        # including the evaluation/contraction split for varying geometry.
+        # Larger reductions are expanded only when some basis derivatives
+        # vanish at every point, or the table is constant so every term
+        # folds to a literal. Preserve tensor-product factorisations.
+        if (
+            not tabledata.has_tensor_factorisation
+            and num_dofs <= _MAX_UNROLLED_SPARSE_COEFFICIENT_DOFS
+        ):
+            active = np.flatnonzero(tabledata.values.any(axis=(0, 1, 2)))
+            domain = ufl.domain.extract_unique_domain(mt.terminal)
+            assert isinstance(domain, ufl.Mesh)
+            unroll_dense = (
+                num_dofs <= _MAX_UNROLLED_DENSE_COEFFICIENT_DOFS
+                and not domain.is_piecewise_linear_simplex_domain()
+            )
+            constant = tabledata.is_piecewise and tabledata.is_uniform and not tabledata.is_permuted
+            if len(active) < num_dofs or unroll_dense or constant:
+                terms = []
+                tables = []
+                for k in active:
+                    ic_k = L.MultiIndex([L.LiteralInt(int(k))], [num_dofs])
+                    FE, term_tables = self.access.table_access(
+                        tabledata, self.entity_type, mt.restriction, iq, ic_k
+                    )
+                    dof = self.symbols.coefficient_dof_access(mt.terminal, int(k) * bs + begin)
+                    terms.append(L.float_product([dof, FE]))
+                    tables.extend(term_tables)
+                return self._unrolled_coefficient(mt, access, begin, terms, tables)
         # Get access to element table
         FE, tables = self.access.table_access(tabledata, self.entity_type, mt.restriction, iq, ic)
         dof_access: L.ArrayAccess = self.symbols.coefficient_dof_access(
@@ -183,7 +277,6 @@ class FFCXBackendDefinitions:
         body = [L.AssignAdd(access, dof_access * FE)]
         code = [L.create_nested_for_loops([ic], body)]
 
-        name = type(mt.terminal).__name__
         input = [dof_access.array, *tables]
         output = [access]
         annotations = [L.Annotation.fuse]
@@ -192,7 +285,29 @@ class FFCXBackendDefinitions:
         assert all(isinstance(i, L.Symbol) for i in input)
         assert all(isinstance(o, L.Symbol) for o in output)
 
-        return [L.Section(name, code, declaration, input, output, annotations)]
+        return [_terminal_section(mt, code, declaration, input, output, annotations)]
+
+    def _unrolled_coefficient(
+        self,
+        mt: ModifiedTerminal,
+        access: L.Symbol,
+        begin: int,
+        terms: list[L.LExpr],
+        tables: list[L.Symbol],
+    ) -> list[L.Section]:
+        """Define a coefficient as an unrolled sum of dof terms."""
+        return [
+            _terminal_section(
+                mt,
+                [],
+                [L.VariableDecl(access, L.Sum(terms))],
+                [
+                    self.symbols.coefficient_dof_access(mt.terminal, begin).array,
+                    *dict.fromkeys(tables),
+                ],
+                [access],
+            )
+        ]
 
     def _define_coordinate_dofs_lincomb(
         self,
@@ -323,15 +438,37 @@ class FFCXBackendDefinitions:
             # exact 0.0/+-1.0 low-order values constant-fold away.
             terms = []
             coord_tables: list[L.Symbol] = []
-            for k in range(num_dofs):
+            # Keep four-coordinate reductions intact: they already fit a
+            # short SIMD reduction, and pairing can disrupt that lowering.
+            constant_table = (
+                tabledata.is_piecewise and tabledata.is_uniform and not tabledata.is_permuted
+            )
+            groups = (
+                [(k, [(k, 1.0)]) for k in range(num_dofs)]
+                if constant_table or num_dofs <= 4
+                else _coordinate_basis_groups(tabledata.values)
+            )
+            for k, members in groups:
                 ic_k = L.MultiIndex([L.LiteralInt(k)], [num_dofs])
                 FE_k, tables_k = self.access.table_access(
                     tabledata, self.entity_type, mt.restriction, iq, ic_k
                 )
+                if L.is_zero_lexpr(FE_k):
+                    continue
                 for t in tables_k:
                     if t not in coord_tables:
                         coord_tables.append(t)
-                terms.append(dof_access[_dof(k) * dim + begin + offset] * FE_k)
+                coordinate = dof_access[_dof(k) * dim + begin + offset]
+                if len(members) > 1:
+                    coordinate = L.Sum(
+                        [
+                            L.float_product(
+                                [dof_access[_dof(j) * dim + begin + offset], L.LiteralFloat(sign)]
+                            )
+                            for j, sign in members
+                        ]
+                    )
+                terms.append(L.float_product([coordinate, FE_k]))
             declaration = [L.VariableDecl(access, L.Sum(terms))]
             code = []
             input = [dof_access, *coord_tables]
@@ -339,7 +476,6 @@ class FFCXBackendDefinitions:
         if closure_table is not None:
             input.append(closure_table)
 
-        name = type(mt.terminal).__name__
         output = [access]
         annotations = [L.Annotation.fuse]
 
@@ -347,7 +483,7 @@ class FFCXBackendDefinitions:
         assert all(isinstance(i, L.Symbol) for i in input)
         assert all(isinstance(o, L.Symbol) for o in output)
 
-        return [L.Section(name, code, declaration, input, output, annotations)]
+        return [_terminal_section(mt, code, declaration, input, output, annotations)]
 
     def _sum_factorised_lincomb(
         self,
@@ -366,8 +502,8 @@ class FFCXBackendDefinitions:
 
         Evaluated at each point, a coefficient, or the spatial coordinate or
         Jacobian, sums over all its dofs, costing O(Q^d N^d). Contracting
-        its dofs with the 1D tables one
-        direction at a time, last direction first, costs O(N^d Q + ... +
+        its dofs with the 1D tables one direction at a time, last direction
+        first after any point-independent directions, costs O(N^d Q + ... +
         Q^d N); in 2D
 
             t[i0, q1] = sum_i1 B1[q1, i1] w[i0, i1]
@@ -380,14 +516,10 @@ class FFCXBackendDefinitions:
         dim = iq.dim
         assert tabledata.tensor_factors is not None
         num_dofs = [factor.values.shape[-1] for factor in tabledata.tensor_factors]
-        num_points = iq.sizes
+        directions, num_points = evaluation_order(tabledata.tensor_factors, list(iq.sizes))
         assert all(
-            factor.values.shape[2] == n for factor, n in zip(tabledata.tensor_factors, num_points)
+            factor.values.shape[2] == n for factor, n in zip(tabledata.tensor_factors, iq.sizes)
         )
-
-        # Contracting direction d leaves the dofs of directions < d and the
-        # points of directions >= d
-        sizes = evaluation_stage_sizes(num_dofs, num_points)
 
         def loop(name: str, extent: int):
             """Return a loop index and a function wrapping a body in its loop.
@@ -406,43 +538,193 @@ class FFCXBackendDefinitions:
         # Terminals reading the same dofs with the same 1D tables, such as x
         # and the derivatives of x, share their first stages
         key: tuple = (quadrature_rule.id(), expr_key(dofs), stride)
-        for d in reversed(range(dim)):
-            key += (tabledata.tensor_factors[d].name,)
+        code += [
+            L.Comment(f"--- {type(mt.terminal).__name__} component: {access.name} ---"),
+            L.Comment(
+                "Apply the one-dimensional basis tables to the dofs, "
+                "storing point-independent directions only once."
+            ),
+        ]
+        local: set[L.Symbol] = set()
+        if tabledata.tensor_permutation is not None:
+            # The element numbers its dofs by entity: copy them in the
+            # order of the products of 1D basis functions
+            permutation = tabledata.tensor_permutation
+            key += (("dofs", tuple(int(dof) for dof in permutation)),)
             if key in self._stages:
                 source, stride, offset = self._stages[key], 1, 0
+            else:
+                ordered = L.Symbol(f"{name}_dofs", dtype=dtype)
+                self._stages[key] = ordered
+                inputs.append(source)
+                code += [
+                    L.Comment("Copy the dofs into tensor product order."),
+                    L.ArrayDecl(ordered, sizes=len(permutation)),
+                ]
+                code += [
+                    L.Assign(ordered[t], source[int(dof) * stride + offset])
+                    for t, dof in enumerate(permutation)
+                ]
+                local.add(ordered)
+                source, stride, offset = ordered, 1, 0
+        derivative_orders = [mt.local_derivatives.count(d) for d in range(dim)]
+        if isinstance(mt.terminal, ufl.geometry.Jacobian):
+            row, column = mt.component
+            derivative_orders[column] += 1
+            code.append(L.Comment(f"Compute J[{row},{column}] = d x{row}/d xi{column}."))
+            if mt.local_derivatives:
+                code.append(
+                    L.Comment(
+                        f"Also apply reference derivatives in directions {mt.local_derivatives}."
+                    )
+                )
+
+        contracted: set[int] = set()
+
+        def stage_comments(direction: int, stage: L.Symbol) -> list[L.LNode]:
+            """Describe logical tensor axes before and after this dof contraction."""
+
+            def layout(done: set[int]) -> str:
+                axes, shape = [], []
+                for d in range(dim):
+                    if d in done:
+                        if num_points[d] == 1:
+                            continue
+                        axes.append(f"q{d}")
+                        shape.append(num_points[d])
+                    else:
+                        axes.append(f"i{d}")
+                        shape.append(num_dofs[d])
+                indices = "".join(f"[{axis}]" for axis in axes) or "scalar"
+                return f"{indices}, shape {shape}"
+
+            done = contracted | {direction}
+            comments: list[L.LNode] = [
+                L.Comment(f"--- Direction {direction}: evaluate {stage.name} ---"),
+                L.Comment(f"Logical input layout: {layout(contracted)}."),
+                L.Comment(f"Logical output layout: {layout(done)}; last index contiguous."),
+            ]
+            assert tabledata.tensor_factors is not None
+            factor = tabledata.tensor_factors[direction]
+            if (
+                num_points[direction] == 1
+                and num_dofs[direction] == 2
+                and np.array_equal(factor.values[0, 0, 0], [-1.0, 1.0])
+            ):
+                comments.append(
+                    L.Comment(
+                        f"Subtract the i{direction}=0 slice from the i{direction}=1 slice: "
+                        "the Q1 reference derivative has weights [-1, +1]."
+                    )
+                )
+            else:
+                operation = (
+                    f"Differentiate (order {derivative_orders[direction]})"
+                    if derivative_orders[direction]
+                    else "Interpolate"
+                )
+                comments.append(
+                    L.Comment(
+                        f"{operation} in reference direction {direction}, "
+                        f"summing over its {num_dofs[direction]} dofs with the 1D basis table."
+                    )
+                )
+            independent = [f"q{d}" for d in sorted(done) if num_points[d] == 1]
+            if independent:
+                comments.append(
+                    L.Comment(
+                        f"Independent of {', '.join(independent)}; omit these axes from storage "
+                        "and reuse the values at every point in those directions."
+                    )
+                )
+            return comments
+
+        # The stage shape holds, in each direction, the dofs or, once
+        # contracted, the stored points.
+        shape = list(num_dofs)
+        for d in directions:
+            key += ((d, tabledata.tensor_factors[d].name),)
+            previous = list(shape)
+            shape[d] = num_points[d]
+            if key in self._stages:
+                source, stride, offset = self._stages[key], 1, 0
+                contracted.add(d)
                 continue
-            if source not in inputs:
+            if source not in inputs and source not in local:
                 inputs.append(source)
             stage = L.Symbol(f"{name}_c{d}", dtype=dtype)
             self._stages[key] = stage
-            code.append(L.ArrayDecl(stage, sizes=sizes[d]))
-            inner = math.prod(num_points[d + 1 :])
-            a, a_loop = loop("a", math.prod(num_dofs[:d]))
+            code += stage_comments(d, stage)
+            contracted.add(d)
+            size = math.prod(shape)
+            code.append(L.ArrayDecl(stage, sizes=size))
+            inner = math.prod(shape[d + 1 :])
+            outer = math.prod(shape[:d])
+            a, a_loop = loop("a", outer)
             q, q_loop = loop("q", num_points[d])
-            width = num_points[-1] if d < dim - 1 else 1
+            width = shape[-1] if d < dim - 1 else 1
             b, b_loop = loop("b", inner // width)
 
-            i = L.Symbol("sfc_i", dtype=L.DataType.INT)
-            initial, updates = [], []
-            for lane in range(width):
-                point = b * width + lane
-                out = stage[(a * num_points[d] + q) * inner + point]
-                terms = []
-                for index in (L.LiteralInt(0), i):
-                    value = source[((a * num_dofs[d] + index) * inner + point) * stride + offset]
-                    table, symbol = self.access.tensor_factor_access(tabledata, d, q, index)
-                    terms.append(value * table)
-                initial.append(L.Assign(out, terms[0]))
-                updates.append(L.AssignAdd(out, terms[1]))
-            if symbol not in inputs:
-                inputs.append(symbol)
+            unroll = num_dofs[d] <= _MAX_UNROLLED_FACTOR_SIZE
+            short_rule = unroll and num_points[d] <= _MAX_UNROLLED_FACTOR_SIZE
+            expand_stage = short_rule and size <= _MAX_UNROLLED_EVALUATION_SIZE
+            points = [L.LiteralInt(k) for k in range(num_points[d])] if short_rule else [q]
+            point_code: list[L.LNode] = []
+            for point_index in points:
+                i = L.Symbol("sfc_i", dtype=L.DataType.INT)
+                initial, updates = [], []
+                for lane in range(width):
+                    point = b * width + lane
+                    out = stage[(a * num_points[d] + point_index) * inner + point]
+                    terms = []
+                    indices = (
+                        [L.LiteralInt(k) for k in range(num_dofs[d])]
+                        if unroll
+                        else [L.LiteralInt(0), i]
+                    )
+                    for index in indices:
+                        value = source[
+                            ((a * previous[d] + index) * inner + point) * stride + offset
+                        ]
+                        if short_rule:
+                            assert isinstance(point_index, L.LiteralInt)
+                            assert isinstance(index, L.LiteralInt)
+                            table = L.LiteralFloat(
+                                tabledata.tensor_factors[d].values[
+                                    0, 0, int(point_index.value), int(index.value)
+                                ]
+                            )
+                            if L.is_zero_lexpr(table):
+                                continue
+                        else:
+                            table, symbol = self.access.tensor_factor_access(
+                                tabledata, d, point_index, index
+                            )
+                            if symbol not in inputs:
+                                inputs.append(symbol)
+                        terms.append(L.float_product([value, table]))
+                    if unroll:
+                        initial.append(L.Assign(out, L.Sum(terms) if terms else 0.0))
+                    else:
+                        initial.append(L.Assign(out, terms[0]))
+                        updates.append(L.AssignAdd(out, terms[1]))
 
-            # The first dof sets the stage, the others add to it, in a
-            # contiguous innermost loop over the points of later directions
-            body = b_loop(initial)
-            if num_dofs[d] > 1:
-                body += [L.ForRange(i, 1, num_dofs[d], b_loop(updates))]
-            code += a_loop(q_loop(body))
+                # Short reductions expose literal table entries and independent
+                # output points. Larger stages retain their outer loops.
+                body = initial if expand_stage else b_loop(initial)
+                if updates and num_dofs[d] > 1:
+                    body += [L.ForRange(i, 1, num_dofs[d], b_loop(updates))]
+                point_code += body
+            stage_code = point_code if short_rule else q_loop(point_code)
+            if expand_stage:
+                # Literal indices let the compiler replace small temporary
+                # arrays by registers instead of vectorising tiny loops.
+                for index, extent in ((b, inner // width), (a, outer)):
+                    if isinstance(index, L.Symbol):
+                        stage_code = unroll_loop(stage_code, index, extent)
+            else:
+                stage_code = a_loop(stage_code)
+            code += stage_code
             source, stride, offset = stage, 1, 0
 
         terminal = type(mt.terminal).__name__
@@ -454,10 +736,23 @@ class FFCXBackendDefinitions:
             [source],
             [L.Annotation.factorize],
         )
-        read = L.Section(
-            terminal,
+        read = _terminal_section(
+            mt,
             [],
-            [L.VariableDecl(access, source[iq.global_index])],
+            [
+                L.VariableDecl(
+                    access,
+                    source[
+                        L.MultiIndex(
+                            [
+                                iq.local_index(d) if n > 1 else L.LiteralInt(0)
+                                for d, n in enumerate(num_points)
+                            ],
+                            num_points,
+                        )
+                    ],
+                )
+            ],
             [source],
             [access],
             [L.Annotation.fuse],

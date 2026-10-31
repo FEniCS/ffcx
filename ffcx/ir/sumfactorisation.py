@@ -43,14 +43,42 @@ def _factors(td: UniqueTableReferenceT) -> list[UniqueTableReferenceT]:
     return td.tensor_factors
 
 
-def evaluation_stage_sizes(num_dofs: list[int], num_points: list[int]) -> list[int]:
-    """Return the sizes of the stages evaluating a linear combination of dofs on a rule.
+def is_point_independent(factor: UniqueTableReferenceT) -> bool:
+    """Check whether a tensor factor table has the same values at every point."""
+    return bool(np.all(factor.values == factor.values[:, :, :1, :]))
 
-    The dofs are contracted one direction at a time, last direction first,
-    and contracting direction d leaves the dofs of directions < d and the
-    points of directions >= d.
+
+def evaluation_order(
+    factors: list[UniqueTableReferenceT], num_points: list[int]
+) -> tuple[list[int], list[int]]:
+    """Return how a linear combination of dofs is evaluated on a tensor product rule.
+
+    Returns the directions in the order their dofs are contracted, and the
+    number of points stored in each direction. A derivative of a low-order
+    basis is often constant in its own direction, so that direction is
+    stored at one point. Point-independent directions are contracted
+    first: forming their differences of dofs before interpolating the
+    others leaves fewer values to interpolate. The others follow, last
+    direction first.
     """
-    return [math.prod(num_dofs[:d]) * math.prod(num_points[d:]) for d in range(len(num_points))]
+    points = [1 if is_point_independent(f) else n for f, n in zip(factors, num_points)]
+    directions = sorted(reversed(range(len(points))), key=lambda d: points[d] != 1)
+    return directions, points
+
+
+def evaluation_stage_sizes(
+    num_dofs: list[int], num_points: list[int], directions: list[int]
+) -> list[int]:
+    """Return the sizes of the stages evaluating a linear combination of dofs, in order.
+
+    Each stage holds, in each direction, the dofs or, once that direction is
+    contracted, its stored points.
+    """
+    shape, sizes = list(num_dofs), []
+    for d in directions:
+        shape[d] = num_points[d]
+        sizes.append(math.prod(shape))
+    return sizes
 
 
 def contraction_stage_size(direction: int, num_points: list[int]) -> int:

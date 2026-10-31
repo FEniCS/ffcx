@@ -14,7 +14,7 @@ import numpy.typing as npt
 import ufl
 
 from ffcx.definitions import entity_types
-from ffcx.element_interface import basix_index
+from ffcx.element_interface import basix_index, tensor_product_factorisation
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.representationutils import (
     QuadratureRule,
@@ -66,6 +66,7 @@ class UniqueTableReferenceT(typing.NamedTuple):
     offset: int | None = None
     block_size: int | None = None
     tensor_factors: list["UniqueTableReferenceT"] | None = None
+    # Element dof of each flat tensor product index, if not the index itself
     tensor_permutation: np.typing.NDArray[np.int32] | None = None
 
     @property
@@ -638,18 +639,21 @@ def build_optimized_tables(
 
         tensor_factors: list[UniqueTableReferenceT] | None = None
         tensor_perm = None
-        factors = element.get_tensor_product_representation()
+        factorisation = tensor_product_factorisation(element)
         if (
             use_sum_factorization
-            and factors is not None
-            and len(factors) == 1
+            and factorisation is not None
             and quadrature_rule.has_tensor_factors
         ):
+            factors, tensor_perm = factorisation
             tensor_factors = []
-            for i, j in enumerate(factors[0]):
+            for i, j in enumerate(factors):
                 pts = quadrature_rule.tensor_factors[i][0]
                 d = local_derivatives[i]
                 sub_tbl = j.tabulate(d, pts)[d]
+                # Apply the full table's tolerances to its factors too, so
+                # tabulation round-off does not hide exact zeros and units.
+                sub_tbl = clamp_table_small_numbers(sub_tbl, rtol=rtol, atol=atol)
                 sub_tbl = sub_tbl.reshape(1, 1, sub_tbl.shape[0], sub_tbl.shape[1])
                 for tensor_factor in all_tensor_factors:
                     if tensor_factor.values.shape == sub_tbl.shape and np.allclose(
