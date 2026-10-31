@@ -20,6 +20,7 @@ from typing import Any, cast
 
 import basix
 import numpy as np
+import numpy.typing as npt
 import ufl
 
 import ffcx.codegeneration.lnodes as L
@@ -581,6 +582,9 @@ class IntegralGenerator:
         # table is declared: the dofs of element tables read by padded
         # contiguous loops, and the points of weights read across padded points.
         self._padded_tables: dict[str, int] = {}
+        # Element dofs of the tensor product indices of elements numbering
+        # their dofs by entity, by the bytes of the map
+        self._dof_maps: dict[bytes, tuple[L.Symbol, npt.NDArray[np.int32]]] = {}
         # Symmetric local arrays contracted on and above the diagonal, in row
         # groups of one SIMD width
         self._upper_locals: set[str] = set()
@@ -700,6 +704,10 @@ class IntegralGenerator:
         # pre-integrated blocks
         parts += self.generate_element_tables(domain)
         parts += self.generate_transposed_tables(domain)
+        parts += [
+            L.ArrayDecl(symbol, values=permutation, const=True)
+            for symbol, permutation in self._dof_maps.values()
+        ]
 
         # Generate the tables of geometry data that are needed
         parts += geometry.static_tables(
@@ -2689,14 +2697,29 @@ class IntegralGenerator:
             tabledata = blockdata.ma_data[i].tabledata
             offset = tabledata.offset
             scale = 1 if len(blockmap[i]) == 1 else tabledata.block_size
+            permutation = tabledata.tensor_permutation
             if all(isinstance(s, L.LiteralInt) for s in index.symbols):
                 dof = np.ravel_multi_index([s.value for s in index.symbols], index.sizes)
+                if permutation is not None:
+                    dof = permutation[dof]
                 A_indices.append(L.LiteralInt(int(scale * dof + offset)))
-            elif scale == 1:
-                A_indices.append(index.global_index + offset)
+                continue
+            dof_index: L.LExpr = index.global_index
+            if permutation is not None:
+                dof_index = self._dof_map(permutation)[dof_index]
+            if scale == 1:
+                A_indices.append(dof_index + offset)
             else:
-                A_indices.append(scale * index.global_index + offset)
+                A_indices.append(scale * dof_index + offset)
         return A_indices
+
+    def _dof_map(self, permutation: npt.NDArray[np.int32]) -> L.Symbol:
+        """Return a table of the element dof of each tensor product index."""
+        key = permutation.tobytes()
+        if key not in self._dof_maps:
+            symbol = L.Symbol(f"tp_dofs{len(self._dof_maps)}", dtype=L.DataType.INT)
+            self._dof_maps[key] = (symbol, permutation)
+        return self._dof_maps[key][0]
 
     def _element_tensor_entry(
         self, target: ContractionTerm, B_indices: list[L.MultiIndex]

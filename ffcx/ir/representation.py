@@ -38,6 +38,7 @@ from ufl.sorting import sorted_expr_sum
 from ffcx import naming
 from ffcx.analysis import UFLData
 from ffcx.definitions import entity_types, supported_integral_types
+from ffcx.element_interface import tensor_product_factorisation
 from ffcx.ir.integral import CommonExpressionIR, TensorPart, compute_integral_ir
 from ffcx.ir.representationutils import (
     QuadratureRule,
@@ -167,7 +168,7 @@ def _group_integrands_by_quadrature_rule(
         sum_factorization
         and integral_type == "cell"
         and len(argument_elements) > 0
-        and all(e.has_tensor_product_factorisation for e in argument_elements)
+        and all(tensor_product_factorisation(e) is not None for e in argument_elements)
     )
     for integral in integrals:
         md = integral.metadata() or {}

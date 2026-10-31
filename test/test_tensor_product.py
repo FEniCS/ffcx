@@ -160,17 +160,26 @@ def distorted_cell(cell_type, dtype):
     return np.array(coords, dtype=dtype)
 
 
-def sum_factorisation_forms(cell_type, P):
+def sum_factorisation_forms(cell_type, P, entity_ordered=False):
     """Forms covering the cases of a sum-factorised contraction.
+
+    With entity_ordered, the elements number their dofs by entity, as
+    `basix.ufl.element` does, instead of in tensor product order.
 
     Returns a map from name to form and the number of coefficient values.
     """
     gdim = cell_to_gdim(cell_type)
     variant = basix.LagrangeVariant.gll_warped
-    mesh = ufl.Mesh(create_tensor_product_element(cell_type, 1, variant, shape=(gdim,)))
-    V = ufl.FunctionSpace(mesh, create_tensor_product_element(cell_type, P, variant))
-    W = ufl.FunctionSpace(mesh, create_tensor_product_element(cell_type, P, variant, (gdim,)))
-    Q = ufl.FunctionSpace(mesh, create_tensor_product_element(cell_type, P + 1, variant))
+
+    def element(degree, shape=None):
+        if entity_ordered:
+            return basix.ufl.element("P", cell_type, degree, lagrange_variant=variant, shape=shape)
+        return create_tensor_product_element(cell_type, degree, variant, shape)
+
+    mesh = ufl.Mesh(element(1, (gdim,)))
+    V = ufl.FunctionSpace(mesh, element(P))
+    W = ufl.FunctionSpace(mesh, element(P, (gdim,)))
+    Q = ufl.FunctionSpace(mesh, element(P + 1))
     DG0 = ufl.FunctionSpace(mesh, basix.ufl.element("DG", cell_type.name, 0))
     u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
     uw, vw = ufl.TrialFunction(W), ufl.TestFunction(W)
@@ -209,6 +218,12 @@ def tabulate_kernel(kernel, module, form, num_coefficients, cell_type, dtype):
     """Tabulate the cell integral kernel of a form on a distorted cell."""
     xdtype = dtype_to_scalar_dtype(dtype)
     coords = distorted_cell(cell_type, xdtype)
+    coordinate_element = form.ufl_domain().ufl_coordinate_element().sub_elements[0].basix_element
+    if coordinate_element.degree > 1:
+        # The Q1 map of the distorted cell, at the coordinate element's nodes
+        q1 = basix.create_element(basix.ElementFamily.P, cell_type, 1)
+        phi = q1.tabulate(0, coordinate_element.points)[0, :, :, 0]
+        coords = np.ascontiguousarray(phi @ coords, dtype=xdtype)
     A = np.zeros(
         math.prod(a.ufl_function_space().ufl_element().dim for a in form.arguments()), dtype
     )
@@ -325,10 +340,10 @@ def compiled_forms(tmp_path_factory, compile_args):
     """Compile forms of `sum_factorisation_forms` into one module, once for all tests using them."""
     modules = {}
 
-    def compile(names, cell_type, P, dtype, sum_factorization):
-        key = (names, cell_type, P, dtype, sum_factorization)
+    def compile(names, cell_type, P, dtype, sum_factorization, entity_ordered=False):
+        key = (names, cell_type, P, dtype, sum_factorization, entity_ordered)
         if key not in modules:
-            forms = sum_factorisation_forms(cell_type, P)
+            forms = sum_factorisation_forms(cell_type, P, entity_ordered)
             options = {"scalar_type": dtype, "sum_factorization": sum_factorization}
             compiled, module = jit_compile(
                 [forms[name][0] for name in names],
@@ -342,14 +357,16 @@ def compiled_forms(tmp_path_factory, compile_args):
     return compile
 
 
-def check_form(compiled_forms, names, name, P, cell_type, dtype):
+def check_form(compiled_forms, names, name, P, cell_type, dtype, entity_ordered=False):
     """Check a form of `sum_factorisation_forms` matches the fused loop.
 
     Returns whether it is contracted one direction at a time.
     """
     kernels = []
     for sum_factorization in (False, True):
-        forms, compiled, module = compiled_forms(names, cell_type, P, dtype, sum_factorization)
+        forms, compiled, module = compiled_forms(
+            names, cell_type, P, dtype, sum_factorization, entity_ordered
+        )
         kernels.append((cell_kernel(compiled[names.index(name)], module, dtype), module))
     form, num_coefficients = forms[name]
     assert_kernels_match(kernels, form, num_coefficients, cell_type, dtype)
@@ -406,6 +423,20 @@ def test_sum_factorisation_unfactorised_coefficient(cell_type, compile_args, tmp
 def test_sum_factorised_contraction(name, P, cell_type, compiled_forms):
     contracted = check_form(compiled_forms, CONTRACTION_FORMS, name, P, cell_type, "float64")
     # A table without a tensor factorisation falls back to the fused loop
+    assert contracted == (name != "non_tensor_product_argument")
+
+
+@pytest.mark.parametrize("name", CONTRACTION_FORMS)
+@pytest.mark.parametrize("cell_type,P", cell_degrees([1, 2, 3]))
+def test_sum_factorised_contraction_entity_ordered(name, P, cell_type, compiled_forms):
+    """Elements numbering their dofs by entity are sum factorised too.
+
+    Their dofs are read, and their element tensor entries written, through
+    the element dof of each product of 1D basis functions.
+    """
+    contracted = check_form(
+        compiled_forms, CONTRACTION_FORMS, name, P, cell_type, "float64", entity_ordered=True
+    )
     assert contracted == (name != "non_tensor_product_argument")
 
 
@@ -581,11 +612,11 @@ def test_sum_factorised_vector_loops(cell_type, quadrature_degree, padded, compi
 def test_sum_factorised_flat_point_loop(cell_type, compile_args, tmp_path):
     """Integrand factors are evaluated in one loop over all points of the rule.
 
-    With an ordinary (not tensor-product) coordinate element, the geometry
-    is tabulated at the flattened point index.
+    The derivatives of a quadratic coordinate map vary in every direction,
+    so the evaluation reads every cached value at the flattened point index.
     """
     gdim = cell_to_gdim(cell_type)
-    mesh = ufl.Mesh(basix.ufl.element("P", cell_type, 1, shape=(gdim,)))
+    mesh = ufl.Mesh(basix.ufl.element("P", cell_type, 2, shape=(gdim,)))
     V = ufl.FunctionSpace(
         mesh, create_tensor_product_element(cell_type, 2, basix.LagrangeVariant.gll_warped)
     )

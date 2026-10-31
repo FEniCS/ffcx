@@ -545,6 +545,28 @@ class FFCXBackendDefinitions:
                 "storing point-independent directions only once."
             ),
         ]
+        local: set[L.Symbol] = set()
+        if tabledata.tensor_permutation is not None:
+            # The element numbers its dofs by entity: copy them in the
+            # order of the products of 1D basis functions
+            permutation = tabledata.tensor_permutation
+            key += (("dofs", tuple(int(dof) for dof in permutation)),)
+            if key in self._stages:
+                source, stride, offset = self._stages[key], 1, 0
+            else:
+                ordered = L.Symbol(f"{name}_dofs", dtype=dtype)
+                self._stages[key] = ordered
+                inputs.append(source)
+                code += [
+                    L.Comment("Copy the dofs into tensor product order."),
+                    L.ArrayDecl(ordered, sizes=len(permutation)),
+                ]
+                code += [
+                    L.Assign(ordered[t], source[int(dof) * stride + offset])
+                    for t, dof in enumerate(permutation)
+                ]
+                local.add(ordered)
+                source, stride, offset = ordered, 1, 0
         derivative_orders = [mt.local_derivatives.count(d) for d in range(dim)]
         if isinstance(mt.terminal, ufl.geometry.Jacobian):
             row, column = mt.component
@@ -628,7 +650,7 @@ class FFCXBackendDefinitions:
                 source, stride, offset = self._stages[key], 1, 0
                 contracted.add(d)
                 continue
-            if source not in inputs:
+            if source not in inputs and source not in local:
                 inputs.append(source)
             stage = L.Symbol(f"{name}_c{d}", dtype=dtype)
             self._stages[key] = stage

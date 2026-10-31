@@ -386,7 +386,7 @@ def _strip_tensor_factors(F: ExpressionGraph, keep=lambda i, tr: False):
     for i, v in F.nodes.items():
         tr = v.get("tr")
         if tr is not None and tr.has_tensor_factorisation and not keep(i, tr):
-            v["tr"] = tr._replace(tensor_factors=None)
+            v["tr"] = tr._replace(tensor_factors=None, tensor_permutation=None)
 
 
 def _block_contributions(
