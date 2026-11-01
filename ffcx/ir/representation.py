@@ -38,6 +38,7 @@ from ufl.sorting import sorted_expr_sum
 from ffcx import naming
 from ffcx.analysis import UFLData
 from ffcx.definitions import entity_types, supported_integral_types
+from ffcx.element_interface import tensor_product_factorisation
 from ffcx.ir.integral import CommonExpressionIR, TensorPart, compute_integral_ir
 from ffcx.ir.representationutils import (
     QuadratureRule,
@@ -167,7 +168,7 @@ def _group_integrands_by_quadrature_rule(
         sum_factorization
         and integral_type == "cell"
         and len(argument_elements) > 0
-        and all(e.has_tensor_product_factorisation for e in argument_elements)
+        and all(tensor_product_factorisation(e) is not None for e in argument_elements)
     )
     for integral in integrals:
         md = integral.metadata() or {}
@@ -356,9 +357,10 @@ def _compute_integral_ir(
         prefix: Namespace prefix for generated code.
         options: Options for the intermediate representation. 'part': If the full tensor or
             the diagonal of the tensor should be generated. Only valid for bi-linear forms.
-            'sum_factorization': If sum factorization should be used. Only has an effect on cell
-            integrals. 'table_atol',`table_rtol': Absolute and relative tolerance for clamping table
-            values at -1, 0 or 1.
+            'sum_factorization': When sum factorization should be used: 'always', 'never' or
+            'auto' (where estimated to pay). Only has an effect on cell integrals. 'table_atol',
+            `table_rtol': Absolute and relative tolerance for clamping table values at -1, 0
+            or 1.
         visualise: If set, the image format in which to store the graph
             representation of each integrand, e.g. "pdf" or "png"
 
@@ -474,6 +476,13 @@ def _compute_integral_ir(
         if diagonalise:  # Modify output tensor shape if diagonalizing
             expression_ir["tensor_shape"] = expression_ir["tensor_shape"][:1]
 
+        sum_factorization = options["sum_factorization"]
+        if sum_factorization not in ("auto", "always", "never"):
+            raise ValueError(
+                f"Unknown sum_factorization value: {sum_factorization!r}. "
+                "Use 'auto', 'always' or 'never'."
+            )
+
         # Group integrals by quadrature rule by splitting them into separate integrands
         grouped_integrands = _group_integrands_by_quadrature_rule(
             itg_data.integrals,
@@ -481,7 +490,7 @@ def _compute_integral_ir(
             integral_type,
             ufl_cell,
             # Assembling the diagonal of a bilinear form uses ordinary quadrature
-            options["sum_factorization"] and not diagonalise,
+            sum_factorization != "never" and not diagonalise,
         )
 
         # Sum up all integrands for a given quadrature rule

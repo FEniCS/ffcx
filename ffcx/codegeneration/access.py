@@ -9,6 +9,7 @@ import logging
 import warnings
 
 import basix.ufl
+import numpy as np
 import ufl
 
 import ffcx.codegeneration.lnodes as L
@@ -449,6 +450,18 @@ class FFCXBackendAccess:
             quadrature_index: Quadrature index
             dof_index: Dof index
         """
+        # A table constant over entities and points, read at a literal dof,
+        # is a known value. Return it so the product it enters can fold.
+        if (
+            tabledata.is_piecewise
+            and tabledata.is_uniform
+            and not tabledata.is_permuted
+            and not tabledata.has_tensor_factorisation
+            and all(isinstance(i, L.LiteralInt) for i in dof_index.symbols)
+        ):
+            dof = np.ravel_multi_index([i.value for i in dof_index.symbols], dof_index.sizes)
+            return L.LiteralFloat(float(tabledata.values[0, 0, 0, dof])), []
+
         entity = self.symbols.entity(entity_type, restriction)
         iq_global_index = quadrature_index.global_index
         ic_global_index = dof_index.global_index
