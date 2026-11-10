@@ -369,7 +369,6 @@ def _compute_integral_ir(
         "cell": "cell",
         "exterior_facet": "facet",
         "interior_facet": "facet",
-        "vertex": "vertex",
         "ridge": "ridge",
         "peak": "peak",
     }
