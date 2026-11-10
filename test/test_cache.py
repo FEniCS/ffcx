@@ -12,11 +12,13 @@ import sysconfig
 from pathlib import Path
 from unittest import mock
 
+import basix
 import basix.ufl
 import pytest
 import ufl
 
 import ffcx.codegeneration.jit
+import ffcx.naming
 
 
 def test_cache_modes(compile_args):
@@ -178,3 +180,17 @@ def test_repeated_compiles_hit_cache(compile_args, tmp_path):
             )
 
     assert compiled == [module.__name__]
+
+
+@pytest.mark.parametrize("module", [basix, ufl])
+def test_signature_depends_on_dependency_version(module):
+    element = basix.ufl.element("Lagrange", "triangle", 1)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    space = ufl.FunctionSpace(domain, element)
+    u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
+    a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
+
+    signature = ffcx.naming.compute_signature([a], "")
+    with mock.patch.object(module, "__version__", module.__version__ + "+changed"):
+        assert ffcx.naming.compute_signature([a], "") != signature
+    assert ffcx.naming.compute_signature([a], "") == signature

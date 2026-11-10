@@ -11,6 +11,7 @@ import hashlib
 import numbers
 from typing import Literal
 
+import basix
 import numpy as np
 import numpy.typing as npt
 import ufl
@@ -73,6 +74,9 @@ def compute_signature(
     signatures = [
         object_signature,
         str(ffcx.__version__),
+        # Generated code depends on Basix's tables and UFL's form processing
+        str(basix.__version__),
+        str(ufl.__version__),
         ffcx.codegeneration.get_signature(),
         kind,
         tag,

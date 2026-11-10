@@ -312,6 +312,15 @@ class Formatter(FormatterInterface):
         return f"{val.value}"
 
     @__call__.register
+    def _(self, scope: L.Scope) -> str:
+        """Format a block scope."""
+        output = "{\n"
+        for line in "".join(self(s) for s in scope.statements).split("\n"):
+            if len(line) > 0:
+                output += f"  {line}\n"
+        return output + "}\n"
+
+    @__call__.register
     def _(self, r: L.ForRange) -> str:
         """Format a for loop over a range."""
         begin = self(r.begin)
