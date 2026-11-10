@@ -130,8 +130,9 @@ def _analyze_expression(
 ) -> ufl.core.expr.Expr:
     """Analyzes and preprocesses expressions."""
     preserve_geometry_types = (ufl.classes.Jacobian,)
-    expression = ufl.algorithms.apply_algebra_lowering.apply_algebra_lowering(expression)
-    expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
+    lowered = ufl.algorithms.apply_algebra_lowering.apply_algebra_lowering(expression)
+    assert isinstance(lowered, ufl.core.expr.Expr)
+    expression = ufl.algorithms.apply_derivatives.apply_derivatives(lowered)
     expression = ufl.algorithms.apply_function_pullbacks.apply_function_pullbacks(expression)
     expression = ufl.algorithms.apply_geometry_lowering.apply_geometry_lowering(
         expression, preserve_geometry_types
