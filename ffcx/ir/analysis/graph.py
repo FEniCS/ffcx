@@ -90,7 +90,10 @@ def build_scalar_graph(expression) -> ExpressionGraph:
     V_deps: list[tuple[()] | list[int]] = []
     for i, v in G.nodes.items():
         expr = v["expression"]
-        if expr._ufl_is_terminal_ or expr._ufl_is_terminal_modifier_:
+        # is_modified_terminal() also covers CellAvg/FacetAvg, which UFL
+        # does not flag as terminal modifiers but which are tabulated as
+        # a unit here
+        if expr._ufl_is_terminal_ or expr._ufl_is_terminal_modifier_ or is_modified_terminal(expr):
             V_deps.append(())
         else:
             V_deps.append([G.e2i[o] for o in expr.ufl_operands])

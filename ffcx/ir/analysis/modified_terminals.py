@@ -150,7 +150,10 @@ class ModifiedTerminal:
 def is_modified_terminal(v):
     """Check if v is a terminal or a terminal wrapped in terminal modifier types."""
     while not v._ufl_is_terminal_:
-        if v._ufl_is_terminal_modifier_:
+        # UFL does not classify CellAvg/FacetAvg as terminal modifiers,
+        # but they are handled as such here: the average of a terminal
+        # over a cell or facet is itself tabulated as a table.
+        if v._ufl_is_terminal_modifier_ or isinstance(v, CellAvg | FacetAvg):
             v = v.ufl_operands[0]
         else:
             return False

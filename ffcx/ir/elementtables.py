@@ -170,13 +170,19 @@ def get_ffcx_table_values(
             weights = element._weights
         else:
             # Make quadrature rule and get points and weights
-            points, weights = create_quadrature_points_and_weights(
+            pts, wts, _ = create_quadrature_points_and_weights(
                 integral_type,
                 cell,
-                element.embedded_superdegree(),
+                element.embedded_superdegree,
                 "default",
                 [element],
             )
+            if len(pts) != 1:
+                raise NotImplementedError(
+                    "Averaging over entities of more than one type is not supported."
+                )
+            (points,) = pts.values()
+            (weights,) = wts.values()
 
     # Tabulate table of basis functions and derivatives in points for each entity
     tdim = cell.topological_dimension
@@ -201,7 +207,7 @@ def get_ffcx_table_values(
         wsum = sum(weights)
         for entity, tbl in enumerate(component_tables):
             num_dofs = tbl.shape[1]
-            tbl = np.dot(tbl, weights) / wsum
+            tbl = np.dot(weights, tbl) / wsum
             tbl = np.reshape(tbl, (1, num_dofs))
             component_tables[entity] = tbl
 
