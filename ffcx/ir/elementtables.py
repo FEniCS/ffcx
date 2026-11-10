@@ -13,7 +13,7 @@ import numpy as np
 import numpy.typing as npt
 import ufl
 
-from ffcx.definitions import entity_types
+from ffcx.definitions import entity_types, supported_integral_types
 from ffcx.element_interface import basix_index
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.representationutils import (
@@ -110,7 +110,7 @@ _EXPRESSION_INTEGRAL_TYPES = {
     "cell": "cell",
     "facet": "exterior_facet",
     "ridge": "ridge",
-    "peak": "vertex",
+    "peak": "peak",
 }
 
 # Codimension of each entity type an expression can be evaluated on
@@ -360,7 +360,7 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
 def build_optimized_tables(
     quadrature_rule: QuadratureRule,
     cell: ufl.Cell,
-    integral_type: typing.Literal["interior_facet", "exterior_facet", "ridge", "cell", "vertex"],
+    integral_type: supported_integral_types | typing.Literal["expression"],
     entity_type: entity_types,
     modified_terminals: typing.Iterable[ModifiedTerminal],
     existing_tables: dict[str, npt.NDArray[np.float64]],

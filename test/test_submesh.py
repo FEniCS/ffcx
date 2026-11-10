@@ -501,25 +501,22 @@ def test_multiple_mesh_codim1_2d_facet_gradient_quadrature_permutation(compile_a
     assert len(set(np.round(results, 8))) == 6
 
 
-def _point_submesh_forms(dtype: str, compile_args: list[str], measure: str):
+def _point_submesh_forms(dtype: str, compile_args: list[str]):
     """Compile a codim-2 point-submesh functional and its manifold reference.
 
-    `measure` is the parent measure to integrate over: "dP" (a vertex
-    integral) or "ridge" -- on a 2D cell a ridge *is* a vertex, so both
-    gather the submesh's coordinate dofs over the parent's vertices.
+    On a 2D cell a ridge is a vertex, so the integral gathers the
+    submesh's coordinate dofs over the parent's vertices.
     """
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    # The coordinate element is discontinuous, matching what DOLFINx builds.
     codomain = ufl.Mesh(basix.ufl.element("Lagrange", "point", 0, shape=(2,), discontinuous=True))
-    # The function space's element must be continuous: `ffcx/analysis.py`
-    # rejects discontinuous elements in vertex integrals. The *coordinate*
-    # element above stays discontinuous, matching what DOLFINx builds.
     element = basix.ufl.element("Lagrange", "point", 0)
     u = ufl.Coefficient(ufl.FunctionSpace(codomain, element))
     x = ufl.SpatialCoordinate(codomain)
     expr = u * (x[0] + 2 * x[1])
 
     return (
-        _compile_scalar_form(expr * ufl.Measure(measure, domain=domain), dtype, compile_args),
+        _compile_scalar_form(expr * ufl.Measure("dr", domain=domain), dtype, compile_args),
         _compile_scalar_form(expr * ufl.Measure("dx", domain=codomain), dtype, compile_args),
     )
 
@@ -528,7 +525,6 @@ def _point_submesh_forms(dtype: str, compile_args: list[str], measure: str):
 _POINT_SUBMESH_COORDS = [0.3, 0.2, 0.0, 2.0, 0.7, 0.0, 0.6, 3.0, 0.0]
 
 
-@pytest.mark.parametrize("measure", ["dP", "ridge"])
 @pytest.mark.parametrize(
     "dtype",
     [
@@ -543,16 +539,15 @@ _POINT_SUBMESH_COORDS = [0.3, 0.2, 0.0, 2.0, 0.7, 0.0, 0.6, 3.0, 0.0]
         ),
     ],
 )
-def test_multiple_mesh_codim2_point_spatial_coordinate(dtype, compile_args, measure):
+def test_multiple_mesh_codim2_point_spatial_coordinate(dtype, compile_args):
     """Spatial coordinates of a codim-2 (point) mixed-dimensional submesh.
 
     Integrating them over the parent's vertices must reproduce, for every
     vertex, the value of integrating directly on the submesh's own mesh.
-    Covers the vertex-closure-dofs gather for both spellings of a 2D
-    codim-2 measure.
+    Covers the vertex-closure-dofs gather.
     """
     (parent_integral, parent_module), (manifold_integral, manifold_module) = _point_submesh_forms(
-        dtype, compile_args, measure
+        dtype, compile_args
     )
 
     xdtype = dtype_to_scalar_dtype(dtype)
@@ -576,8 +571,7 @@ def test_multiple_mesh_codim2_point_spatial_coordinate(dtype, compile_args, meas
     assert len(set(np.round(results, 8))) == 3
 
 
-@pytest.mark.parametrize("measure", ["dP", "ridge"])
-def test_multiple_mesh_codim2_point_quadrature_permutation_invariance(compile_args, measure):
+def test_multiple_mesh_codim2_point_quadrature_permutation_invariance(compile_args):
     """A vertex has no orientation, so its gather must ignore the permutation.
 
     The inverse of the facet/ridge permutation sweeps above, which assert
@@ -586,7 +580,7 @@ def test_multiple_mesh_codim2_point_quadrature_permutation_invariance(compile_ar
     out-of-range) `quadrature_permutation` must change nothing.
     """
     dtype = "float64"
-    (parent_integral, parent_module), _ = _point_submesh_forms(dtype, compile_args, measure)
+    (parent_integral, parent_module), _ = _point_submesh_forms(dtype, compile_args)
 
     coords = np.array(_POINT_SUBMESH_COORDS, dtype=dtype_to_scalar_dtype(dtype))
     w = np.array([3.2], dtype=dtype)
