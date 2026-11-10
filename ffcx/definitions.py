@@ -2,8 +2,6 @@
 
 from typing import Literal
 
-entity_types = Literal["cell", "facet", "vertex", "ridge", "peak"]
+entity_types = Literal["cell", "facet", "ridge", "peak"]
 
-supported_integral_types = Literal[
-    "cell", "interior_facet", "exterior_facet", "vertex", "ridge", "peak"
-]
+supported_integral_types = Literal["cell", "interior_facet", "exterior_facet", "ridge", "peak"]
