@@ -127,3 +127,15 @@ def test_generated_code_included_in_cpp(tmp_path):
     msvc = Path(cxx).stem == "cl"
     for defines in [[]] if msvc else [[], ["__STDC_NO_COMPLEX__"]]:
         _compile(cxx, wrapper, [include, tmp_path], defines, "c++20")
+
+
+@pytest.mark.parametrize("value", ["auto", "always", "never"])
+def test_sum_factorization_flag(value):
+    """The sum factorisation option takes one of its modes on the command line."""
+    from ffcx.main import parser
+
+    assert parser.parse_args(["--sum_factorization", value, "forms.py"]).sum_factorization == value
+    # Left out, the option takes its default from the option system
+    assert parser.parse_args(["forms.py"]).sum_factorization is None
+    with pytest.raises(SystemExit):
+        parser.parse_args(["--sum_factorization", "on", "forms.py"])

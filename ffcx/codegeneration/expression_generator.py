@@ -16,6 +16,7 @@ import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.lnodes import LNode
+from ffcx.codegeneration.optimizer import prune_unused_tables
 from ffcx.ir.representation import ExpressionIR
 
 logger = logging.getLogger("ffcx")
@@ -61,7 +62,7 @@ class ExpressionGenerator:
         parts += all_preparts
         parts += all_quadparts
 
-        return L.StatementList(parts)
+        return L.StatementList(prune_unused_tables(parts))
 
     def generate_element_tables(self):
         """Generate tables of FE basis evaluated at specified points."""
