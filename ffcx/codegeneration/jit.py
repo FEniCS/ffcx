@@ -308,6 +308,7 @@ def compile_expressions(
             graphs, e.g. "pdf" or "png". `True` means "pdf".
     """
     p = ffcx.options.get_options(options)
+    cffi_extra_compile_args = cffi_extra_compile_args or []
 
     module_name = "libffcx_expressions_" + ffcx.naming.compute_signature(
         expressions,

@@ -15,6 +15,7 @@ import ufl
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.backend import FFCXBackend
+from ffcx.codegeneration.interpolation import generate_interpolations
 from ffcx.codegeneration.lnodes import LNode
 from ffcx.ir.representation import ExpressionIR
 
@@ -48,6 +49,15 @@ class ExpressionGenerator:
             self.ir.expression.integrand.values(),
             self.ir.expression.integration_domain_coordinate_element,
         )
+
+        # Evaluate the interpolations, for the proxy coefficients and the
+        # element tables that are built for each cell
+        parts += generate_interpolations(
+            self.ir.interpolation,
+            self.backend,
+            self.ir.expression.interpolated_tables.get(self.quadrature_rule[0], {}),
+        )
+
         parts += self.generate_piecewise_partition()
 
         all_preparts = []
@@ -68,7 +78,10 @@ class ExpressionGenerator:
         parts = []
 
         tables = self.ir.expression.unique_tables[self.quadrature_rule[0]]
-        table_names = sorted(tables)
+        # Tables built for each cell are declared and filled by
+        # `generate_interpolations` instead.
+        interpolated = self.ir.expression.interpolated_tables.get(self.quadrature_rule[0], {})
+        table_names = sorted(name for name in tables if name not in interpolated)
 
         for name in table_names:
             table = tables[name]
@@ -276,6 +289,18 @@ class ExpressionGenerator:
             )
 
             assert td.ttype != "zeros"
+
+            if td.interpolation is not None and len(td.interpolation.dof_dims) > 1:
+                # An interpolation of an expression linear in several arguments
+                # is one table spanning every argument axis, not a factor per
+                # axis, so contribute it once at its first slot.
+                if i > 0 and blockdata.ma_data[i - 1].ma_index == mad.ma_index:
+                    continue
+                access = self.backend.symbols.element_tables[td.name][indices[0]]
+                for index in indices[1 : 1 + len(td.interpolation.dof_dims)]:
+                    access = access[index]
+                arg_factors.append(access)
+                continue
 
             if td.ttype == "ones":
                 arg_factor = L.LiteralFloat(1.0)

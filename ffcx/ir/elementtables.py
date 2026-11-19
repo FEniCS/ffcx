@@ -708,10 +708,13 @@ def build_optimized_tables(
             # table is only known per cell. Contract the target table with the
             # interpolation matrix here; the generated code contracts that with
             # the expression evaluated at the interpolation points.
-            if integral_type != "cell":
+            # The contraction is that of the first entity, which only holds
+            # for tables evaluated in the cell.
+            if entity_type != "cell" or integral_type not in ("cell", "expression"):
                 raise NotImplementedError(
-                    "Interpolating an expression that is only linear in the argument "
-                    f"is not supported for {integral_type} integrals."
+                    "Interpolating an expression that is only linear in the argument is "
+                    "only supported in cell integrals and in expressions evaluated in "
+                    f"cells, not for {integral_type} on {entity_type}s."
                 )
             interpolation_matrix = _table_dof_element(element).basix_element.interpolation_matrix
             contraction = t["array"][0, 0] @ interpolation_matrix
