@@ -1,6 +1,7 @@
 """Optimizer."""
 
 import math
+import typing
 from collections import defaultdict
 
 import ffcx.codegeneration.lnodes as L
@@ -255,6 +256,14 @@ def _collect_referenced_names(node, out: set[str]) -> None:
         pass
     elif isinstance(node, L.Statement):
         _referenced_symbol_names(node.expr, out)
+
+
+@typing.overload
+def _drop_unreferenced(node: list[L.LNode], dead: set[str]) -> list[L.LNode]: ...
+
+
+@typing.overload
+def _drop_unreferenced(node: L.LNode, dead: set[str]) -> L.LNode: ...
 
 
 def _drop_unreferenced(node, dead: set[str]):

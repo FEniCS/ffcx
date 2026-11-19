@@ -54,7 +54,8 @@ def generator(
     parts = ig.generate(domain)
 
     # Format code as string
-    format = Formatter(options["scalar_type"])  # type: ignore
+    # pyrefly: ignore[bad-argument-type]
+    format = Formatter(options["scalar_type"])
     body = format(parts)
     body = "\n".join(["    " + line for line in body.split("\n")])
 

@@ -544,7 +544,7 @@ def _compute_integral_ir(
             integral_type,
             entity_type,
             integrand_map,
-            expression_ir["tensor_shape"],
+            tuple(expression_ir["tensor_shape"]),
             options,
             visualise,
             integral_names[(form_index, itg_data_index)],
@@ -554,7 +554,9 @@ def _compute_integral_ir(
 
         # Fetch name
         expression_ir["name"] = integral_names[(form_index, itg_data_index)]
+        # pyrefly: ignore
         ir["expression"] = CommonExpressionIR(**expression_ir)
+        # pyrefly: ignore[missing-argument]
         irs.append(IntegralIR(**ir))
 
     return irs
@@ -641,6 +643,7 @@ def _compute_form_ir(
             ir["integral_names"][integral_type] += [iname]
             ir["integral_domains"][integral_type] += [integral_domains[iname]]
 
+    # pyrefly: ignore[missing-argument]
     return FormIR(**ir)
 
 

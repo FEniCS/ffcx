@@ -134,8 +134,8 @@ def main(args: Sequence[str] | None = None) -> int:
 
     for filename, namespace, outfile in zip(filenames, namespaces, outfiles):
         # Turn on profiling
-        if xargs.profile:
-            pr = cProfile.Profile()
+        pr = cProfile.Profile() if xargs.profile else None
+        if pr is not None:
             pr.enable()
 
         # Load UFL file
@@ -154,7 +154,7 @@ def main(args: Sequence[str] | None = None) -> int:
         formatting.write_code(code, outfile, suffixes, xargs.dir)
 
         # Turn off profiling and write status to file
-        if xargs.profile:
+        if pr is not None:
             pr.disable()
             pfn = f"ffcx_{namespace}.profile"
             pr.dump_stats(pfn)

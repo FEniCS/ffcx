@@ -126,8 +126,10 @@ def compile_ufl_objects(
     cpu_time = time()
     analysis = analyze_ufl_objects(
         ufl_objects,
-        options["scalar_type"],  # type: ignore
-        do_cancel_jacobian_products=options["do_cancel_jacobian_products"],  # type: ignore
+        # pyrefly: ignore[bad-argument-type]
+        options["scalar_type"],
+        # pyrefly: ignore[bad-argument-type]
+        do_cancel_jacobian_products=options["do_cancel_jacobian_products"],
     )
     _print_timing(1, time() - cpu_time)
 
