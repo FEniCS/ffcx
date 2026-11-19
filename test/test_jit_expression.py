@@ -11,7 +11,10 @@ import numpy as np
 import pytest
 import ufl
 
+import ffcx.analysis
 import ffcx.codegeneration.jit
+import ffcx.ir.representation
+import ffcx.options
 
 
 def test_matvec(compile_args):
@@ -908,3 +911,151 @@ def test_cell_geometry_in_cell_expression(compile_args, quantity):
         geometry = basix.geometry(cell)
         exact = [geometry[j] - geometry[i] for i, j in basix.topology(cell)[1]]
     np.testing.assert_allclose(output, exact)
+
+
+@pytest.mark.parametrize(
+    "cellname", ["interval", "triangle", "quadrilateral", "tetrahedron", "hexahedron"]
+)
+def test_expression_entity_type_from_point_dimension(cellname):
+    """Points of dimension tdim to tdim - 3 give a cell, facet, ridge or peak
+    Expression. Zero-dimensional points are a facet on a 1D cell and a ridge on
+    a 2D cell, so only a 3D cell has peaks. Points of dimension above tdim are
+    rejected.
+    """
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", cellname, 1, shape=(3,)))
+    tdim = mesh.ufl_cell().topological_dimension
+    x = ufl.SpatialCoordinate(mesh)
+    options = ffcx.options.get_options()
+
+    def entity_type(pdim):
+        points = np.zeros((1, pdim))
+        analysis = ffcx.analysis.analyze_ufl_objects([(x[0], points)], options["scalar_type"])
+        ir = ffcx.ir.representation.compute_ir(analysis, {}, "", options, False)
+        return ir.expressions[0].expression.entity_type
+
+    for pdim in range(tdim + 1):
+        assert entity_type(pdim) == ("cell", "facet", "ridge", "peak")[tdim - pdim]
+
+    with pytest.raises(
+        ValueError, match=f"dimension {tdim} with points of dimension {tdim + 1} not supported"
+    ):
+        entity_type(tdim + 1)
+
+
+def _tabulate_at_vertices(expression, value_size, coeffs, coords):
+    """Tabulate a single-point peak expression at each vertex of a cell."""
+    ffi = cffi.FFI()
+    empty = np.zeros(0, dtype=np.float64)
+    quad_perm = np.zeros(1, dtype=np.uint8)
+    values = []
+    for local_index in range(coords.shape[0]):
+        output = np.zeros(value_size, dtype=np.float64)
+        entity_index = np.array([local_index], dtype=np.intc)
+        expression.tabulate_tensor_float64(
+            ffi.cast("double *", output.ctypes.data),
+            ffi.cast("double *", coeffs.ctypes.data),
+            ffi.cast("double *", empty.ctypes.data),
+            ffi.cast("double *", coords.ctypes.data),
+            ffi.cast("int *", entity_index.ctypes.data),
+            ffi.cast("uint8_t *", quad_perm.ctypes.data),
+            ffi.NULL,
+        )
+        values.append(output)
+    return np.array(values)
+
+
+@pytest.mark.parametrize(
+    "cellname,coords",
+    [
+        ("tetrahedron", [[0.3, 0.1, 0.0], [1.3, 0.2, 0.1], [0.4, 2.0, 0.3], [0.2, 0.5, 1.7]]),
+        (
+            "hexahedron",
+            [
+                [0.1, 0.0, 0.0],
+                [1.2, 0.1, 0.0],
+                [0.0, 1.1, 0.2],
+                [1.3, 1.0, 0.1],
+                [0.0, 0.2, 1.0],
+                [1.1, 0.0, 1.2],
+                [0.2, 1.0, 1.1],
+                [1.0, 1.3, 1.0],
+            ],
+        ),
+    ],
+)
+def test_expression_peak(compile_args, cellname, coords):
+    """Test an expression evaluated on the peaks (vertices) of a 3D cell.
+
+    A vertex has no interior, so the points array has zero columns.
+    """
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", cellname, 1, shape=(3,)))
+    obj, _, _ = ffcx.codegeneration.jit.compile_expressions(
+        [(ufl.SpatialCoordinate(mesh), np.zeros((1, 0)))], cffi_extra_compile_args=compile_args
+    )
+    assert obj[0].entity_dimension == 0
+
+    coords = np.array(coords, dtype=np.float64)
+    values = _tabulate_at_vertices(obj[0], 3, np.zeros(0), coords)
+    np.testing.assert_allclose(values, coords)
+
+
+def test_expression_peak_coefficient_gradient(compile_args):
+    """A P2 coefficient and its gradient at the peaks of an affine tetrahedron."""
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+    element = basix.ufl.element("Lagrange", "tetrahedron", 2)
+    u = ufl.Coefficient(ufl.FunctionSpace(mesh, element))
+    expr = ufl.as_vector([u, *ufl.grad(u)])
+
+    obj, _, _ = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, np.zeros((1, 0)))], cffi_extra_compile_args=compile_args
+    )
+
+    def f(x):
+        return 1 + x[0] + 2 * x[1] * x[2] - x[0] ** 2 + 0.5 * x[2]
+
+    def grad_f(x):
+        return np.array([1 - 2 * x[0], 2 * x[2], 2 * x[1] + 0.5])
+
+    coords = np.array(
+        [[0.3, 0.1, 0.0], [1.3, 0.2, 0.1], [0.4, 2.0, 0.3], [0.2, 0.5, 1.7]], dtype=np.float64
+    )
+    # P2 interpolates a quadratic exactly; its dofs are point evaluations
+    X = element.basix_element.points
+    x = coords[0] + X @ (coords[1:] - coords[0])
+    u_dofs = np.array([f(p) for p in x])
+
+    values = _tabulate_at_vertices(obj[0], 4, u_dofs, coords)
+    exact = np.array([[f(v), *grad_f(v)] for v in coords])
+    np.testing.assert_allclose(values, exact, atol=1e-12)
+
+
+def test_mixed_mesh_peak_expression(compile_args):
+    """A peak expression with data on the parent and on the peak mesh."""
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+    point_mesh = ufl.Mesh(basix.ufl.element("Lagrange", "point", 0, shape=(3,), discontinuous=True))
+    c = ufl.Coefficient(ufl.FunctionSpace(point_mesh, basix.ufl.element("Lagrange", "point", 0)))
+    u = ufl.Coefficient(ufl.FunctionSpace(mesh, basix.ufl.element("Lagrange", "tetrahedron", 1)))
+    expr = c * u * ufl.SpatialCoordinate(point_mesh)
+
+    obj, _, _ = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, np.zeros((1, 0)))], cffi_extra_compile_args=compile_args
+    )
+
+    coords = np.array(
+        [[0.3, 0.1, 0.0], [1.3, 0.2, 0.1], [0.4, 2.0, 0.3], [0.2, 0.5, 1.7]], dtype=np.float64
+    )
+    c_dof = 1.5
+    u_dofs = np.array([0.2, -1.0, 0.7, 2.0])
+    values = _tabulate_at_vertices(obj[0], 3, np.array([c_dof, *u_dofs]), coords)
+    np.testing.assert_allclose(values, c_dof * u_dofs[:, None] * coords, atol=1e-12)
+
+
+@pytest.mark.parametrize("cellname", ["triangle", "interval"])
+def test_peak_expression_rejects_data_on_entities_of_other_dimension(cellname):
+    """A peak maps to a cell of a coefficient's mesh, so a facet or edge mesh is rejected."""
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+    sub_mesh = ufl.Mesh(basix.ufl.element("Lagrange", cellname, 1, shape=(3,)))
+    c = ufl.Coefficient(ufl.FunctionSpace(sub_mesh, basix.ufl.element("Lagrange", cellname, 1)))
+    expr = c * ufl.SpatialCoordinate(mesh)[0]
+    with pytest.raises(ValueError, match="Cannot evaluate an expression on peaks"):
+        ffcx.codegeneration.jit.compile_expressions([(expr, np.zeros((1, 0)))])

@@ -50,6 +50,17 @@ implementation_pre = """
 #include <ufcx.h>
 {extra_c_includes}
 
+// MSVC's CRT spells the integer-order Bessel functions with a leading
+// underscore and deprecates the POSIX names, so calling jn/yn directly
+// is a diagnostic there. Redirect them to the CRT names, after the
+// system headers so that their own declarations are not affected. No
+// other C library provides the underscored names, so the mapping is
+// guarded on MSVC alone.
+#if defined(_MSC_VER)
+#define jn(n, x) _jn((n), (x))
+#define yn(n, x) _yn((n), (x))
+#endif
+
 """
 
 

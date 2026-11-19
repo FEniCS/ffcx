@@ -33,6 +33,12 @@ class QuadratureRule:
         self.has_tensor_factors = tensor_factors is not None
         self._hash = None
 
+    @property
+    def num_points(self) -> list[int]:
+        """Return the number of points in each direction of a tensor product rule."""
+        assert self.tensor_factors is not None
+        return [int(weights.size) for _, weights in self.tensor_factors]
+
     def __hash__(self):
         """Hash."""
         if self._hash is None:
@@ -104,12 +110,12 @@ def create_quadrature_points_and_weights(
     elif integral_type == "expression":
         pass
     else:
-        logger.error(f"Unknown integral type: {integral_type}")
+        raise ValueError(f"Unknown integral type: {integral_type}")
 
     return pts, wts, tensor_factors
 
 
-def integral_type_to_entity_dim(integral_type, tdim):
+def integral_type_to_entity_dim(integral_type: str, tdim: int) -> int:
     """Given integral_type and domain tdim, return the tdim of the integration entity."""
     if integral_type == "cell":
         entity_dim = tdim

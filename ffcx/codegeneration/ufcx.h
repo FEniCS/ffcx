@@ -37,11 +37,16 @@ extern "C"
 #define restrict __restrict__
 #elif defined(_MSC_VER)
 #define restrict __restrict
-#define __STDC_NO_COMPLEX__
 #else
 #define restrict
 #endif // restrict
 #endif // __cplusplus
+
+// No complex kernels without C99 _Complex or with MSVC-compatible compilers,
+// as in DOLFINx. Generated code tests this macro, so it stays defined.
+#if defined(__STDC_NO_COMPLEX__) || defined(_MSC_VER)
+#define UFCX_NO_COMPLEX
+#endif
 
   // <HEADER_DECL>
 
@@ -107,7 +112,7 @@ extern "C"
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation, void* custom_data);
 
-#ifndef __STDC_NO_COMPLEX__
+#ifndef UFCX_NO_COMPLEX
   /// Tabulate integral into tensor A with compiled
   /// quadrature rule and complex single precision
   ///
@@ -117,9 +122,9 @@ extern "C"
       const float _Complex* restrict c, const float* restrict coordinate_dofs,
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation, void* custom_data);
-#endif // __STDC_NO_COMPLEX__
+#endif // UFCX_NO_COMPLEX
 
-#ifndef __STDC_NO_COMPLEX__
+#ifndef UFCX_NO_COMPLEX
   /// Tabulate integral into tensor A with compiled
   /// quadrature rule and complex double precision
   ///
@@ -129,17 +134,17 @@ extern "C"
       const double _Complex* restrict c, const double* restrict coordinate_dofs,
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation, void* custom_data);
-#endif // __STDC_NO_COMPLEX__
+#endif // UFCX_NO_COMPLEX
 
   typedef struct ufcx_integral
   {
     const bool* enabled_coefficients;
     ufcx_tabulate_tensor_float32* tabulate_tensor_float32;
     ufcx_tabulate_tensor_float64* tabulate_tensor_float64;
-#ifndef __STDC_NO_COMPLEX__
+#ifndef UFCX_NO_COMPLEX
     ufcx_tabulate_tensor_complex64* tabulate_tensor_complex64;
     ufcx_tabulate_tensor_complex128* tabulate_tensor_complex128;
-#endif // __STDC_NO_COMPLEX__
+#endif // UFCX_NO_COMPLEX
     bool needs_facet_permutations;
 
     /// Hash of the coordinate element associated with the geometry of the mesh.
@@ -159,10 +164,10 @@ extern "C"
     /// @see ufcx_tabulate_tensor
     ufcx_tabulate_tensor_float32* tabulate_tensor_float32;
     ufcx_tabulate_tensor_float64* tabulate_tensor_float64;
-#ifndef __STDC_NO_COMPLEX__
+#ifndef UFCX_NO_COMPLEX
     ufcx_tabulate_tensor_complex64* tabulate_tensor_complex64;
     ufcx_tabulate_tensor_complex128* tabulate_tensor_complex128;
-#endif // __STDC_NO_COMPLEX__
+#endif // UFCX_NO_COMPLEX
 
     /// Number of coefficients
     int num_coefficients;
@@ -267,6 +272,5 @@ extern "C"
 
 #ifdef __cplusplus
 #undef restrict
-#undef __STDC_NO_COMPLEX__
 }
 #endif

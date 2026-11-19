@@ -454,8 +454,9 @@ def _analyze_expression(
             collected after the form has been processed.
     """
     preserve_geometry_types = (ufl.classes.Jacobian,)
-    expression = ufl.algorithms.apply_algebra_lowering.apply_algebra_lowering(expression)
-    expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
+    lowered = ufl.algorithms.apply_algebra_lowering.apply_algebra_lowering(expression)
+    assert isinstance(lowered, ufl.core.expr.Expr)
+    expression = ufl.algorithms.apply_derivatives.apply_derivatives(lowered)
     if do_apply_function_pullbacks:
         expression = ufl.algorithms.apply_function_pullbacks.apply_function_pullbacks(expression)
     expression = ufl.algorithms.apply_geometry_lowering.apply_geometry_lowering(
@@ -560,10 +561,29 @@ def _analyze_form(
                 if "quadrature_degree" in metadata.keys():
                     qd = metadata["quadrature_degree"]
 
+                # An upper bound on the estimated degree. It caps the
+                # degree that UFL estimates, and is contradictory if the
+                # degree has also been set explicitly.
+                qd_max = metadata.get("max_quadrature_degree")
+                if qd_max is not None:
+                    if qd >= 0:
+                        raise ValueError(
+                            "Cannot set both 'quadrature_degree' and "
+                            "'max_quadrature_degree' in integral metadata. "
+                            "'max_quadrature_degree' bounds the estimated degree, "
+                            "so it has no effect when the degree is given explicitly."
+                        )
+                    if int(qd_max) < 0:
+                        raise ValueError(
+                            f"'max_quadrature_degree' must be non-negative, got {qd_max}."
+                        )
+
                 # Sending in a negative quadrature degree means that we want to be
                 # able to customize it at a later stage.
                 if qd < 0:
                     qd = int(np.max(integral.metadata()["estimated_polynomial_degree"]))
+                    if qd_max is not None:
+                        qd = min(qd, int(qd_max))
                 # Extract quadrature rule
                 qr = integral.metadata().get("quadrature_rule", "default")
 

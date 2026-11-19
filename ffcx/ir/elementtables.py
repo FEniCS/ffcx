@@ -134,6 +134,18 @@ def clamp_table_small_numbers(
     return table
 
 
+# Integral type whose points an expression on each entity type is mapped like
+_EXPRESSION_INTEGRAL_TYPES = {
+    "cell": "cell",
+    "facet": "exterior_facet",
+    "ridge": "ridge",
+    "peak": "vertex",
+}
+
+# Codimension of each entity type an expression can be evaluated on
+_ENTITY_CODIM = {"cell": 0, "facet": 1, "ridge": 2, "peak": 3}
+
+
 def get_ffcx_table_values(
     points,
     cell,
@@ -160,12 +172,10 @@ def get_ffcx_table_values(
         assert not avg
 
     if integral_type == "expression":
-        # FFCx tables for expression are generated as either interior cell points
-        # or points on a facet or ridge
-        if entity_type in ("cell", "ridge"):
-            integral_type = entity_type
-        else:
-            integral_type = "exterior_facet"
+        # Tabulate an expression as the integral over its entity whose points
+        # are mapped the same way. A peak, only reachable on a 3D cell, maps
+        # as the vertex of a vertex integral.
+        integral_type = _EXPRESSION_INTEGRAL_TYPES[entity_type]
 
     if avg in ("cell", "facet"):
         # Redefine points to compute average tables
@@ -208,10 +218,9 @@ def get_ffcx_table_values(
     for entity in range(num_entities):
         if codim == 0:
             entity_points = map_integral_points(points, integral_type, cell, entity)
-        elif codim == 1 or codim == 2:
-            entity_points = points
         else:
-            raise RuntimeError("Codimension > 1 isn't supported.")
+            # The element is on the entity, whose reference cell holds the points
+            entity_points = points
         tbl = component_element.tabulate(deriv_order, entity_points)
         tbl = tbl[basix_index(derivative_counts)]
         component_tables.append(tbl)
@@ -274,7 +283,7 @@ def generate_psi_table_name(
     if any(derivative_counts):
         name += "_D" + "".join(str(d) for d in derivative_counts)
     name += {None: "", "cell": "_AC", "facet": "_AF"}[averaged]
-    name += {"cell": "", "facet": "_F", "vertex": "_V", "ridge": "_R"}[entity_type]
+    name += {"cell": "", "facet": "_F", "vertex": "_V", "ridge": "_R", "peak": "_P"}[entity_type]
     name += f"_Q{quadrature_rule.id()}"
     return name
 
@@ -517,7 +526,16 @@ def build_optimized_tables(
         tdim = cell.topological_dimension
         codim = tdim - element.cell.topological_dimension
         assert codim >= 0
-        if codim > 2:
+        if integral_type == "expression":
+            # An evaluation entity maps to a *cell* of the element's mesh
+            entity_codim = _ENTITY_CODIM[entity_type]
+            if codim not in (0, entity_codim):
+                raise ValueError(
+                    f"Cannot evaluate an expression on {entity_type}s (codimension "
+                    f"{entity_codim}) with data on a mesh of codimension {codim}. Data "
+                    "on another mesh must live on the entities evaluated over."
+                )
+        elif codim > 2:
             raise RuntimeError("Codimension > 2 isn't supported.")
 
         # Only permute quadrature rules for interior facets integrals and for
@@ -647,6 +665,19 @@ def build_optimized_tables(
                         )
                     t = new_table[0]
                     t["array"] = np.vstack([td["array"] for td in new_table])
+            elif entity_type == "peak":
+                # A vertex has a single orientation, so nothing to permute
+                t = get_ffcx_table_values(
+                    quadrature_rule.points,
+                    cell,
+                    integral_type,
+                    element,
+                    avg,
+                    entity_type,
+                    local_derivatives,
+                    flat_component,
+                    codim,
+                )
             else:
                 raise NotImplementedError(
                     f"Cannot build a permuted element table for integral type {integral_type!r} "
@@ -738,9 +769,6 @@ def build_optimized_tables(
 
         cell_offset = 0
 
-        if use_sum_factorization and (not quadrature_rule.has_tensor_factors):
-            raise RuntimeError("Sum factorization not available for this quadrature rule.")
-
         tensor_factors: list[UniqueTableReferenceT] | None = None
         tensor_perm = None
         factors = element.get_tensor_product_representation()
@@ -764,7 +792,7 @@ def build_optimized_tables(
                         break
                 else:
                     ut = UniqueTableReferenceT(
-                        name=f"FE_TF{tensor_n}",
+                        name=f"FE_TF{tensor_n}_Q{quadrature_rule.id()}",
                         values=sub_tbl,
                         ttype="tensor_factor",
                         is_permuted=False,

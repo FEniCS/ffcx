@@ -6,7 +6,10 @@
 
 import logging
 import pprint
+import re
 from unittest import mock
+
+import pytest
 
 import ffcx.options
 
@@ -29,3 +32,32 @@ def test_options_formatted_when_info_enabled(caplog):
     assert "Final option values" in caplog.text
     assert f"'verbosity': {logging.INFO}" in caplog.text
     assert options["verbosity"] == logging.INFO
+
+
+def test_unknown_option_key_raises():
+    """An unrecognised option key must be rejected, not silently accepted.
+
+    An unknown key has no effect on the generated code, but it does
+    change the JIT cache signature, so the form is recompiled and the
+    option appears to have been applied.
+    """
+    with pytest.raises(ValueError, match="totally_made_up"):
+        ffcx.options.get_options({"totally_made_up": "xyz"})
+
+    # 'quadrature_degree' is a legacy FFC form compiler parameter; it is
+    # set through integral metadata, not through the options
+    with pytest.raises(ValueError, match="quadrature_degree"):
+        ffcx.options.get_options({"quadrature_degree": 4})
+
+
+def test_known_option_keys_accepted():
+    """Every default option key must be accepted."""
+    defaults = {k: v[1] for k, v in ffcx.options.FFCX_DEFAULT_OPTIONS.items()}
+    assert ffcx.options.get_options(defaults) == defaults
+
+
+def test_unknown_option_key_in_config_file_raises():
+    """Keys read from a configuration file are checked too."""
+    with mock.patch.object(ffcx.options, "_load_options", return_value=({"bad_key": 1}, {})):
+        with pytest.raises(ValueError, match=re.escape("ffcx_options.json")):
+            ffcx.options.get_options()

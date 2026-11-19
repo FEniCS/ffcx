@@ -317,15 +317,9 @@ class ExpressionGenerator:
 
                 # Backend specific modified terminal translation
                 vaccess = self.backend.access.get(mt, tabledata, 0)
-                vdef = self.backend.definitions.get(mt, tabledata, 0, vaccess)
-
-                if vdef:
-                    assert isinstance(vdef, L.Section)
-                    vdef = vdef.declarations + vdef.statements
-
                 # Store definitions of terminals in list
-                assert isinstance(vdef, list)
-                definitions.extend(vdef)
+                for section in self.backend.definitions.get(mt, tabledata, 0, vaccess):
+                    definitions.extend(section.declarations + section.statements)
             else:
                 # Get previously visited operands
                 vops = [self.get_var(op) for op in v.ufl_operands]

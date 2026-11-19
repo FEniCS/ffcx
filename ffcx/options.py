@@ -27,7 +27,22 @@ FFCX_DEFAULT_OPTIONS = {
         "Scalar type to use in generated code.",
         ("float32", "float64", "complex64", "complex128"),
     ),
-    "sum_factorization": (bool, False, "Use sum factorization.", None),
+    "sum_factorization": (
+        bool,
+        True,
+        "Use sum factorization where available for cell integrals of tensor product elements: "
+        "tabulate on a tensor product quadrature rule and contract one direction at a time, "
+        "at a cost of O(P^(2d+1)) for a bilinear form of degree P in dimension d.",
+        None,
+    ),
+    "sum_factorization_stack_limit": (
+        int,
+        262144,
+        "Bytes of stack the arrays of a sum-factorised kernel may take. The integrand factors are "
+        "cached and contracted in batches to stay within it, and ordinary quadrature is used if "
+        "a single factor doesn't fit. 0 for no limit.",
+        None,
+    ),
     "table_rtol": (
         float,
         1e-6,
@@ -54,6 +69,26 @@ FFCX_DEFAULT_OPTIONS = {
         None,
     ),
 }
+
+
+def _check_option_keys(options: dict, source: str) -> None:
+    """Check that all keys are recognised FFCx options.
+
+    Args:
+        options: Option values to check.
+        source: Description of where the options came from, used in the
+            error message.
+
+    Raises:
+        ValueError: If any key is not in `FFCX_DEFAULT_OPTIONS`.
+    """
+    unknown = sorted(set(options) - set(FFCX_DEFAULT_OPTIONS))
+    if unknown:
+        known = ", ".join(sorted(FFCX_DEFAULT_OPTIONS))
+        raise ValueError(
+            f"Unknown FFCx option(s) in {source}: {', '.join(unknown)}. "
+            f"Available options are: {known}."
+        )
 
 
 @functools.cache
@@ -105,6 +140,9 @@ def get_options(
 
         `XDG_CONFIG_HOME` is `~/.config/` if the environment variable is not set.
 
+        A key that is not in `FFCX_DEFAULT_OPTIONS` raises `ValueError`,
+        from whichever of these sources it came.
+
         Example `ffcx_options.json` file:
 
           { "table_atol": 1e-10 }
@@ -117,6 +155,15 @@ def get_options(
 
     # NOTE: _load_options uses functools.lru_cache
     user_options, pwd_options = _load_options()
+
+    # Reject unrecognised keys. An unknown key would otherwise be merged
+    # in silently: it has no effect on the generated code, but it does
+    # change the JIT cache signature, so the form is recompiled and the
+    # option appears to have been applied.
+    _check_option_keys(user_options, "$XDG_CONFIG_HOME/ffcx/ffcx_options.json")
+    _check_option_keys(pwd_options, "$PWD/ffcx_options.json")
+    if priority_options is not None:
+        _check_option_keys(priority_options, "the options passed to FFCx")
 
     options.update(user_options)
     options.update(pwd_options)

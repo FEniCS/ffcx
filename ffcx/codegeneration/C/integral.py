@@ -7,7 +7,6 @@
 """Generate UFCx code for an integral."""
 
 import logging
-import sys
 
 import basix
 import numpy as np
@@ -92,12 +91,12 @@ def generator(
 
     code["tabulate_tensor_float32"] = ".tabulate_tensor_float32 = NULL,"
     code["tabulate_tensor_float64"] = ".tabulate_tensor_float64 = NULL,"
-    if sys.platform.startswith("win32"):
-        code["tabulate_tensor_complex64"] = ""
-        code["tabulate_tensor_complex128"] = ""
-    else:
-        code["tabulate_tensor_complex64"] = ".tabulate_tensor_complex64 = NULL,"
-        code["tabulate_tensor_complex128"] = ".tabulate_tensor_complex128 = NULL,"
+    # The complex members only exist when the compiler supports C99
+    # complex numbers, so the generated code guards them the same way
+    # ufcx.h declares them. The guard is evaluated where the code is
+    # compiled, which need not be where it was generated.
+    code["tabulate_tensor_complex64"] = ".tabulate_tensor_complex64 = NULL,"
+    code["tabulate_tensor_complex128"] = ".tabulate_tensor_complex128 = NULL,"
     code[f"tabulate_tensor_{np_scalar_type}"] = (
         f".tabulate_tensor_{np_scalar_type} = {kernel_name},"
     )

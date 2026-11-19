@@ -32,8 +32,10 @@ ufcx_integral {factory_name} =
   .enabled_coefficients = {enabled_coefficients},
   {tabulate_tensor_float32}
   {tabulate_tensor_float64}
+#ifndef UFCX_NO_COMPLEX
   {tabulate_tensor_complex64}
   {tabulate_tensor_complex128}
+#endif
   .needs_facet_permutations = {needs_facet_permutations},
   .coordinate_element_hash = {coordinate_element_hash},
   .domain = {domain},
