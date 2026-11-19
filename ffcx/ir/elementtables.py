@@ -294,7 +294,8 @@ def get_modified_terminal_element(mt) -> ModifiedTerminalElement | None:
     ld = mt.local_derivatives
     domain = ufl.domain.extract_unique_domain(mt.terminal)
     # Extract element from FormArguments and relevant GeometricQuantities
-    if isinstance(mt.terminal, ufl.classes.FormArgument | ufl.Interpolate):
+    # `FormArgument` does not declare `ufl_element`, but its subclasses do.
+    if isinstance(mt.terminal, ufl.Argument | ufl.Coefficient | ufl.Interpolate):
         if gd and mt.reference_value:
             raise RuntimeError("Global derivatives of reference values not defined.")
         elif ld and not mt.reference_value:
@@ -334,6 +335,7 @@ def get_modified_terminal_element(mt) -> ModifiedTerminalElement | None:
 
     assert (mt.averaged is None) or not (ld or gd)
     assert isinstance(domain, ufl.Mesh)
+    assert isinstance(element, basix.ufl._ElementBase)
 
     # Change derivatives format for table lookup
     tdim = domain.topological_dimension
@@ -395,13 +397,17 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
     return output
 
 
-def _table_dof_element(element: basix.ufl._ElementBase) -> basix.ufl._ElementBase:
+def _table_dof_element(element: ufl.AbstractFiniteElement) -> basix.ufl._ElementBase:
     """Get the element whose dofs a component table of ``element`` is indexed by.
 
     Component tables of a blocked element are tabulated for its scalar
     sub-element, while all other elements are tabulated as a whole.
     """
-    return element.sub_elements[0] if element.block_size > 1 else element
+    assert isinstance(element, basix.ufl._ElementBase)
+    if element.block_size > 1:
+        element = element.sub_elements[0]
+        assert isinstance(element, basix.ufl._ElementBase)
+    return element
 
 
 def _interpolation_operator(interpolation: ufl.Interpolate) -> npt.NDArray[np.float64]:

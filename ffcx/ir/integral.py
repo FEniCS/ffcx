@@ -17,6 +17,7 @@ import ufl
 from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
 from ufl.classes import QuadratureWeight
+from ufl.corealg.traversal import unique_pre_traversal
 
 from ffcx.analysis import ProxyCoefficient
 from ffcx.definitions import entity_types, supported_integral_types
@@ -144,7 +145,7 @@ class CommonExpressionIR(typing.NamedTuple):
     unique_tables: dict[basix.CellType, npt.NDArray[np.float64]]
     unique_table_types: dict[basix.CellType, dict[str, str]]
     interpolated_tables: dict[basix.CellType, dict[str, InterpolatedTableT]]
-    integrand: dict[tuple[basix.CellType, QuadratureRule], dict]
+    integrand: dict[tuple[basix.CellType, QuadratureRule], IntermediateIntegrandIR]
     name: str
     needs_facet_permutations: bool
     shape: list[int]
@@ -205,7 +206,7 @@ def _compute_integral_ir(
     ) + ufl.algorithms.analysis.extract_coefficients(expression)
     domains = map(ufl.domain.extract_unique_domain, coeffs_and_arguments)
     for domain in domains:
-        assert domain is not None
+        assert domain is not None and cell is not None
         if domain.topological_dimension != cell.topological_dimension:
             is_mixed_dim = True
     # Check geometric terminals for mixed-dimensionality
@@ -213,7 +214,7 @@ def _compute_integral_ir(
         if type(mt.terminal) not in (ufl.geometry.SpatialCoordinate, ufl.geometry.Jacobian):
             continue
         domain = ufl.domain.extract_unique_domain(mt.terminal)
-        assert domain is not None
+        assert domain is not None and cell is not None
         if domain.topological_dimension != cell.topological_dimension:
             is_mixed_dim = True
 
@@ -704,7 +705,7 @@ def analyse_dependencies(F, mt_unique_table_reference):
 def replace_quadratureweight(expression):
     """Remove any QuadratureWeight terminals and replace with 1.0."""
     r = []
-    for node in ufl.corealg.traversal.unique_pre_traversal(expression):
+    for node in unique_pre_traversal(expression):
         if is_modified_terminal(node) and isinstance(node, QuadratureWeight):
             r.append(node)
 

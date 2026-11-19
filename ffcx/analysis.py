@@ -44,6 +44,7 @@ from ufl.algorithms.formdata import FormData
 from ufl.algorithms.remove_complex_nodes import remove_complex_nodes
 from ufl.algorithms.remove_component_tensors import remove_component_tensors
 from ufl.corealg.dag_traverser import DAGTraverser
+from ufl.corealg.traversal import unique_pre_traversal
 
 logger = logging.getLogger("ffcx")
 
@@ -113,7 +114,7 @@ def _interpolations(data: FormData) -> list[ProxyCoefficient | ufl.Interpolate]:
     seen = set()
     for integral_data in data.integral_data:
         for integral in integral_data.integrals:
-            for node in ufl.corealg.traversal.unique_pre_traversal(integral.integrand()):
+            for node in unique_pre_traversal(integral.integrand()):
                 if (
                     isinstance(node, ufl.Interpolate)
                     and not isinstance(node.ufl_operands[0], ufl.Argument)
@@ -222,7 +223,9 @@ def _same_expression(a: ufl.core.expr.Expr, b: ufl.core.expr.Expr) -> bool:
             expression = apply_geometry_lowering(expression, preserve)
             expression = apply_derivatives(expression)
         expression = remove_component_tensors(expression)
-        return ufl.algorithms.renumbering.renumber_indices(expression)
+        return typing.cast(
+            ufl.core.expr.Expr, ufl.algorithms.renumbering.renumber_indices(expression)
+        )
 
     return bool(normalise(a) == normalise(b))
 
@@ -290,7 +293,7 @@ def interpolation_target_space(
         interpolation: A `ProxyCoefficient` or a `ufl.Interpolate`.
     """
     if isinstance(interpolation, ProxyCoefficient):
-        return interpolation.ufl_function_space()
+        return typing.cast(ufl.FunctionSpace, interpolation.ufl_function_space())
     # `ufl_function_space()` is the dual of the source space for an interpolation
     # of a test function, so build the target space from the target element.
     domain = ufl.domain.extract_unique_domain(interpolation)
@@ -650,9 +653,7 @@ class ProxyCoefficient(ufl.Coefficient):
         return self._operator
 
 
-def _primal_base_form_operator(
-    o: ufl.core.base_form_operator.BaseFormOperator, argument: ufl.Argument
-) -> ufl.core.base_form_operator.BaseFormOperator:
+def _primal_base_form_operator(o: ufl.Interpolate, argument: ufl.Argument) -> ufl.Interpolate:
     """Rebuild a base form operator as a function of the space it is acting on.
 
     The operator taking part in an action does not know its own target space:
@@ -665,10 +666,12 @@ def _primal_base_form_operator(
         argument: The argument that the action contracts.
     """
     (operand,) = o.ufl_operands
-    return o._ufl_expr_reconstruct_(operand, v=argument.ufl_function_space())
+    return typing.cast(
+        ufl.Interpolate, o._ufl_expr_reconstruct_(operand, v=argument.ufl_function_space())
+    )
 
 
-def expand_base_form_operator_actions(form: ufl.form.BaseForm) -> ufl.Form:
+def expand_base_form_operator_actions(form: ufl.form.BaseForm | ufl.core.expr.Expr) -> ufl.Form:
     """Expand actions of base form operators into a plain form.
 
     Differentiating a form that holds an interpolation gives
@@ -699,20 +702,24 @@ def expand_base_form_operator_actions(form: ufl.form.BaseForm) -> ufl.Form:
         )
     elif isinstance(form, ufl.classes.Action):
         left, right = form.ufl_operands
-        if not isinstance(right, ufl.core.base_form_operator.BaseFormOperator):
+        if not isinstance(right, ufl.Interpolate):
             raise NotImplementedError(f"Cannot expand the action of {type(right).__name__}.")
         # `action` contracts the last argument of the left operand.
         left = expand_base_form_operator_actions(left)
         argument = left.arguments()[-1]
-        return ufl.replace(left, {argument: _primal_base_form_operator(right, argument)})
-    elif isinstance(form, ufl.core.base_form_operator.BaseFormOperator):
+        return typing.cast(
+            ufl.Form, ufl.replace(left, {argument: _primal_base_form_operator(right, argument)})
+        )
+    elif isinstance(form, ufl.Interpolate):
         # `Action(dF/dN, dN/dw)` folded into the dual argument slot, which is
         # only done for a single-argument left operand, so that argument is the
         # one standing in for the operator.
         dFdN = form.argument_slots()[0]
         dFdN = expand_base_form_operator_actions(dFdN)
         (argument,) = dFdN.arguments()
-        return ufl.replace(dFdN, {argument: _primal_base_form_operator(form, argument)})
+        return typing.cast(
+            ufl.Form, ufl.replace(dFdN, {argument: _primal_base_form_operator(form, argument)})
+        )
     else:
         raise NotImplementedError(f"Cannot expand a form of type {type(form).__name__}.")
 
@@ -723,8 +730,11 @@ class IntermediateCoefficientReplacer(DAGTraverser):
     def __init__(
         self,
         compress: bool | None = True,
-        visited_cache: dict[tuple, ufl.core.expr.Expr] | None = None,
-        result_cache: dict[ufl.core.expr.Expr, ufl.core.expr.Expr] | None = None,
+        visited_cache: dict[tuple, ufl.core.expr.Expr | ufl.form.BaseForm] | None = None,
+        result_cache: dict[
+            ufl.core.expr.Expr | ufl.form.BaseForm, ufl.core.expr.Expr | ufl.form.BaseForm
+        ]
+        | None = None,
     ) -> None:
         """Initialise.
 
@@ -753,7 +763,7 @@ class IntermediateCoefficientReplacer(DAGTraverser):
             reference_grad: Number of `ReferenceGrad` operators that have been applied.
             restricted: '+', '-', or None.
         """
-        return super().process(o)
+        return typing.cast(ufl.core.expr.Expr, super().process(o))
 
     @process.register(ufl.Interpolate)
     def _(
@@ -812,7 +822,7 @@ def compute_form_data(
     do_apply_integral_scaling: bool = False,
     do_apply_geometry_lowering: bool = False,
     preserve_geometry_types: tuple[ufl.geometry.GeometricQuantity, ...] = (),
-    do_cancel_jacobian_products=False,
+    do_cancel_jacobian_products: bool = False,
     do_apply_default_restrictions: bool = True,
     do_apply_restrictions: bool = True,
     do_estimate_degrees: bool = True,
@@ -887,7 +897,7 @@ def compute_form_data(
     if do_apply_function_pullbacks:
         form = apply_interpolate_pullbacks(form)
         for integral in form.integrals():
-            for node in ufl.corealg.traversal.unique_pre_traversal(integral.integrand()):
+            for node in unique_pre_traversal(integral.integrand()):
                 if isinstance(node, ufl.Interpolate):
                     check_interpolation(node)
 

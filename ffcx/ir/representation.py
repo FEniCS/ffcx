@@ -29,10 +29,12 @@ if typing.TYPE_CHECKING:
 import warnings
 
 import basix
+import basix.ufl
 import numpy as np
 import numpy.typing as npt
 import ufl.algorithms
 from ufl.classes import Integral
+from ufl.corealg.traversal import unique_pre_traversal
 from ufl.sorting import sorted_expr_sum
 
 from ffcx import naming
@@ -628,7 +630,7 @@ def _compute_integral_ir(
         # kernel evaluated at the target element's interpolation points.
         runtime_interpolations: list[ufl.Interpolate] = []
         for integral in itg_data.integrals:
-            for node in ufl.corealg.traversal.unique_pre_traversal(integral.integrand()):
+            for node in unique_pre_traversal(integral.integrand()):
                 if (
                     isinstance(node, ufl.Interpolate)
                     and interpolation_has_runtime_table(node)
@@ -647,6 +649,7 @@ def _compute_integral_ir(
             argument_proxy_offsets.append(len(ir["coefficients_in_argument_proxy"]))
             ir["argument_sub_expressions"].append((interpolation, expression_names[expression]))
             target = interpolation.ufl_element()
+            assert isinstance(target, basix.ufl._ElementBase)
             ir["argument_proxy_shapes"].append(
                 (
                     target.basix_element.points.shape[0],
@@ -756,7 +759,7 @@ def _compute_expression_ir(
     prefix: str,
     analysis: UFLData,
     options: dict,
-    visualise: bool,
+    visualise: str | None,
     object_names,
 ):
     """Compute intermediate representation of an Expression."""
@@ -776,6 +779,7 @@ def _compute_expression_ir(
     expr_domain = max(
         ufl.domain.extract_domains(expr), default=None, key=lambda d: d.topological_dimension
     )
+    assert expr_domain is None or isinstance(expr_domain, ufl.Mesh)
     cell = expr_domain.ufl_cell() if expr_domain else None
 
     # Prepare dimensions of all unique element in expression, including
