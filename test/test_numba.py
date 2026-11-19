@@ -9,13 +9,17 @@ import importlib.util
 from pathlib import Path
 from types import ModuleType
 
+import basix.ufl
 import numpy as np
 import numpy.typing as npt
 import pytest
+import ufl
 
 import ffcx.main
+import ffcx.options
 from ffcx.codegeneration.numba.utils import ufcx_kernel_signature
 from ffcx.codegeneration.utils import dtype_to_scalar_dtype
+from ffcx.compiler import compile_ufl_objects
 
 numba = pytest.importorskip("numba")
 
@@ -153,3 +157,61 @@ def test_expression(scalar_type: str, generate_poisson: ModuleType) -> None:
         [5, 7, 8, 11, 15, 18, 14, 16, 17, 32, 36, 39, 23, 25, 26, 53, 57, 60], dtype=dtype
     )
     assert np.allclose(e, e_expected)
+
+
+@pytest.mark.parametrize("scalar_type", ["float32", "float64"])
+@pytest.mark.parametrize("operand", ["proxy_coefficient", "runtime_table"])
+def test_interpolation(scalar_type: str, operand: str, tmp_path: Path) -> None:
+    """Interpolations evaluated by an expression kernel the integral calls.
+
+    `u**2` becomes a proxy coefficient, `u * v` an element table built for
+    each cell. Interpolating into P1 evaluates at the vertices, which are the
+    first three dofs of P2, so both integrals have a closed form.
+    """
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    V1 = ufl.FunctionSpace(mesh, basix.ufl.element("Lagrange", "triangle", 1))
+    V2 = ufl.FunctionSpace(mesh, basix.ufl.element("Lagrange", "triangle", 2))
+    u = ufl.Coefficient(V2)
+    v = ufl.TestFunction(V2)
+    form = {
+        "proxy_coefficient": ufl.Interpolate(u**2, V1) * ufl.dx,
+        "runtime_table": ufl.Interpolate(u * v, V1) * ufl.dx,
+    }[operand]
+
+    options = ffcx.options.get_options({"language": "numba", "scalar_type": scalar_type})
+    (source,), (suffix,) = compile_ufl_objects(
+        [form], options, object_names={id(form): "J"}, namespace=operand
+    )
+    path = tmp_path / f"{operand}{suffix}"
+    path.write_text(source)
+    module = load_module(path)
+
+    dtype = np.dtype(scalar_type).type
+    dtype_r = dtype_to_scalar_dtype(dtype)
+    integral = getattr(module, f"form_{operand}_J").form_integrals[0]
+    kernel = wrap_kernel(dtype, dtype_r)(integral.tabulate_tensor)
+
+    w = np.array([0.5, -1.0, 2.0, 0.3, 0.7, -0.2], dtype=dtype)
+    c = np.empty((0,), dtype=dtype)
+    coords = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [0.0, 3.0, 0.0]], dtype=dtype_r)
+    entity_local_index = np.zeros((2,), dtype=np.intc)
+    quadrature_permutation = np.zeros((2,), dtype=np.uint8)
+    A = np.zeros((1,) if operand == "proxy_coefficient" else (6,), dtype=dtype)
+
+    # Calling `kernel` itself runs the Python function, `ctypes` the compiled one.
+    kernel.ctypes(
+        as_C_array(A),
+        as_C_array(w),
+        as_C_array(c),
+        as_C_array(coords),
+        as_C_array(entity_local_index),
+        as_C_array(quadrature_permutation),
+        None,
+    )
+
+    area = 3.0
+    if operand == "proxy_coefficient":
+        expected = np.array([area / 3 * np.sum(w[:3] ** 2)])
+    else:
+        expected = np.concatenate([area / 3 * w[:3], np.zeros(3)])
+    np.testing.assert_allclose(A, expected, rtol=10 * np.finfo(dtype).eps)
