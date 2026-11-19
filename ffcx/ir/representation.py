@@ -166,7 +166,14 @@ def _group_integrands_by_quadrature_rule(
     grouped_integrands: dict[basix.CellType, dict[QuadratureRule, list[Expr]]] = {}
     # NOTE: this variable changes throughout the loop
     cell_type = basix_cell_from_string(ufl_cell.cellname)
-    use_sum_factorization = sum_factorization and integral_type == "cell"
+    # A tensor product rule is only useful if every argument factorises,
+    # otherwise the integral is not sum factorised
+    use_sum_factorization = (
+        sum_factorization
+        and integral_type == "cell"
+        and len(argument_elements) > 0
+        and all(e.has_tensor_product_factorisation for e in argument_elements)
+    )
     for integral in integrals:
         md = integral.metadata() or {}
         scheme = md["quadrature_rule"]
@@ -241,7 +248,7 @@ def compute_ir(
     object_names: dict[int, str],
     prefix: str,
     options: dict[str, npt.DTypeLike | int | float | bool],
-    visualise: bool,
+    visualise: str | None,
 ) -> DataIR:
     """Compute intermediate representation."""
     logger.info(79 * "*")
@@ -363,8 +370,8 @@ def _compute_integral_ir(
             'sum_factorization': If sum factorization should be used. Only has an effect on cell
             integrals. 'table_atol',`table_rtol': Absolute and relative tolerance for clamping table
             values at -1, 0 or 1.
-        visualise: If True, store the graph representation of the integrand in a pdf file
-            `S.pdf` and `F.pdf`
+        visualise: If set, the image format in which to store the graph
+            representation of each integrand, e.g. "pdf" or "png"
 
     Returns:
          A list of intermediate representations for each integral of the Form.
@@ -484,7 +491,8 @@ def _compute_integral_ir(
             form_data.argument_elements,
             integral_type,
             ufl_cell,
-            options["sum_factorization"],
+            # Assembling the diagonal of a bilinear form uses ordinary quadrature
+            options["sum_factorization"] and not diagonalise,
         )
 
         # Sum up all integrands for a given quadrature rule
@@ -564,6 +572,7 @@ def _compute_integral_ir(
             expression_ir["tensor_shape"],
             options,
             visualise,
+            integral_names[(form_index, itg_data_index)],
         )
 
         # Check if the coefficients of the integral is a proxy coefficient, and if it is enabled.
@@ -791,10 +800,12 @@ def _compute_expression_ir(
             base_ir["entity_type"] = "facet"
         elif tdim - 2 == pdim:
             base_ir["entity_type"] = "ridge"
+        elif tdim - 3 == pdim:
+            base_ir["entity_type"] = "peak"
         else:
             raise ValueError(
-                f"Expression on domain with topological dimension {tdim}"
-                + f"with points of dimension {pdim} not supported."
+                f"Expression on domain with topological dimension {tdim} "
+                f"with points of dimension {pdim} not supported."
             )
     else:
         # For spatially invariant expressions, all expressions are evaluated in the cell
@@ -837,6 +848,7 @@ def _compute_expression_ir(
         tensor_shape,
         options,
         visualise,
+        base_ir["name"],
     )
 
     base_ir.update(expression_ir)

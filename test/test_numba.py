@@ -5,8 +5,9 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import ctypes
-import importlib
+import importlib.util
 from pathlib import Path
+from types import ModuleType
 
 import numpy as np
 import numpy.typing as npt
@@ -29,22 +30,48 @@ def as_C_array(np_array: npt.NDArray):
     return np_array.ctypes.data_as(ctypes.POINTER(dtype_C))
 
 
-def test_external_module():
+def load_module(path: Path) -> ModuleType:
+    """Load a generated module from an explicit file path."""
+    spec = importlib.util.spec_from_file_location(path.stem, path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_external_module(tmp_path: Path):
     """Inject ffcx.codegeneration.numba as external module, to test support for custom backends."""
     opts = "--language ffcx.codegeneration.numba --scalar_type float64"
     dir = Path(__file__).parent
-    assert ffcx.main.main([str(dir / "poisson.py"), *opts.split(" ")]) == 0
+    args = [str(dir / "poisson.py"), *opts.split(" "), "--dir", str(tmp_path)]
+    assert ffcx.main.main(args) == 0
 
 
-@pytest.fixture
-def generate_poisson() -> None:
+@pytest.fixture(scope="module")
+def generate_poisson(tmp_path_factory: pytest.TempPathFactory) -> ModuleType:
+    """Generate the numba Poisson module and load it.
+
+    The module is generated into a pytest temporary directory and loaded
+    from that path, rather than written to and imported by name from the
+    current working directory. A shared file in the working directory is
+    racy when tests run in parallel (``pytest-xdist``): one worker can
+    import the module while another is still writing it.
+
+    Module-scoped so the generation runs once rather than once per test.
+    The tests only read from the module, so sharing one instance is safe.
+    ``tmp_path_factory`` is used because the function-scoped ``tmp_path``
+    cannot be requested from a module-scoped fixture.
+    """
+    tmp_path = tmp_path_factory.mktemp("numba")
     dir = Path(__file__).parent
-    assert ffcx.main.main([str(dir / "poisson.py"), "--language", "numba"]) == 0
+    args = [str(dir / "poisson.py"), "--language", "numba", "--dir", str(tmp_path)]
+    assert ffcx.main.main(args) == 0
+    return load_module(tmp_path / "poisson_numba.py")
 
 
 @pytest.mark.parametrize("scalar_type", ["float32", "float64"])  # TODO: complex limited by ctypes
-def test_integral(scalar_type: str, generate_poisson) -> None:
-    poisson = importlib.import_module("poisson_numba")
+def test_integral(scalar_type: str, generate_poisson: ModuleType) -> None:
+    poisson = generate_poisson
 
     dtype = np.dtype(scalar_type).type
     dtype_r = dtype_to_scalar_dtype(dtype)
@@ -96,8 +123,8 @@ def test_integral(scalar_type: str, generate_poisson) -> None:
 
 
 @pytest.mark.parametrize("scalar_type", ["float32", "float64"])  # TODO: complex limited by ctypes
-def test_expression(scalar_type: str, generate_poisson) -> None:
-    poisson = importlib.import_module("poisson_numba")
+def test_expression(scalar_type: str, generate_poisson: ModuleType) -> None:
+    poisson = generate_poisson
 
     dtype = np.dtype(scalar_type).type
     dtype_r = dtype_to_scalar_dtype(dtype)

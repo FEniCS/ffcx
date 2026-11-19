@@ -46,7 +46,15 @@ parser.add_argument(
     default=None,
     help="Namespace prefix used in the generated code. Defaults to the stem of the UFL file name.",
 )
-parser.add_argument("--visualise", action="store_true", help="Visualise the IR graph.")
+parser.add_argument("--visualise", action="store_true", help="Visualise the IR graphs.")
+parser.add_argument(
+    "--visualise-format",
+    type=str,
+    default="pdf",
+    metavar="FORMAT",
+    help="Image format for --visualise, e.g. pdf, png or svg (default: pdf). Graphs are "
+    "written to <name>_S.FORMAT and <name>_F.FORMAT in the working directory.",
+)
 parser.add_argument("-p", "--profile", action="store_true", help="Enable profiling.")
 
 # Add all options from FFCx option system
@@ -116,8 +124,12 @@ def main(args: Sequence[str] | None = None) -> int:
     else:
         outfiles = xargs.outfile
 
-    # Parse all other options
-    priority_options = {k: v for k, v in xargs.__dict__.items() if v is not None}
+    # Parse all other options. Only forward the parsed arguments that
+    # are FFCx options; the rest (input files, output directory, ...)
+    # are handled here and are not option values.
+    priority_options = {
+        k: v for k, v in xargs.__dict__.items() if v is not None and k in FFCX_DEFAULT_OPTIONS
+    }
     options = get_options(priority_options)
 
     for filename, namespace, outfile in zip(filenames, namespaces, outfiles):
@@ -135,7 +147,7 @@ def main(args: Sequence[str] | None = None) -> int:
             options=options,
             object_names=ufd.object_names,
             namespace=namespace,
-            visualise=xargs.visualise,
+            visualise=xargs.visualise_format if xargs.visualise else None,
         )
 
         # Write to file

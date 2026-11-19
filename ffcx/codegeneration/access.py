@@ -492,19 +492,45 @@ class FFCXBackendAccess:
         if tabledata.is_permuted:
             qp = self.symbols.entity_permutation(restriction)
 
-        if dof_index.dim == 1 and quadrature_index.dim == 1:
+        if not tabledata.has_tensor_factorisation:
             symbols += [L.Symbol(tabledata.name, dtype=L.DataType.REAL)]
             return self.symbols.element_tables[tabledata.name][qp][entity][iq_global_index][
                 ic_global_index
             ], symbols
         else:
             FE = []
-            assert tabledata.tensor_factors is not None
             for i in range(dof_index.dim):
-                factor = tabledata.tensor_factors[i]
-                iq_i = quadrature_index.local_index(i)
-                ic_i = dof_index.local_index(i)
-                table = self.symbols.element_tables[factor.name][qp][entity][iq_i][ic_i]
-                symbols += [L.Symbol(factor.name, dtype=L.DataType.REAL)]
+                table, symbol = self.tensor_factor_access(
+                    tabledata, i, quadrature_index.local_index(i), dof_index.local_index(i)
+                )
+                symbols += [symbol]
                 FE.append(table)
             return L.Product(FE), symbols
+
+    def tensor_factor_access(
+        self,
+        tabledata: UniqueTableReferenceT,
+        direction: int,
+        quadrature_index: L.LExpr,
+        dof_index: L.LExpr,
+    ):
+        """Access the 1D tensor factor of an element table in one direction.
+
+        Tensor factors are tabulated on the 1D reference interval, so they
+        have a single quadrature permutation and entity whatever the
+        permutation and entity of the table they factorise.
+
+        Args:
+            tabledata: Table data object with tensor factors
+            direction: Direction of the tensor factor
+            quadrature_index: 1D quadrature index in that direction
+            dof_index: 1D dof index in that direction
+
+        Returns:
+            The table access and the symbol of the accessed table.
+        """
+        assert tabledata.tensor_factors is not None
+        factor = tabledata.tensor_factors[direction]
+        assert factor.values.shape[:2] == (1, 1)
+        table = self.symbols.element_tables[factor.name][0][0][quadrature_index][dof_index]
+        return table, L.Symbol(factor.name, dtype=L.DataType.REAL)
