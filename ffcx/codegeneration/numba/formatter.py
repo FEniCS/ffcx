@@ -15,6 +15,16 @@ from ffcx.codegeneration.interface import Formatter as FormatterInterface
 from ffcx.codegeneration.utils import dtype_to_scalar_dtype
 
 
+def expression_kernel_name(expression_name: str) -> str:
+    """Name of the array based kernel of a generated expression.
+
+    The `tabulate_tensor` of an expression takes raw pointers, which a kernel
+    can not pass for its local arrays. Generated code calls this `numba.njit`
+    compiled kernel instead, which takes the arrays.
+    """
+    return f"_tabulate_tensor_{expression_name}"
+
+
 def build_initializer_lists(values: npt.NDArray) -> str:
     """Build list of values."""
     arr = "["
@@ -101,6 +111,15 @@ class Formatter(FormatterInterface):
         av = build_initializer_lists(arr.values)
         av = f"np.array({av}, dtype={typename})"
         return f"{symbol} = {av}\n"
+
+    @__call__.register
+    def _(self, call: L.CallOp) -> str:
+        """Format a call to the `tabulate_tensor` of a generated expression."""
+        expression, _, kernel = call.func.rpartition(".")
+        if not expression or kernel != "tabulate_tensor":
+            raise NotImplementedError(f"Can not format call to {call.func}")
+        args = ", ".join(self(arg) for arg in call.args)
+        return f"{expression_kernel_name(expression)}({args})\n"
 
     @__call__.register
     def _(self, arr: L.ArrayAccess) -> str:

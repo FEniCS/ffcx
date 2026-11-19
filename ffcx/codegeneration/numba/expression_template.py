@@ -8,11 +8,18 @@
 factory = """
 # Code for expression {factory_name}
 
+@numba.njit
+def {kernel_name}(A, w, c, coordinate_dofs, entity_local_index,
+                  quadrature_permutation, custom_data):
+{tabulate_expression}
+
+
 def tabulate_tensor_{factory_name}(_A, _w, _c, _coordinate_dofs,
                                    _entity_local_index,
                                    _quadrature_permutation, custom_data):
-{tabulate_expression}
-
+{unpack_arguments}
+    {kernel_name}(A, w, c, coordinate_dofs, entity_local_index,
+                  quadrature_permutation, custom_data)
 
 
 class {factory_name}:

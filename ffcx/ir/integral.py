@@ -17,7 +17,9 @@ import ufl
 from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
 from ufl.classes import QuadratureWeight
+from ufl.corealg.traversal import unique_pre_traversal
 
+from ffcx.analysis import ProxyCoefficient
 from ffcx.definitions import entity_types, supported_integral_types
 from ffcx.ir.analysis.factorization import compute_argument_factorization
 from ffcx.ir.analysis.graph import ExpressionGraph, build_scalar_graph
@@ -28,6 +30,7 @@ from ffcx.ir.analysis.modified_terminals import (
 )
 from ffcx.ir.analysis.visualise import visualise_graph
 from ffcx.ir.elementtables import (
+    InterpolatedTableT,
     UniqueTableReferenceT,
     build_optimized_tables,
 )
@@ -111,9 +114,10 @@ class IntermediateIntegralIR(typing.TypedDict):
     """Intermediate IR for integrals."""
 
     needs_facet_permutations: bool
-    unique_tables: dict[basix.CellType, dict[str, npt.NDArray[np.float64]]]
-    unique_table_types: dict[basix.CellType, dict[str, _table_types]]
-    integrand: dict[tuple[basix.CellType, QuadratureRule], IntermediateIntegrandIR]
+    unique_tables: dict[basix.CellType | str, dict[str, npt.NDArray[np.float64]]]
+    unique_table_types: dict[basix.CellType | str, dict[str, _table_types]]
+    interpolated_tables: dict[basix.CellType | str, dict[str, InterpolatedTableT]]
+    integrand: dict[tuple[basix.CellType | str, QuadratureRule], IntermediateIntegrandIR]
 
 
 class CommonExpressionIR(typing.NamedTuple):
@@ -129,9 +133,18 @@ class CommonExpressionIR(typing.NamedTuple):
     coefficient_numbering: dict[ufl.Coefficient, int]
     # Each coefficient is accessed from a given offset in the input array
     coefficient_offsets: dict[ufl.Coefficient, int]
+
+    proxy_coefficient_numbering: dict[
+        ProxyCoefficient, int
+    ]  # For coefficients that are accessed via a proxy
+    proxy_coefficient_offsets: dict[
+        ProxyCoefficient, int
+    ]  # For coefficients that are accessed via a proxy
+
     original_constant_offsets: dict[ufl.Constant, int]
     unique_tables: dict[basix.CellType, npt.NDArray[np.float64]]
     unique_table_types: dict[basix.CellType, dict[str, str]]
+    interpolated_tables: dict[basix.CellType, dict[str, InterpolatedTableT]]
     integrand: dict[tuple[basix.CellType, QuadratureRule], IntermediateIntegrandIR]
     name: str
     needs_facet_permutations: bool
@@ -148,7 +161,7 @@ def _compute_integral_ir(
     expression: ufl.core.expr.Expr,
     existing_tables: dict[str, npt.NDArray[np.float64]],
     quadrature_rule: QuadratureRule,
-    cell: ufl.Cell,
+    cell: ufl.Cell | None,
     integral_type: supported_integral_types,
     entity_type: entity_types,
     argument_shape: tuple[int, ...],
@@ -158,6 +171,7 @@ def _compute_integral_ir(
 ) -> tuple[
     dict[str, npt.NDArray[np.float64]],
     dict[str, _table_types],
+    dict[str, InterpolatedTableT],
     ExpressionGraph,
     list[int],
     dict[tuple[tuple[int, ...], ...], list[BlockDataT]],
@@ -186,12 +200,13 @@ def _compute_integral_ir(
     # Check if we have a mixed-dimensional integral.
     # We allow for constants to be defined on other meshes, as they require no mapping.
     is_mixed_dim = False
+
     coeffs_and_arguments = ufl.algorithms.analysis.extract_arguments(
         expression
     ) + ufl.algorithms.analysis.extract_coefficients(expression)
     domains = map(ufl.domain.extract_unique_domain, coeffs_and_arguments)
     for domain in domains:
-        assert domain is not None
+        assert domain is not None and cell is not None
         if domain.topological_dimension != cell.topological_dimension:
             is_mixed_dim = True
     # Check geometric terminals for mixed-dimensionality
@@ -199,7 +214,7 @@ def _compute_integral_ir(
         if type(mt.terminal) not in (ufl.geometry.SpatialCoordinate, ufl.geometry.Jacobian):
             continue
         domain = ufl.domain.extract_unique_domain(mt.terminal)
-        assert domain is not None
+        assert domain is not None and cell is not None
         if domain.topological_dimension != cell.topological_dimension:
             is_mixed_dim = True
 
@@ -219,6 +234,10 @@ def _compute_integral_ir(
     table_types: dict[str, _table_types] = {v.name: v.ttype for v in mt_table_reference.values()}
     tables: dict[str, npt.NDArray[np.float64]] = {
         v.name: v.values for v in mt_table_reference.values()
+    }
+    # Tables that the generated code has to build for each cell.
+    interpolated_tables: dict[str, InterpolatedTableT] = {
+        v.name: v.interpolation for v in mt_table_reference.values() if v.interpolation is not None
     }
 
     S_targets = [i for i, v in S.nodes.items() if v.get("target", False)]
@@ -371,6 +390,7 @@ def _compute_integral_ir(
     return (
         active_tables,
         active_table_types,
+        interpolated_tables,
         F,
         argkeys,
         block_contributions,
@@ -410,12 +430,18 @@ def _block_contributions(
         assert not any(tt == "zeros" for tt in ttypes)
 
         _blockmap: list[tuple[int, ...]] = []
-        for tr in trs:
+        for slot, tr in enumerate(trs):
             assert tr is not None
             begin = tr.offset
             assert begin is not None
-            num_dofs = tr.values.shape[3]
             assert tr.block_size is not None
+            if tr.interpolation is not None and len(tr.interpolation.dof_dims) > 1:
+                # An interpolation of an expression linear in several arguments
+                # takes one element tensor axis per argument, so the same table
+                # appears in every slot with its own dof extent.
+                num_dofs = tr.interpolation.dof_dims[slot]
+            else:
+                num_dofs = tr.values.shape[3]
             dofmap = tuple(begin + i * tr.block_size for i in range(num_dofs))
             _blockmap.append(dofmap)
         blockmap = tuple(_blockmap)
@@ -522,10 +548,10 @@ def _graph_name(name, integral_domain, quadrature_rule) -> str:
 
 
 def compute_integral_ir(
-    cell: ufl.Cell,
+    cell: ufl.Cell | None,
     integral_type: supported_integral_types,
     entity_type: entity_types,
-    integrands: dict[basix.CellType, dict[QuadratureRule, ufl.core.expr.Expr]],
+    integrands: dict[basix.CellType | str, dict[QuadratureRule, ufl.core.expr.Expr]],
     argument_shape: tuple[int, ...],
     p: dict,
     visualise: str | None,
@@ -547,12 +573,14 @@ def compute_integral_ir(
     """
     # Data that will populate the intermediate representation.
     needs_facet_permutations: bool = False
-    unique_tables: dict[basix.CellType, dict[str, npt.NDArray[np.float64]]] = {}
-    unique_table_types: dict[basix.CellType, dict[str, _table_types]] = {}
-    integrand_map: dict[tuple[basix.CellType, QuadratureRule], IntermediateIntegrandIR] = {}
+    unique_tables: dict[basix.CellType | str, dict[str, npt.NDArray[np.float64]]] = {}
+    unique_table_types: dict[basix.CellType | str, dict[str, _table_types]] = {}
+    interpolated_tables: dict[basix.CellType | str, dict[str, InterpolatedTableT]] = {}
+    integrand_map: dict[tuple[basix.CellType | str, QuadratureRule], IntermediateIntegrandIR] = {}
     for integral_domain, integrands_on_domain in integrands.items():
         unique_tables[integral_domain] = {}
         unique_table_types[integral_domain] = {}
+        interpolated_tables[integral_domain] = {}
         for quadrature_rule, integrand in integrands_on_domain.items():
             expression = integrand
 
@@ -562,6 +590,7 @@ def compute_integral_ir(
             (
                 active_tables,
                 active_table_types,
+                active_interpolated_tables,
                 F,
                 argkeys,
                 block_contributions,
@@ -584,6 +613,7 @@ def compute_integral_ir(
             # Add tables and types for this quadrature rule to global tables dict
             unique_tables[integral_domain].update(active_tables)
             unique_table_types[integral_domain].update(active_table_types)
+            interpolated_tables[integral_domain].update(active_interpolated_tables)
 
             # Without sum factorisation, use the tensor product rule as an
             # ordinary rule: its points and weights are already flattened
@@ -609,6 +639,7 @@ def compute_integral_ir(
         needs_facet_permutations=needs_facet_permutations,
         unique_tables=unique_tables,
         unique_table_types=unique_table_types,
+        interpolated_tables=interpolated_tables,
         integrand=integrand_map,
     )
 
@@ -651,6 +682,7 @@ def analyse_dependencies(F, mt_unique_table_reference):
                     raise RuntimeError(f"Invalid ttype {ttype}.")
 
         elif not is_cellwise_constant(v["expression"]):
+            breakpoint()
             raise RuntimeError("Error " + str(tr))
             # Keeping this check to be on the safe side,
             # not sure which cases this will cover (if any)
@@ -673,7 +705,7 @@ def analyse_dependencies(F, mt_unique_table_reference):
 def replace_quadratureweight(expression):
     """Remove any QuadratureWeight terminals and replace with 1.0."""
     r = []
-    for node in ufl.corealg.traversal.unique_pre_traversal(expression):
+    for node in unique_pre_traversal(expression):
         if is_modified_terminal(node) and isinstance(node, QuadratureWeight):
             r.append(node)
 

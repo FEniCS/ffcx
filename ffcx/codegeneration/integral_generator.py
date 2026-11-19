@@ -23,6 +23,7 @@ import ufl
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.definitions import create_dof_index, create_quadrature_index
+from ffcx.codegeneration.interpolation import generate_interpolations
 from ffcx.codegeneration.optimizer import (
     expr_key,
     optimize,
@@ -286,6 +287,14 @@ class IntegralGenerator:
         all_preparts = []
         all_quadparts = []
 
+        # Evaluate the interpolations, for the proxy coefficients and the
+        # element tables that are built for each cell
+        all_preparts += generate_interpolations(
+            self.ir.interpolation,
+            self.backend,
+            self.ir.expression.interpolated_tables.get(domain, {}),
+        )
+
         # Pre-definitions are collected across all quadrature loops to
         # improve re-use and avoid name clashes
         for cell, rule in self.ir.expression.integrand.keys():
@@ -345,6 +354,9 @@ class IntegralGenerator:
         parts: list[L.LNode] = []
         tables = self.ir.expression.unique_tables[domain]
         table_types = self.ir.expression.unique_table_types[domain]
+        # Tables built for each cell are declared and filled by
+        # `generate_interpolations` instead.
+        interpolated = self.ir.expression.interpolated_tables.get(domain, {})
         if self.ir.expression.integral_type in ufl.custom_integral_types:
             # Define only piecewise tables
             table_names = [name for name in sorted(tables) if table_types[name] in piecewise_ttypes]
@@ -353,6 +365,8 @@ class IntegralGenerator:
             table_names = sorted(tables)
 
         for name in table_names:
+            if name in interpolated:
+                continue
             table = tables[name]
             parts += self.declare_table(name, table)
 
@@ -969,6 +983,20 @@ class IntegralGenerator:
             #       now because it assumes too much about indices.
 
             assert td.ttype != "zeros"
+
+            if td.interpolation is not None and len(td.interpolation.dof_dims) > 1:
+                # An interpolation of an expression linear in several arguments
+                # is one table spanning every element tensor axis, not a factor
+                # per axis, so contribute it once at its first slot.
+                if i > 0 and blockdata.ma_data[i - 1].ma_index == mad.ma_index:
+                    continue
+                table = self.backend.symbols.element_tables[td.name]
+                access = table[iq.global_index]
+                for index in indices[: len(td.interpolation.dof_dims)]:
+                    access = access[index.global_index]
+                arg_factors.append(access)
+                tables.append(table)
+                continue
 
             if td.ttype == "ones":
                 arg_factor = 1

@@ -482,6 +482,17 @@ class ArithmeticBinOp(BinOp):
         self.dtype = merge_dtypes([self.lhs.dtype, self.rhs.dtype])
 
 
+class CallOp(LExprOperator):
+    """A function call operator."""
+
+    op = ""
+
+    def __init__(self, function, args):
+        """Initialise."""
+        self.func = function
+        self.args = [as_lexpr(arg) for arg in args]
+
+
 class NaryOp(LExprOperator):
     """Base class for special n-ary operators."""
 
