@@ -37,9 +37,10 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     d["factory_name"] = factory_name
     parts = eg.generate()
 
-    # The body goes into a kernel on arrays, which the kernels of forms holding
-    # an interpolation of this expression call. `tabulate_tensor` wraps the
-    # raw pointers it is given into arrays and calls it.
+    # The body goes into a kernel on arrays, which the kernels of integrals and
+    # expressions holding an interpolation of this expression call. Its
+    # `tabulate_tensor` wraps the raw pointers it is given into arrays and
+    # calls it.
     d["kernel_name"] = expression_kernel_name(factory_name)
     format = Formatter(options["scalar_type"])  # type: ignore
     body = format(parts)
