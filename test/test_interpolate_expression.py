@@ -11,6 +11,8 @@ interpolating something that already lies in the target space, which the
 interpolation must then reproduce.
 """
 
+import sys
+
 import basix
 import basix.ufl
 import numpy as np
@@ -116,7 +118,20 @@ def coefficient_values(element, seed=0):
     return np.random.default_rng(seed).uniform(0.5, 1.5, element.dim)
 
 
-@pytest.mark.parametrize("dtype", ["float64", "float32", "complex128"])
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        "float64",
+        "float32",
+        pytest.param(
+            "complex128",
+            marks=pytest.mark.skipif(
+                sys.platform.startswith("win32"),
+                reason="win32 platform does not support C99 _Complex numbers",
+            ),
+        ),
+    ],
+)
 @pytest.mark.parametrize("target", [("Lagrange", 1, {}), ("Lagrange", 2, {})])
 def test_interpolate_coefficient_expression(compile_args, dtype, target):
     """Interpolating an expression of a coefficient, by hand.
