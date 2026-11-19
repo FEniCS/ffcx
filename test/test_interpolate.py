@@ -743,3 +743,196 @@ def test_interpolate_argument_is_compile_time(family, do_cancel_jacobian_product
     for node in interpolations:
         assert ffcx.analysis.interpolated_argument(node) is not None
         assert not ffcx.analysis.interpolation_has_runtime_table(node)
+
+
+def _integral(module, form, subdomain_id=-1):
+    """Get the cell integral of a compiled form over a subdomain."""
+    cell = module.lib.cell
+    offsets = form.form_integral_offsets
+    for i in range(offsets[cell], offsets[cell + 1]):
+        if form.form_integral_ids[i] == subdomain_id:
+            return form.form_integrals[i]
+    raise KeyError(subdomain_id)
+
+
+def _tabulate_scalar(module, integral, coefficients=None, constants=None):
+    """Tabulate a functional on an affine triangle."""
+    ffi = module.ffi
+    coords = np.array([[0.1, 0.2, 0.0], [2.0, 0.3, 0.0], [0.4, 1.7, 0.0]]).flatten()
+    A = np.zeros(1)
+
+    def pointer(array):
+        return ffi.NULL if array is None else ffi.cast("double *", array.ctypes.data)
+
+    integral.tabulate_tensor_float64(
+        pointer(A),
+        pointer(coefficients),
+        pointer(constants),
+        pointer(coords),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.NULL,
+    )
+    return A[0]
+
+
+def test_interpolation_shared_between_forms(compile_args):
+    """An interpolation in two forms, or two that differ only in coefficients.
+
+    The kernel of the interpolation is generated once, and each interpolation
+    is evaluated with its own coefficients. Interpolating into the space the
+    coefficients live in is the identity.
+    """
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    V = ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", "triangle", 2))
+    u, w = ufl.Coefficient(V), ufl.Coefficient(V)
+    forms = [
+        (ufl.Interpolate(u, V) + 2 * ufl.Interpolate(w, V)) * ufl.dx,
+        3 * ufl.Interpolate(u, V) * ufl.dx,
+        (u + 2 * w) * ufl.dx,
+    ]
+    compiled, module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms, cffi_extra_compile_args=compile_args
+    )
+    rng = np.random.default_rng(1)
+    u_values, w_values = rng.random(6), rng.random(6)
+    both = np.concatenate([u_values, w_values])
+    A = _tabulate_scalar(module, _integral(module, compiled[0]), both)
+    B = _tabulate_scalar(module, _integral(module, compiled[1]), u_values)
+    A_ref = _tabulate_scalar(module, _integral(module, compiled[2]), both)
+    np.testing.assert_allclose(A, A_ref, rtol=1e-13)
+    w_ref = _tabulate_scalar(module, _integral(module, compiled[2]), np.r_[0 * u_values, w_values])
+    np.testing.assert_allclose(B, 3 * (A_ref - w_ref), rtol=1e-13)
+
+
+def test_interpolation_constants_in_form(compile_args):
+    """The constants of an interpolated expression are passed in its own order.
+
+    The form holds a constant that the interpolation does not, ahead of those
+    that it does.
+    """
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    V = ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", "triangle", 2))
+    u = ufl.Coefficient(V)
+    c0, c1, c2 = ufl.Constant(domain), ufl.Constant(domain, shape=(2,)), ufl.Constant(domain)
+    forms = [
+        c0 * ufl.Interpolate(c2 * u + c1[1], V) * ufl.dx,
+        c0 * (c2 * u + c1[1]) * ufl.dx,
+    ]
+    compiled, module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms, cffi_extra_compile_args=compile_args
+    )
+    u_values = np.random.default_rng(2).random(6)
+    constants = np.array([2.0, 3.0, -0.5, 0.25])
+    A, A_ref = (
+        _tabulate_scalar(module, _integral(module, form), u_values, constants) for form in compiled
+    )
+    np.testing.assert_allclose(A, A_ref, rtol=1e-13)
+
+
+def test_interpolation_in_one_of_several_integrals(compile_args):
+    """Interpolations in different integrals of one form.
+
+    Each integral evaluates the proxy coefficients it holds, where it reads
+    them. The interpolation in the last integral reads a coefficient that the
+    form holds elsewhere, which must be passed to that integral too.
+    Interpolating into the space a coefficient lives in is the identity.
+    """
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    V1 = ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", "triangle", 1))
+    V2 = ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", "triangle", 2))
+    u, z = ufl.Coefficient(V2), ufl.Coefficient(V1)
+    forms = [
+        z * ufl.dx(1) + ufl.Interpolate(u, V2) * ufl.dx(2) + ufl.Interpolate(z, V1) * ufl.dx(3),
+        (u + z) * ufl.dx,
+    ]
+    compiled, module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms, cffi_extra_compile_args=compile_args
+    )
+    form = compiled[0]
+    assert form.num_coefficients == 2
+    rng = np.random.default_rng(3)
+    u_values, z_values = rng.random(6), rng.random(3)
+    coefficients = np.concatenate([u_values, z_values])
+
+    def reference(u, z):
+        return _tabulate_scalar(module, _integral(module, compiled[1]), np.concatenate([u, z]))
+
+    for subdomain, expected, enabled in [
+        (1, reference(0 * u_values, z_values), [False, True]),
+        (2, reference(u_values, 0 * z_values), [True, False]),
+        (3, reference(0 * u_values, z_values), [False, True]),
+    ]:
+        integral = _integral(module, form, subdomain)
+        assert [integral.enabled_coefficients[i] for i in range(2)] == enabled
+        A = _tabulate_scalar(module, integral, coefficients)
+        np.testing.assert_allclose(A, expected, rtol=1e-13)
+
+
+def test_two_interpolations_in_one_integral(compile_args):
+    """Each proxy coefficient of an integral is evaluated, not only the first."""
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    V1 = ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", "triangle", 1))
+    V2 = ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", "triangle", 2))
+    u, z = ufl.Coefficient(V2), ufl.Coefficient(V1)
+    forms = [
+        (ufl.Interpolate(u, V2) - 2 * ufl.Interpolate(z, V1)) * ufl.dx,
+        (u - 2 * z) * ufl.dx,
+    ]
+    compiled, module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms, cffi_extra_compile_args=compile_args
+    )
+    rng = np.random.default_rng(5)
+    coefficients = np.concatenate([rng.random(6), rng.random(3)])
+    A, A_ref = (
+        _tabulate_scalar(module, _integral(module, form), coefficients) for form in compiled
+    )
+    np.testing.assert_allclose(A, A_ref, rtol=1e-13)
+
+
+def test_interpolate_into_blocked_space_with_interpolation_matrix(compile_args):
+    """A blocked target space whose interpolation matrix is not the identity.
+
+    Each block component is interpolated with the matrix of the scalar
+    sub-element. A linear field lies in the space, so it is reproduced.
+    """
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    element = basix.ufl.element(
+        "DG", "triangle", 1, shape=(2,), lagrange_variant=basix.LagrangeVariant.legendre
+    )
+    assert not element.basix_element.interpolation_is_identity
+    V = ufl.FunctionSpace(domain, element)
+    x = ufl.SpatialCoordinate(domain)
+    f = ufl.as_vector((x[0] - 2 * x[1], 0.5 + x[1]))
+    forms = [
+        ufl.dot(ufl.Interpolate(f, V), ufl.as_vector((1.0, 3.0))) * ufl.dx,
+        ufl.dot(f, ufl.as_vector((1.0, 3.0))) * ufl.dx,
+    ]
+    compiled, module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms, cffi_extra_compile_args=compile_args
+    )
+    A, A_ref = (_tabulate_scalar(module, _integral(module, form)) for form in compiled)
+    assert abs(A_ref) > 1e-3
+    np.testing.assert_allclose(A, A_ref, rtol=1e-13)
+
+
+def test_nested_interpolation_in_form(compile_args):
+    """An interpolation of an expression holding another interpolation.
+
+    Both interpolate into the space the coefficient lives in, so they are the
+    identity.
+    """
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    V1 = ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", "triangle", 1))
+    V2 = ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", "triangle", 2))
+    z = ufl.Coefficient(V1)
+    forms = [
+        ufl.Interpolate(ufl.Interpolate(z, V1) * z, V2) * ufl.dx,
+        z * z * ufl.dx,
+    ]
+    compiled, module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms, cffi_extra_compile_args=compile_args
+    )
+    z_values = np.random.default_rng(4).random(3)
+    A, A_ref = (_tabulate_scalar(module, _integral(module, form), z_values) for form in compiled)
+    np.testing.assert_allclose(A, A_ref, rtol=1e-13)
