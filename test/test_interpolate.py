@@ -177,6 +177,110 @@ def test_interpolate_argument(compile_args, dtype, elements):
     np.testing.assert_allclose(A, interpolation.T @ A_ref, atol=tol)
 
 
+@pytest.mark.parametrize("degrees", [(2, 1), (1, 2), (3, 2)])
+def test_interpolate_argument_tensor_product(compile_args, degrees):
+    """Interpolating an argument between tensor product spaces on a quadrilateral.
+
+    Sum factorisation is on by default for these elements. The interpolated
+    table includes the interpolation operator, which the 1D tables of the
+    target element leave out, so it must not be sum factorised.
+    """
+    dtype = "float64"
+
+    def element(degree, shape=None):
+        e = basix.ufl.wrap_element(
+            basix.create_tp_element(
+                basix.ElementFamily.P,
+                basix.CellType.quadrilateral,
+                degree,
+                basix.LagrangeVariant.gll_warped,
+            )
+        )
+        return e if shape is None else basix.ufl.blocked_element(e, shape=shape)
+
+    domain = ufl.Mesh(element(1, (2,)))
+    element_a, element_t = element(degrees[0]), element(degrees[1])
+    V_a = ufl.FunctionSpace(domain, element_a)
+    V_t = ufl.FunctionSpace(domain, element_t)
+    J = ufl.Interpolate(ufl.TrialFunction(V_a), V_t) * ufl.dx
+    J_ref = ufl.TrialFunction(V_t) * ufl.dx
+
+    compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
+        [J, J_ref], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+
+    coords = np.array(
+        [[0.1, 0.2, 0.0], [2.0, 0.3, 0.0], [0.4, 1.7, 0.0], [2.3, 1.9, 0.0]], dtype=np.float64
+    ).flatten()
+    ffi = module.ffi
+
+    def tabulate(form, size):
+        offsets = form.form_integral_offsets
+        integral = form.form_integrals[offsets[module.lib.cell]]
+        A = np.zeros(size, dtype=dtype)
+        getattr(integral, f"tabulate_tensor_{dtype}")(
+            ffi.cast(f"{dtype_to_c_type(dtype)} *", A.ctypes.data),
+            ffi.NULL,
+            ffi.NULL,
+            ffi.cast("double *", coords.ctypes.data),
+            ffi.NULL,
+            ffi.NULL,
+            ffi.NULL,
+        )
+        return A
+
+    A = tabulate(compiled_forms[0], element_a.dim)
+    A_ref = tabulate(compiled_forms[1], element_t.dim)
+    interpolation = basix.compute_interpolation_operator(
+        element_a.basix_element, element_t.basix_element
+    )
+    np.testing.assert_allclose(A, interpolation.T @ A_ref, atol=1e-13)
+
+
+def test_interpolate_derivative_with_test_function(compile_args):
+    """Differentiate through an interpolation in a form that has a test function.
+
+    The derivative pushes the trial function into the interpolation, whose
+    Coargument has the same number as the form's test function. Interpolating
+    ``w`` into its own space is the identity, so the Jacobian must be that of
+    ``w * w * v * dx``.
+    """
+    dtype = "float64"
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    V = ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", "triangle", 2))
+    w, v, du = ufl.Coefficient(V), ufl.TestFunction(V), ufl.TrialFunction(V)
+    J = ufl.derivative(w * ufl.Interpolate(w, V) * v * ufl.dx, w, du)
+    J_ref = ufl.derivative(w * w * v * ufl.dx, w, du)
+
+    compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
+        [J, J_ref], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+
+    coords = np.array([[0.0, 0.0, 0.0], [2.0, 0.3, 0.0], [0.1, 1.5, 0.0]]).flatten()
+    w_values = np.random.default_rng(0).random(V.ufl_element().dim)
+    constants = np.zeros(1)
+    ffi = module.ffi
+
+    def tabulate(form):
+        offsets = form.form_integral_offsets
+        integral = form.form_integrals[offsets[module.lib.cell]]
+        A = np.zeros((V.ufl_element().dim,) * 2, dtype=dtype)
+        integral.tabulate_tensor_float64(
+            ffi.cast("double *", A.ctypes.data),
+            ffi.cast("double *", w_values.ctypes.data),
+            ffi.cast("double *", constants.ctypes.data),
+            ffi.cast("double *", coords.ctypes.data),
+            ffi.NULL,
+            ffi.NULL,
+            ffi.NULL,
+        )
+        return A
+
+    A, A_ref = tabulate(compiled_forms[0]), tabulate(compiled_forms[1])
+    assert np.abs(A_ref).max() > 1e-8
+    np.testing.assert_allclose(A, A_ref, atol=1e-13)
+
+
 @pytest.mark.parametrize("dtype", ["float64", "float32"])
 def test_interpolate_derivative(compile_args, dtype):
     """Differentiating an interpolation is the interpolation of the derivative.

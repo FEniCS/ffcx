@@ -291,7 +291,10 @@ def interpolation_target_space(
     """
     if isinstance(interpolation, ProxyCoefficient):
         return interpolation.ufl_function_space()
-    return interpolation.target_space()
+    # `ufl_function_space()` is the dual of the source space for an interpolation
+    # of a test function, so build the target space from the target element.
+    domain = ufl.domain.extract_unique_domain(interpolation)
+    return ufl.FunctionSpace(domain, interpolation.ufl_element())
 
 
 def analyze_ufl_objects(
@@ -537,16 +540,22 @@ def _analyze_form(
         for i, integral in enumerate(integral_data.integrals):
             metadata = integral.metadata()
 
+            # Extract from the integrand, an expression, so that the
+            # Coargument of an interpolation in it counts as bound, as it is
+            # in the form. Passed the integral, UFL takes it for a free
+            # argument, which clashes with the form's own argument of that
+            # number once a derivative has been pushed into the interpolation.
+            elements = ufl.algorithms.extract_elements(integral.integrand())
+
             # Vertex integrals do not support discontinuous integrands.
             if integral.integral_type() == "vertex":
-                elements = ufl.algorithms.extract_elements(integral)
                 if any(e.discontinuous for e in elements):
                     raise TypeError("Vertex integrals not supported for discontinuous elements.")
 
             # If form contains a quadrature element, use the custom
             # quadrature scheme
             custom_q = None
-            for e in ufl.algorithms.extract_elements(integral):
+            for e in elements:
                 if e.has_custom_quadrature:
                     if custom_q is None:
                         custom_q = e.custom_quadrature()
@@ -853,12 +862,12 @@ def compute_form_data(
     # See 'reduced_coefficients' below.
 
     # --- Expand derivatives of base form operators.
-    # An interpolation is linear in the expression it interpolates, so a
-    # derivative can be pushed into it: d/du I(g(u))[v] = I(dg/du[v]). That
-    # keeps the result an ordinary form and composes to higher derivatives,
-    # which the Jacobian of an interpolated expression needs. `preprocess_form`
-    # below repeats both steps, which is idempotent.
-    form = apply_derivatives(apply_algebra_lowering(form), differentiate_through_operators=True)
+    # An interpolation is linear in the expression it interpolates, so UFL
+    # pushes a derivative into it: d/du I(g(u))[v] = I(dg/du[v]). That keeps
+    # the result an ordinary form and composes to higher derivatives, which the
+    # Jacobian of an interpolated expression needs. `preprocess_form` below
+    # repeats both steps, which is idempotent.
+    form = apply_derivatives(apply_algebra_lowering(form))
 
     # --- Expand any remaining action of a base form operator into a plain form.
     form = expand_base_form_operator_actions(form)

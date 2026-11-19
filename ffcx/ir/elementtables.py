@@ -777,6 +777,10 @@ def build_optimized_tables(
             and factors is not None
             and len(factors) == 1
             and quadrature_rule.has_tensor_factors
+            # The table of an interpolation is contracted with the
+            # interpolation operator, which the 1D tables of its target
+            # element leave out, so it is accessed whole.
+            and not isinstance(mt.terminal, ufl.Interpolate)
         ):
             tensor_factors = []
             for i, j in enumerate(factors[0]):
