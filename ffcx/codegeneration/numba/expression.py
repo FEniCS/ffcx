@@ -14,7 +14,7 @@ from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.common import template_keys, tensor_sizes
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
 from ffcx.codegeneration.numba import expression_template
-from ffcx.codegeneration.numba.formatter import Formatter
+from ffcx.codegeneration.numba.formatter import Formatter, expression_kernel_name
 from ffcx.ir.representation import ExpressionIR
 
 logger = logging.getLogger("ffcx")
@@ -37,21 +37,23 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     d["factory_name"] = factory_name
     parts = eg.generate()
 
-    # tabulate_expression
+    # The body goes into a kernel on arrays, which the kernels of integrals and
+    # expressions holding an interpolation of this expression call. Its
+    # `tabulate_tensor` wraps the raw pointers it is given into arrays and
+    # calls it.
+    d["kernel_name"] = expression_kernel_name(factory_name)
+    format = Formatter(options["scalar_type"])  # type: ignore
+    body = format(parts)
+    d["tabulate_expression"] = "\n".join(["    " + line for line in body.split("\n")])
+
     sizes = tensor_sizes(ir)
-    header = f"""
+    d["unpack_arguments"] = f"""\
     A = numba.carray(_A, ({sizes.A}))
     w = numba.carray(_w, ({sizes.w}))
     c = numba.carray(_c, ({sizes.c}))
     coordinate_dofs = numba.carray(_coordinate_dofs, ({sizes.coords}))
     entity_local_index = numba.carray(_entity_local_index, ({sizes.local_index}))
-    quadrature_permutation = numba.carray(_quadrature_permutation, ({sizes.permutation}))
-    """
-    format = Formatter(options["scalar_type"])  # type: ignore
-    body = format(parts)
-    body = "\n".join(["    " + line for line in body.split("\n")])
-
-    d["tabulate_expression"] = header + body
+    quadrature_permutation = numba.carray(_quadrature_permutation, ({sizes.permutation}))"""
 
     # TODO: original_coefficient_positions_init
     originals = ", ".join(str(i) for i in ir.original_coefficient_positions)
