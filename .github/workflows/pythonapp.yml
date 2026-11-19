@@ -10,7 +10,7 @@ on:
     tags:
       - "v*"
   pull_request:
-    # branches: [main]
+    branches: [main]
   merge_group:
     branches: [main]
   workflow_dispatch:
@@ -107,8 +107,8 @@ jobs:
           ruff check .
           ruff format --check .
 
-      # - name: Static check with mypy
-      #   run: mypy -p ffcx
+      - name: Static check with mypy
+        run: mypy -p ffcx
 
       - name: Setup cl.exe (Windows)
         if: runner.os == 'Windows'
