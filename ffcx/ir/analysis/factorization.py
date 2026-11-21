@@ -12,7 +12,11 @@ from ufl import as_ufl, conditional
 from ufl.classes import Argument, Conditional, Conj, Division, Product, Sum, Zero
 
 from ffcx.ir.analysis.graph import ExpressionGraph
-from ffcx.ir.analysis.modified_terminals import analyse_modified_terminal, strip_modified_terminal
+from ffcx.ir.analysis.modified_terminals import (
+    analyse_modified_terminal,
+    is_modified_terminal,
+    strip_modified_terminal,
+)
 
 logger = logging.getLogger("ffcx")
 
@@ -332,7 +336,11 @@ def compute_argument_factorization(S, rank):
     # Compute dependencies in FV
     for i, v in F.nodes.items():
         expr = v["expression"]
-        if not expr._ufl_is_terminal_ and not expr._ufl_is_terminal_modifier_:
+        if (
+            not expr._ufl_is_terminal_
+            and not expr._ufl_is_terminal_modifier_
+            and not is_modified_terminal(expr)
+        ):
             for o in expr.ufl_operands:
                 F.add_edge(i, F.e2i[o])
 
