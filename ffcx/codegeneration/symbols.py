@@ -189,17 +189,6 @@ class FFCXBackendSymbols:
         c = self.proxy_coefficient_numbering[mt.terminal]
         return L.Symbol(format_mt_name(f"pw{c:d}", mt), dtype=L.DataType.SCALAR)
 
-    def proxy_coefficient_dof_access_blocked(
-        self, coefficient: ufl.Coefficient, index, block_size, dof_offset
-    ):
-        """Blocked proxy coefficient DOF access."""
-        coeff_offset = self.coefficient_offsets[coefficient]
-        z = self.proxy_coefficients
-        _z = L.Symbol(f"_pw_{coeff_offset}_{dof_offset}", dtype=L.DataType.SCALAR)
-        unit_stride_access = _z[index]
-        original_access = z[coeff_offset + index * block_size + dof_offset]
-        return unit_stride_access, original_access
-
     def constant_index_access(self, constant, index):
         """Constant index access."""
         offset = self.original_constant_offsets[constant]
