@@ -15,6 +15,7 @@ import numpy.typing as npt
 import ufl
 
 from ffcx.analysis import (
+    ProxyCoefficient,
     interpolation_dof_elements,
     interpolation_has_runtime_table,
 )
@@ -499,6 +500,15 @@ def build_optimized_tables(
             continue
         element, avg, local_derivatives, flat_component = res
 
+        if mt.restriction == "-" and isinstance(mt.terminal, ProxyCoefficient):
+            # The dofs of a proxy coefficient are only built for the cell that
+            # `coordinate_dofs` and the coefficients start with, see
+            # `ffcx.codegeneration.interpolation`.
+            raise NotImplementedError(
+                "Interpolating an expression is only supported on the '+' side of an "
+                "interior facet, not restricted to '-'."
+            )
+
         # Generate table and store table name with modified terminal
 
         # The element whose dofs the table is indexed by. For an interpolation
@@ -815,8 +825,11 @@ def build_optimized_tables(
                     mt_tables[ut.name] = ut
                     tensor_n += 1
 
-        if mt.restriction == "-" and isinstance(mt.terminal, ufl.classes.FormArgument):
-            # offset = 0 or number of element dofs, if restricted to "-"
+        if mt.restriction == "-" and isinstance(
+            mt.terminal, ufl.classes.FormArgument | ufl.Interpolate
+        ):
+            # offset = 0 or number of element dofs, if restricted to "-". For an
+            # interpolation these are the dofs of the argument it interpolates.
             cell_offset = dof_element.dim
 
         offset = cell_offset + t["offset"]

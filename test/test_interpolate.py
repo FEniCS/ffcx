@@ -936,3 +936,60 @@ def test_nested_interpolation_in_form(compile_args):
     z_values = np.random.default_rng(4).random(3)
     A, A_ref = (_tabulate_scalar(module, _integral(module, form), z_values) for form in compiled)
     np.testing.assert_allclose(A, A_ref, rtol=1e-13)
+
+
+def test_interpolation_on_interior_facet(compile_args):
+    """Interpolations restricted to either side of an interior facet.
+
+    Interpolating into the space the argument or coefficient lives in is the
+    identity, so each form must match the one without the interpolation. The
+    dofs of a proxy coefficient are only built for the '+' cell, so '-' is
+    reported as not implemented.
+    """
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    V = ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", "triangle", 2))
+    v, u = ufl.TestFunction(V), ufl.Coefficient(V)
+    x = ufl.SpatialCoordinate(domain)
+
+    # Two triangles sharing the facet (1, 0) -> (0, 1), local facet 0 of both,
+    # with the same vertex order so neither side is permuted.
+    coords = np.array(
+        [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0], [0, 1, 0]], dtype=np.float64
+    ).flatten()
+    entity = np.array([0, 0], dtype=np.int32)
+    perm = np.array([0, 0], dtype=np.uint8)
+    # Far apart on the two sides, so reading the wrong side shows
+    w = np.concatenate([np.random.default_rng(5).random(6), 10 + np.arange(6.0)])
+
+    def tabulate(form, size):
+        (compiled,), module, _ = ffcx.codegeneration.jit.compile_forms(
+            [form], cffi_extra_compile_args=compile_args
+        )
+        ffi = module.ffi
+        offsets = compiled.form_integral_offsets
+        integral = compiled.form_integrals[offsets[module.lib.interior_facet]]
+        A = np.zeros(size)
+        integral.tabulate_tensor_float64(
+            ffi.cast("double *", A.ctypes.data),
+            ffi.cast("double *", w.ctypes.data),
+            ffi.NULL,
+            ffi.cast("double *", coords.ctypes.data),
+            ffi.cast("int *", entity.ctypes.data),
+            ffi.cast("uint8_t *", perm.ctypes.data),
+            ffi.NULL,
+        )
+        return A
+
+    for side in ("+", "-"):
+        # The table of an interpolated argument, into that side's block
+        A = tabulate(ufl.Interpolate(v, V)(side) * (1 + x[0]) * ufl.dS, 2 * 6)
+        A_ref = tabulate(v(side) * (1 + x[0]) * ufl.dS, 2 * 6)
+        assert np.abs(A_ref).max() > 1e-3
+        np.testing.assert_allclose(A, A_ref, atol=1e-14)
+
+    A = tabulate(ufl.Interpolate(u, V)("+") * (1 + x[0]) * ufl.dS, 1)
+    A_ref = tabulate(u("+") * (1 + x[0]) * ufl.dS, 1)
+    np.testing.assert_allclose(A, A_ref, rtol=1e-13)
+
+    with pytest.raises(NotImplementedError, match="restricted to '-'"):
+        tabulate(ufl.Interpolate(u, V)("-") * ufl.dS, 1)
