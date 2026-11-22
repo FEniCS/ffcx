@@ -35,35 +35,16 @@ from ufl.utils.sorting import sorted_by_count
 
 logger = logging.getLogger("ffcx")
 
-
-def apply_push_forward(
-    expr: ufl.core.expr.Expr, domain: ufl.Mesh, pullback: ufl.pullback.AbstractPullback
-) -> ufl.core.expr.Expr:
-    """Apply push forward to an expression."""
-    J = ufl.Jacobian(domain)
-    J_T = J.T
-    detJ = ufl.JacobianDeterminant(domain)
-    invJ = ufl.JacobianInverse(domain)
-    invJ_T = invJ.T
-    pushed_forward_expr: ufl.core.expr.Expr
-    match pullback:
-        case ufl.pullback.L2Piola():
-            pushed_forward_expr = detJ * expr
-        case ufl.pullback.CovariantPiola():
-            pushed_forward_expr = ufl.dot(J_T, expr)
-        case ufl.pullback.ContravariantPiola():
-            pushed_forward_expr = detJ * ufl.dot(invJ, expr)
-        case ufl.pullback.DoubleCovariantPiola():
-            pushed_forward_expr = ufl.dot(J_T, ufl.dot(expr, J))
-        case ufl.pullback.DoubleContravariantPiola():
-            pushed_forward_expr = detJ * ufl.dot(invJ, ufl.dot(expr, invJ_T))
-        case ufl.pullback.CovariantContravariantPiola():
-            pushed_forward_expr = detJ * ufl.dot(J_T, ufl.dot(expr, invJ_T))
-        case ufl.pullback.IdentityPullback():
-            pushed_forward_expr = expr
-        case _:
-            raise NotImplementedError(f"Pullback {pullback} not supported.")
-    return pushed_forward_expr
+#: The pull backs of the spaces that a proxy coefficient can be interpolated into
+_PROXY_PULLBACKS = (
+    ufl.pullback.IdentityPullback,
+    ufl.pullback.L2Piola,
+    ufl.pullback.CovariantPiola,
+    ufl.pullback.ContravariantPiola,
+    ufl.pullback.DoubleCovariantPiola,
+    ufl.pullback.DoubleContravariantPiola,
+    ufl.pullback.CovariantContravariantPiola,
+)
 
 
 class UFLData(typing.NamedTuple):
@@ -518,10 +499,16 @@ def _analyze_interpolation(
     target_space = interpolation_target_space(interpolation)
     element = target_space.ufl_element()
     if isinstance(interpolation, ProxyCoefficient):
+        # The dofs are built by `ffcx.codegeneration.interpolation` from a single
+        # basix element, which a mixed, symmetric or quadrature space lacks.
+        if not isinstance(element.pullback, _PROXY_PULLBACKS):
+            raise NotImplementedError(
+                f"Interpolating an expression into a {element.pullback} space is not supported."
+            )
         # Map the expression onto the reference cell of the target element,
         # which is what its dual basis evaluates. An interpolation that stayed
         # in the integrands was mapped there by `apply_interpolate_pullbacks`.
-        expression = apply_push_forward(expression, target_space.ufl_domain(), element.pullback)
+        expression = element.pullback.apply_inverse(expression, target_space.ufl_domain())
     processed = _analyze_expression(
         expression,
         scalar_type,

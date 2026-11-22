@@ -180,8 +180,27 @@ def test_interpolate_coefficient_expression(compile_args, dtype, target):
         # P1 fields plus (x1, -x0) * x0, which is in the second degree space
         (("N1curl", 2, {}), lambda x: ufl.as_vector((x[0] * x[1] + 0.5, x[1] - x[0] ** 2))),
         (("RT", 1, {}), lambda x: ufl.as_vector((0.3 + x[0], -1.2 + x[1]))),
+        # Double Piola mapped, which scale with J twice
+        (
+            ("Regge", 1, {}),
+            lambda x: ufl.as_matrix([[1 + x[0], 0.4 - x[1]], [0.4 - x[1], -0.7 + 2 * x[0]]]),
+        ),
+        (
+            ("HHJ", 1, {}),
+            lambda x: ufl.as_matrix([[1 + x[0], 0.4 - x[1]], [0.4 - x[1], -0.7 + 2 * x[0]]]),
+        ),
     ],
-    ids=["P2", "P1-vector", "P2-tensor", "DG1-legendre-vector", "N1curl1", "N1curl2", "RT1"],
+    ids=[
+        "P2",
+        "P1-vector",
+        "P2-tensor",
+        "DG1-legendre-vector",
+        "N1curl1",
+        "N1curl2",
+        "RT1",
+        "Regge1",
+        "HHJ1",
+    ],
 )
 @pytest.mark.parametrize("derivative", [False, True])
 def test_interpolate_reproduces_target_space(compile_args, target, expression, derivative):
@@ -577,6 +596,24 @@ def test_unsupported_interpolations():
         ffcx.codegeneration.jit.compile_expressions(
             [(ufl.Interpolate(u * ufl.TestFunction(W), W), POINTS)]
         )
+
+    # The dofs of a proxy coefficient are built from a single basix element
+    x = ufl.SpatialCoordinate(mesh)
+    symmetric = space(mesh, "Lagrange", 1, shape=(2, 2), symmetry=True)
+    mixed = ufl.FunctionSpace(
+        mesh,
+        basix.ufl.mixed_element(
+            [basix.ufl.element("Lagrange", CELL, 1), basix.ufl.element("N1curl", CELL, 1)]
+        ),
+    )
+    for target, expression in [
+        (symmetric, ufl.as_matrix([[x[0], x[1]], [x[1], 1.0]])),
+        (mixed, ufl.as_vector((x[0], x[1], 1.0))),
+    ]:
+        with pytest.raises(NotImplementedError, match="space is not supported"):
+            ffcx.codegeneration.jit.compile_expressions(
+                [(ufl.Interpolate(expression, target), POINTS)]
+            )
 
 
 def test_kernel_interpolations():
