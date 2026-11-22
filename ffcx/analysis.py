@@ -25,23 +25,9 @@ import numpy as np
 import numpy.typing as npt
 import ufl.algorithms
 from ufl.algorithms.apply_algebra_lowering import apply_algebra_lowering
-from ufl.algorithms.apply_derivatives import apply_coordinate_derivatives, apply_derivatives
-from ufl.algorithms.apply_function_pullbacks import (
-    apply_function_pullbacks,
-    apply_interpolate_pullbacks,
-)
+from ufl.algorithms.apply_derivatives import apply_derivatives
+from ufl.algorithms.apply_function_pullbacks import apply_interpolate_pullbacks
 from ufl.algorithms.apply_geometry_lowering import apply_geometry_lowering
-from ufl.algorithms.apply_integral_scaling import apply_integral_scaling
-from ufl.algorithms.cancel_jacobian_products import cancel_jacobian_products
-from ufl.algorithms.compute_form_data import attach_estimated_degrees, preprocess_form
-
-# See TODOs at the call sites of these below:
-from ufl.algorithms.domain_analysis import (
-    build_integral_data,
-    group_form_integrals,
-)
-from ufl.algorithms.formdata import FormData
-from ufl.algorithms.remove_complex_nodes import remove_complex_nodes
 from ufl.algorithms.remove_component_tensors import remove_component_tensors
 from ufl.corealg.dag_traverser import DAGTraverser
 from ufl.corealg.traversal import unique_pre_traversal
@@ -257,10 +243,13 @@ def interpolated_argument(interpolation: ufl.Interpolate) -> ufl.Argument | None
     # The argument as it stands in the operand. `apply_interpolate_pullbacks`
     # maps the operand onto the reference cell of the target element, and
     # `apply_function_pullbacks` later represents the argument itself in
-    # reference value, through its own pull back. Both forms are met: the
-    # interpolations are checked between the two passes, and classified after.
+    # reference value, through its own pull back. Both forms are met: an
+    # expression is checked between the two passes, and a form after them.
+    # Cancelling Jacobian products in a form then removes the two pull backs
+    # entirely, which `check_interpolation` requires to be the same.
     mapped = (
         target.pullback.apply_inverse(argument, domain),
+        ufl.classes.ReferenceValue(argument),
         target.pullback.apply_inverse(
             source.pullback.apply(ufl.classes.ReferenceValue(argument), domain), domain
         ),
@@ -626,7 +615,7 @@ def _analyze_form(
         do_apply_function_pullbacks=True,
         do_apply_integral_scaling=True,
         do_apply_geometry_lowering=True,
-        preserve_geometry_types=(ufl.geometry.Jacobian,),  # type: ignore
+        preserve_geometry_types=(ufl.classes.Jacobian,),
         do_apply_restrictions=True,
         do_append_everywhere_integrals=False,  # do not add dx integrals to dx(i) in UFL
         do_cancel_jacobian_products=do_cancel_jacobian_products,
@@ -761,77 +750,6 @@ class ProxyCoefficient(ufl.Coefficient):
         return self._operator
 
 
-def _primal_base_form_operator(o: ufl.Interpolate, argument: ufl.Argument) -> ufl.Interpolate:
-    """Rebuild a base form operator as a function of the space it is acting on.
-
-    The operator taking part in an action does not know its own target space:
-    its dual slot holds the form being acted on, so ``ufl_function_space`` is
-    the space of the action's result. The space to rebuild it in is that of the
-    argument the action contracts.
-
-    Args:
-        o: The base form operator to rebuild.
-        argument: The argument that the action contracts.
-    """
-    (operand,) = o.ufl_operands
-    return typing.cast(
-        ufl.Interpolate, o._ufl_expr_reconstruct_(operand, v=argument.ufl_function_space())
-    )
-
-
-def expand_base_form_operator_actions(form: ufl.form.BaseForm | ufl.core.expr.Expr) -> ufl.Form:
-    """Expand actions of base form operators into a plain form.
-
-    Differentiating a form that holds an interpolation gives
-    ``dF/dw = dF/dw|_N + sum_i Action(dF/dN_i, dN_i/dw)``, where ``N_i`` are the
-    interpolations and ``dN_i/dw`` are two-forms. UFL folds an action into the
-    operator's dual argument slot when it can, so the result is a
-    {py:class}`ufl.form.FormSum` over forms, base form operators and actions.
-
-    FFCx evaluates an interpolation cell-locally, so an action of it is not an
-    operator that has to be assembled separately: substituting the interpolation
-    for the argument that the left form acts on recovers an ordinary form.
-
-    Args:
-        form: The result of applying derivatives to a form.
-
-    Return:
-        An equivalent {py:class}`ufl.Form`.
-    """
-    if isinstance(form, ufl.Form):
-        return form
-    elif isinstance(form, ufl.form.FormSum):
-        return sum(
-            (
-                weight * expand_base_form_operator_actions(component)
-                for component, weight in zip(form.components(), form.weights())
-            ),
-            start=ufl.form.Form([]),
-        )
-    elif isinstance(form, ufl.classes.Action):
-        left, right = form.ufl_operands
-        if not isinstance(right, ufl.Interpolate):
-            raise NotImplementedError(f"Cannot expand the action of {type(right).__name__}.")
-        # `action` contracts the last argument of the left operand.
-        left = expand_base_form_operator_actions(left)
-        argument = left.arguments()[-1]
-        return typing.cast(
-            ufl.Form, ufl.replace(left, {argument: _primal_base_form_operator(right, argument)})
-        )
-    elif isinstance(form, ufl.Interpolate):
-        # `Action(dF/dN, dN/dw)` folded into the dual argument slot, which is
-        # only done for a single-argument left operand, so that argument is the
-        # one standing in for the operator.
-        dFdN = form.argument_slots()[0]
-        dFdN = expand_base_form_operator_actions(dFdN)
-        (argument,) = dFdN.arguments()
-        return typing.cast(
-            ufl.Form, ufl.replace(dFdN, {argument: _primal_base_form_operator(form, argument)})
-        )
-    else:
-        raise NotImplementedError(f"Cannot expand a form of type {type(form).__name__}.")
-
-
 class IntermediateCoefficientReplacer(DAGTraverser):
     """Replace operands requiring intermediate coefficients with intermediate objects."""
 
@@ -924,167 +842,36 @@ def replace_ufl_operands(form: ufl.Form) -> ufl.Form:
     return ufl.algorithms.map_integrands.map_integrands(rule, form)  # type: ignore
 
 
-def compute_form_data(
-    form: ufl.Form,
-    do_apply_function_pullbacks: bool = False,
-    do_apply_integral_scaling: bool = False,
-    do_apply_geometry_lowering: bool = False,
-    preserve_geometry_types: tuple[ufl.geometry.GeometricQuantity, ...] = (),
-    do_cancel_jacobian_products: bool = False,
-    do_apply_default_restrictions: bool = True,
-    do_apply_restrictions: bool = True,
-    do_estimate_degrees: bool = True,
-    do_append_everywhere_integrals: bool = True,
-    do_replace_functions: bool = False,
-    coefficients_to_split: tuple[ufl.Coefficient, ...] | None = None,
-    complex_mode: bool = False,
-    do_remove_component_tensors: bool = False,
-) -> FormData:
-    """Compute form data.
+def compute_form_data(form: ufl.Form, **kwargs: typing.Any) -> FormData:
+    """Compute form data, with interpolations of expressions as proxy coefficients.
+
+    Wraps {py:func}`ufl.algorithms.compute_form_data`, which it passes
+    ``kwargs`` on to, after replacing each interpolation that holds no argument
+    by a `ProxyCoefficient`. The remaining interpolations, which hold an
+    argument, are evaluated on the reference cell of their target element by
+    UFL, and checked here.
+
+    Note:
+        The `FormData.original_form` returned holds the proxy coefficients.
 
     Args:
         form: The form to compute form data for.
-        do_apply_function_pullbacks: Apply pull-back to reference cell
-            for coefficients, including Piola and symmetry transforms
-            if required.
-        do_apply_integral_scaling: Apply scaling of moving the integral
-            from physical to reference frame.
-        do_apply_geometry_lowering: Lower the representation of geometrical
-            quantities to a smaller subset of quantities
-        preserve_geometry_types: Set of quantities not to lower, and keep
-            at its present stage for the form-compiler.
-        do_cancel_jacobian_products: Delay the expansion of the Jacobian
-            inverse into individual matrix entries, and cancel out index
-            contractions of the Jacobian with its inverse.  This
-            simplifies the expressions that Piola-mapped elements
-            generate, before lowering the surviving Jacobian quantities
-            as usual.
-        do_apply_default_restrictions: Apply default restrictions, defined in
-            {py:mod}`ufl.algorithms.apply_restrictions` to integrals if no
-            restriction has been set.
-        do_apply_restrictions: Apply restrictions towards terminal nodes.
-        do_replace_functions: Replace functions with with its cannonically numbered
-            function or thos provided in coefficients_to_split.
-        coefficients_to_split: Sequence of coefficients to split over a MeshSequence.
-        do_estimate_degrees: Estimate polynomial degree of integrands.
-        do_append_everywhere_integrals: If True append every `dx` integral to each `dx(i)`
-            integral defined in the form.
-        do_remove_component_tensors: Remove component-tensor if true.
-        complex_mode: If false remove complex nodes from the form.
+        kwargs: Options of {py:func}`ufl.algorithms.compute_form_data`.
     """
-    # --- Store untouched form for reference.
-    # The user of FormData may get original arguments,
-    # original coefficients, and form signature from this object.
-    # But be aware that the set of original coefficients are not
-    # the same as the ones used in the final UFC form.
-    # See 'reduced_coefficients' below.
-
-    # --- Expand derivatives of base form operators.
     # An interpolation is linear in the expression it interpolates, so UFL
-    # pushes a derivative into it: d/du I(g(u))[v] = I(dg/du[v]). That keeps
-    # the result an ordinary form and composes to higher derivatives, which the
-    # Jacobian of an interpolated expression needs. `preprocess_form` below
-    # repeats both steps, which is idempotent.
+    # pushes a derivative into it: d/du I(g(u))[v] = I(dg/du[v]). This has to
+    # happen before the interpolation is replaced, since a proxy coefficient is
+    # opaque to differentiation. `compute_form_data` repeats both steps, which
+    # is idempotent.
     form = apply_derivatives(apply_algebra_lowering(form))
-
-    # --- Expand any remaining action of a base form operator into a plain form.
-    form = expand_base_form_operator_actions(form)
-
-    original_form = form
-
-    # --- Pass form integrands through some symbolic manipulation
-    # Interpolations of an expression become proxy coefficients. These are
-    # internal to the generated kernel, so they must *not* appear in
-    # `original_form`, whose coefficients are the ones the caller passes in.
     form = replace_ufl_operands(form)
 
-    # Evaluate the interpolations that are left, which are the ones holding an
-    # argument, on the reference cell of their target element. The ones that
-    # became proxy coefficients are gone by now: their operand is compiled as an
-    # expression of its own, and mapped there in `analyze_ufl_objects`.
-    if do_apply_function_pullbacks:
-        form = apply_interpolate_pullbacks(form)
-        for integral in form.integrals():
-            for node in unique_pre_traversal(integral.integrand()):
-                if isinstance(node, ufl.Interpolate):
-                    check_interpolation(node)
+    form_data = ufl.algorithms.compute_form_data(form, **kwargs)
 
-    form = preprocess_form(form, complex_mode)
-
-    # --- Group form integrals
-    # TODO: Refactor this, it's rather opaque what this does
-    # TODO: Is self.original_form.ufl_domains() right here?
-    #       It will matter when we start including 'num_domains' in ufc form.
-    form = group_form_integrals(
-        form,
-        original_form.ufl_domains(),
-        do_append_everywhere_integrals=do_append_everywhere_integrals,
-    )
-
-    # Estimate polynomial degree of integrands now, before applying
-    # any pullbacks and geometric lowering.  Otherwise quad degrees
-    # blow up horrifically.
-    if do_estimate_degrees:
-        form = attach_estimated_degrees(form)
-
-    if do_apply_function_pullbacks:
-        # Rewrite coefficients and arguments in terms of their
-        # reference cell values with Piola transforms and symmetry
-        # transforms injected where needed.
-        # Decision: Not supporting grad(dolfin.Expression) without a
-        #           Domain.  Current dolfin works if Expression has a
-        #           cell but this should be changed to a mesh.
-        form = apply_function_pullbacks(form)
-
-    # Scale integrals to reference cell frames
-    if do_apply_integral_scaling:
-        form = apply_integral_scaling(form)
-
-    # Lower abstractions for geometric quantities into a smaller set
-    # of quantities, allowing the form compiler to deal with a smaller
-    # set of types and treating geometric quantities like any other
-    # expressions w.r.t. loop-invariant code motion etc.
-    if do_apply_geometry_lowering:
-        form = apply_geometry_lowering(form, preserve_geometry_types)
-
-    # Apply differentiation again, because the algorithms above can
-    # generate new derivatives or rewrite expressions inside
-    # derivatives
-    if do_apply_function_pullbacks or do_apply_geometry_lowering:
-        form = apply_derivatives(form)
-
-        # Neverending story: apply_derivatives introduces new Jinvs,
-        # which needs more geometry lowering
-        if do_apply_geometry_lowering:
-            form = apply_geometry_lowering(form, preserve_geometry_types)
-            # Lower derivatives that may have appeared
-            form = apply_derivatives(form)
-
-            if do_cancel_jacobian_products:
-                # Cancel contractions of the Jacobian with its inverse,
-                # which requires component tensors to be removed first
-                form = remove_component_tensors(form)
-                form = cancel_jacobian_products(form)
-                # Lower the Jacobian quantities that were preserved above
-                form = apply_geometry_lowering(form, preserve_geometry_types)
-                form = apply_derivatives(form)
-
-    form = apply_coordinate_derivatives(form)
-
-    # If in real mode, remove any complex nodes introduced during form processing.
-    if not complex_mode:
-        form = remove_complex_nodes(form)
-
-    # Remove component tensors
-    if do_remove_component_tensors:
-        form = remove_component_tensors(form)
-    integral_data = build_integral_data(form.integrals())
-    return FormData(
-        original_form,
-        integral_data,
-        do_apply_default_restrictions=do_apply_default_restrictions,
-        do_apply_restrictions=do_apply_restrictions,
-        do_replace_functions=do_replace_functions,
-        coefficients_to_split=coefficients_to_split,
-        complex_mode=complex_mode,
-    )
+    if kwargs.get("do_apply_function_pullbacks", False):
+        for itg_data in form_data.integral_data:
+            for integral in itg_data.integrals:
+                for node in unique_pre_traversal(integral.integrand()):
+                    if isinstance(node, ufl.Interpolate):
+                        check_interpolation(node)
+    return form_data
