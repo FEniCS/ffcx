@@ -596,6 +596,9 @@ def test_unsupported_interpolations():
         ffcx.codegeneration.jit.compile_expressions(
             [(ufl.Interpolate(u * ufl.TestFunction(W), W), POINTS)]
         )
+    # Including one whose argument is shaped differently from the space
+    with pytest.raises(NotImplementedError, match="space is only supported"):
+        ffcx.codegeneration.jit.compile_expressions([(ufl.Interpolate(ufl.grad(v), W), POINTS)])
 
     # The dofs of a proxy coefficient are built from a single basix element
     x = ufl.SpatialCoordinate(mesh)

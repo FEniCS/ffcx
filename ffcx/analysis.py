@@ -13,6 +13,8 @@ representation type.
 
 from __future__ import annotations
 
+import functools
+import itertools
 import logging
 import typing
 from functools import singledispatchmethod
@@ -27,7 +29,7 @@ import ufl.algorithms
 from ufl.algorithms.apply_derivatives import apply_derivatives
 from ufl.algorithms.apply_function_pullbacks import apply_interpolate_pullbacks
 from ufl.algorithms.apply_geometry_lowering import apply_geometry_lowering
-from ufl.algorithms.remove_component_tensors import remove_component_tensors
+from ufl.algorithms.renumbering import renumber_indices
 from ufl.corealg.dag_traverser import DAGTraverser
 from ufl.corealg.traversal import unique_pre_traversal
 from ufl.utils.sorting import sorted_by_count
@@ -221,67 +223,130 @@ def interpolation_dof_elements(
 
 
 def interpolated_argument(interpolation: ufl.Interpolate) -> ufl.Argument | None:
-    """Get the argument that an interpolation maps directly, if it maps one.
+    """Get the argument that an analysed interpolation maps directly, if it maps one.
 
-    `apply_interpolate_pullbacks` maps the operand onto the reference cell, so
-    interpolating an argument itself leaves the argument under the target
-    element's inverse pull back rather than on its own.
+    The analysis rewrites the operand of each interpolation of an argument
+    itself into the argument's reference value, see `_classify_interpolation`,
+    so after it this is an exact comparison.
 
     Args:
-        interpolation: A `ufl.Interpolate`.
+        interpolation: A `ufl.Interpolate`, from an analysed form or expression.
 
     Returns:
-        The argument, or None if the operand is not one mapped that way.
+        The argument, or None if the operand is not its reference value.
     """
-    operand = interpolated_expression(interpolation)
     arguments = interpolation_arguments(interpolation)
     if len(arguments) != 1:
         return None
     (argument,) = arguments
-    space = interpolation_target_space(interpolation)
-    target = space.ufl_element()
-    source = argument.ufl_function_space().ufl_element()
-    domain = ufl.domain.extract_unique_domain(argument) or space.ufl_domain()
-    # The argument as it stands in the operand. `apply_interpolate_pullbacks`
-    # maps the operand onto the reference cell of the target element, and
-    # `apply_function_pullbacks` then represents the argument itself in
-    # reference value, through its own pull back. Interpolations are only
-    # classified after both passes. Cancelling Jacobian products in a form
-    # then removes the two pull backs entirely, which `check_interpolation`
-    # requires to be the same.
-    mapped = (
-        ufl.classes.ReferenceValue(argument),
-        target.pullback.apply_inverse(
-            source.pullback.apply(ufl.classes.ReferenceValue(argument), domain), domain
-        ),
-    )
-    return argument if any(_same_expression(operand, m) for m in mapped) else None
+    if interpolated_expression(interpolation) != ufl.classes.ReferenceValue(argument):
+        return None
+    return argument
 
 
-def _same_expression(a: ufl.core.expr.Expr, b: ufl.core.expr.Expr) -> bool:
-    """Compare two expressions up to lowering and index numbering.
+class _Processing(typing.NamedTuple):
+    """How an expression holding interpolations has been processed.
 
-    The operand of an interpolation is compared against one built here, which
-    has not been through the passes the form has: the geometry of a pull back is
-    lowered in the form, cancelling Jacobian products removes its component
-    tensors, and each pull back numbers its free indices from a global counter.
-
-    Args:
-        a: An expression.
-        b: An expression to compare it against.
+    An interpolation in it is classified against an interpolation of the
+    argument itself processed the same way, see `_processed_argument`.
     """
 
-    def normalise(expression: ufl.core.expr.Expr) -> ufl.core.expr.Expr:
-        preserve = (ufl.classes.Jacobian,)
-        for _ in range(2):
-            expression = apply_geometry_lowering(expression, preserve)
-            expression = apply_derivatives(expression)
-        expression = remove_component_tensors(expression)
-        return typing.cast(
-            ufl.core.expr.Expr, ufl.algorithms.renumbering.renumber_indices(expression)
-        )
+    #: As the integrand of a form, by `_compute_form_data`, rather than as an
+    #: expression, by `_process_expression`
+    form: bool
+    #: For a complex scalar type
+    complex_mode: bool
+    #: With Jacobian products cancelled, which only applies to a form
+    do_cancel_jacobian_products: bool = False
 
-    return bool(normalise(a) == normalise(b))
+
+@functools.lru_cache(maxsize=128)
+def _processed_argument(
+    space: ufl.FunctionSpace, part: int | None, target: ufl.FunctionSpace, processing: _Processing
+) -> tuple[ufl.Argument, ufl.core.expr.Expr]:
+    """Get what interpolating an argument itself is processed into.
+
+    The interpolation of an argument into the target space is processed the
+    way that `processing` describes, so that it carries what UFL makes of it:
+    the pull backs mapping it onto the reference cell of the target element,
+    their lowered geometry and, if enabled, cancelled Jacobian products.
+
+    Args:
+        space: The space of the argument.
+        part: The part of the argument.
+        target: The space interpolated into.
+        processing: How to process the interpolation.
+
+    Returns:
+        The argument it is built with, and the operand of the processed
+        interpolation, with its indices renumbered.
+    """
+    # Numbered 1, which a form may hold on its own and unconjugated in
+    # complex mode.
+    argument = ufl.Argument(space, 1, part)
+    interpolation = ufl.Interpolate(argument, target)
+    if processing.form:
+        shape = interpolation.ufl_shape
+        components = itertools.product(*(range(n) for n in shape))
+        integrand = sum(interpolation[c] for c in components) if shape else interpolation
+        # Restrictions are applied to an interpolation rather than into its
+        # operand, and the scaling to the integrand, so a cell integral
+        # processes it as an integral of any type does.
+        form_data = _compute_form_data(
+            integrand * ufl.Measure("dx", domain=target.ufl_domain()),
+            processing.complex_mode,
+            processing.do_cancel_jacobian_products,
+        )
+        expressions = [
+            integral.integrand()
+            for integral_data in form_data.integral_data
+            for integral in integral_data.integrals
+        ]
+    else:
+        expressions = [_process_expression(interpolation, processing.complex_mode)]
+    (processed,) = {
+        node
+        for expression in expressions
+        for node in unique_pre_traversal(expression)
+        if isinstance(node, ufl.Interpolate)
+    }
+    return argument, renumber_indices(interpolated_expression(processed))
+
+
+def _classify_interpolation(
+    interpolation: ufl.Interpolate, processing: _Processing | None
+) -> ufl.Argument | None:
+    """Get the argument that a processed interpolation maps directly, if it maps one.
+
+    After processing, the operand of an interpolation of an argument itself is
+    the argument mapped by its own pull back and the inverse of the target
+    element's, with the geometry lowered, so it is compared against an
+    interpolation of the argument processed the same way. Cancelling Jacobian
+    products in a form reduces it to the argument's reference value when the
+    two pull backs are the same, which is compared against directly.
+
+    Args:
+        interpolation: A `ufl.Interpolate` from a processed expression.
+        processing: How the expression has been processed, or None if its
+            interpolations have already been classified.
+    """
+    argument = interpolated_argument(interpolation)
+    if argument is not None or processing is None:
+        return argument
+    arguments = interpolation_arguments(interpolation)
+    if len(arguments) != 1:
+        return None
+    (argument,) = arguments
+    source = argument.ufl_function_space()
+    target = interpolation_target_space(interpolation)
+    # The table of an argument itself maps between the reference elements,
+    # which needs them on the same cells and with the same value shape. Only
+    # then can the interpolation of the argument be built to compare against.
+    if source.ufl_domain() != target.ufl_domain() or source.value_shape != target.value_shape:
+        return None
+    built, processed = _processed_argument(source, argument.part(), target, processing)
+    operand = renumber_indices(interpolated_expression(interpolation))
+    return argument if operand == ufl.replace(processed, {built: argument}) else None
 
 
 def interpolation_has_runtime_table(interpolation: ufl.Interpolate) -> bool:
@@ -294,19 +359,20 @@ def interpolation_has_runtime_table(interpolation: ufl.Interpolate) -> bool:
     depends on the cell.
 
     Args:
-        interpolation: A `ufl.Interpolate`.
+        interpolation: A `ufl.Interpolate`, from an analysed form or expression.
     """
     return interpolated_argument(interpolation) is None
 
 
-def check_interpolation(interpolation: ufl.Interpolate) -> None:
+def check_interpolation(interpolation: ufl.Interpolate, argument: ufl.Argument | None) -> None:
     """Check that an interpolation holding an argument can be turned into a table.
 
     Args:
         interpolation: A `ufl.Interpolate`.
+        argument: The argument it maps directly, or None if it interpolates an
+            expression merely linear in its arguments.
     """
     target = interpolation_target_space(interpolation).ufl_element()
-    argument = interpolated_argument(interpolation)
     if argument is not None:
         # The argument's reference basis is pushed straight through the
         # interpolation, so the table is known at compile time. That needs the
@@ -530,55 +596,71 @@ def _analyze_expression(
             reference cells of their target elements, and represent the form
             arguments and coefficients in reference value. This is already done
             for the expression an interpolation interpolates, which is taken
-            from a processed form or expression.
+            from a processed form or expression, and whose interpolations have
+            been classified with it.
+    """
+    complex_mode = bool(np.issubdtype(scalar_type, np.complexfloating))
+    expression = _process_expression(expression, complex_mode, do_apply_function_pullbacks)
+    processing = None
+    if do_apply_function_pullbacks:
+        processing = _Processing(form=False, complex_mode=complex_mode)
+    replacer = IntermediateCoefficientReplacer(processing)
+    return typing.cast(ufl.core.expr.Expr, replacer(expression))
+
+
+def _process_expression(
+    expression: ufl.core.expr.Expr, complex_mode: bool, do_apply_function_pullbacks: bool = True
+) -> ufl.core.expr.Expr:
+    """Process an expression, as `ufl.algorithms.compute_form_data` does a form.
+
+    Args:
+        expression: The expression to process.
+        complex_mode: Whether to process it for a complex scalar type.
+        do_apply_function_pullbacks: See `_analyze_expression`.
     """
     preserve_geometry_types = (ufl.classes.Jacobian,)
     lowered = ufl.algorithms.apply_algebra_lowering.apply_algebra_lowering(expression)
     assert isinstance(lowered, ufl.core.expr.Expr)
     # An interpolation is linear in the expression it interpolates, so UFL
     # pushes a derivative into it.
-    expression = ufl.algorithms.apply_derivatives.apply_derivatives(lowered)
+    expression = apply_derivatives(lowered)
     if do_apply_function_pullbacks:
         check_proxy_targets(expression)
         # The same passes, in the same order, as `ufl.algorithms.compute_form_data`
         expression = apply_interpolate_pullbacks(expression)
         expression = ufl.algorithms.apply_function_pullbacks.apply_function_pullbacks(expression)
-    expression = ufl.algorithms.apply_geometry_lowering.apply_geometry_lowering(
-        expression, preserve_geometry_types
-    )
-    expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
-    expression = ufl.algorithms.apply_geometry_lowering.apply_geometry_lowering(
-        expression, preserve_geometry_types
-    )
-    expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
+    expression = apply_geometry_lowering(expression, preserve_geometry_types)
+    expression = apply_derivatives(expression)
+    expression = apply_geometry_lowering(expression, preserve_geometry_types)
+    expression = apply_derivatives(expression)
 
     # Remove complex nodes if scalar type is real valued
-    if not np.issubdtype(scalar_type, np.complexfloating):
+    if not complex_mode:
         expression = ufl.algorithms.remove_complex_nodes.remove_complex_nodes(expression)
+    return expression
 
-    return _replace_interpolations(expression)
 
-
-def _replace_interpolations(
-    expression: ufl.core.expr.Expr, replacer: IntermediateCoefficientReplacer | None = None
-) -> ufl.core.expr.Expr:
-    """Replace the interpolations of an expression by proxy coefficients.
-
-    Each one is evaluated by an expression kernel of its own. The
-    interpolations that are left hold an argument, and are checked to be
-    supported.
+def _compute_form_data(
+    form: ufl.Form, complex_mode: bool, do_cancel_jacobian_products: bool
+) -> FormData:
+    """Process a form with the options FFCx compiles forms with.
 
     Args:
-        expression: A processed expression, or integrand of a processed form.
-        replacer: The replacer to use. One that is shared between expressions
-            replaces an interpolation they share by the same proxy coefficient.
+        form: The form.
+        complex_mode: Whether to process it for a complex scalar type.
+        do_cancel_jacobian_products: Whether to cancel Jacobian products.
     """
-    replacer = replacer or IntermediateCoefficientReplacer()
-    expression = typing.cast(ufl.core.expr.Expr, replacer(expression))
-    for node in unique_pre_traversal(expression):
-        if isinstance(node, ufl.Interpolate):
-            check_interpolation(node)
-    return expression
+    return ufl.algorithms.compute_form_data(
+        form,
+        do_apply_function_pullbacks=True,
+        do_apply_integral_scaling=True,
+        do_apply_geometry_lowering=True,
+        preserve_geometry_types=(ufl.classes.Jacobian,),
+        do_apply_restrictions=True,
+        do_append_everywhere_integrals=False,  # do not add dx integrals to dx(i) in UFL
+        do_cancel_jacobian_products=do_cancel_jacobian_products,
+        complex_mode=complex_mode,
+    )
 
 
 def _analyze_form(
@@ -610,7 +692,7 @@ def _analyze_form(
         assert isinstance(_integral._ufl_domain._ufl_coordinate_element, basix.ufl._ElementBase)
 
     # Check for complex mode
-    complex_mode = np.issubdtype(scalar_type, np.complexfloating)
+    complex_mode = bool(np.issubdtype(scalar_type, np.complexfloating))
 
     # Interpolations of an expression are left in the form for UFL to process,
     # so that it accounts for the coefficients they read, and replaced by proxy
@@ -618,21 +700,17 @@ def _analyze_form(
     check_proxy_targets(form)
 
     # Compute form metadata
-    form_data: FormData = ufl.algorithms.compute_form_data(
-        form,
-        do_apply_function_pullbacks=True,
-        do_apply_integral_scaling=True,
-        do_apply_geometry_lowering=True,
-        preserve_geometry_types=(ufl.classes.Jacobian,),
-        do_apply_restrictions=True,
-        do_append_everywhere_integrals=False,  # do not add dx integrals to dx(i) in UFL
-        do_cancel_jacobian_products=do_cancel_jacobian_products,
-        complex_mode=complex_mode,
-    )
+    form_data = _compute_form_data(form, complex_mode, do_cancel_jacobian_products)
 
     # Shared between the integrals, so that an interpolation they share is
     # replaced by the same proxy coefficient
-    replacer = IntermediateCoefficientReplacer()
+    replacer = IntermediateCoefficientReplacer(
+        _Processing(
+            form=True,
+            complex_mode=complex_mode,
+            do_cancel_jacobian_products=do_cancel_jacobian_products,
+        )
+    )
 
     # Determine unique quadrature degree and quadrature scheme
     # per each integral data
@@ -648,10 +726,11 @@ def _analyze_form(
         for i, integral in enumerate(integral_data.integrals):
             metadata = integral.metadata()
 
-            # Interpolations of an expression become proxy coefficients. UFL
-            # has mapped each onto the reference cell of its target element,
-            # and represented what it reads in reference value.
-            integrand = _replace_interpolations(integral.integrand(), replacer)
+            # Interpolations of an expression become proxy coefficients, and
+            # those holding an argument are classified. UFL has mapped each
+            # onto the reference cell of its target element, and represented
+            # what it reads in reference value.
+            integrand = typing.cast(ufl.core.expr.Expr, replacer(integral.integrand()))
 
             # Extract from the integrand, an expression, so that the
             # Coargument of an interpolation in it counts as bound, as it is
@@ -780,10 +859,23 @@ class IntermediateCoefficientReplacer(DAGTraverser):
     """Replace interpolations of an expression by proxy coefficients.
 
     An interpolation holding an argument is left in place: it is a modified
-    terminal, see `ffcx.ir.analysis.modified_terminals`. Interpolations nested in
-    the expression of a replaced one are left too, and replaced when that
-    expression is compiled into a kernel of its own.
+    terminal, see `ffcx.ir.analysis.modified_terminals`. If it interpolates the
+    argument itself, its operand is rewritten into the argument's reference
+    value, which `interpolated_argument` recognises from then on. Interpolations
+    nested in the expression of a replaced one are left too, and replaced when
+    that expression is compiled into a kernel of its own.
     """
+
+    def __init__(self, processing: _Processing | None = None):
+        """Initialise.
+
+        Args:
+            processing: How the expressions to replace in have been
+                processed, to classify their interpolations by, or None if
+                they have already been classified.
+        """
+        super().__init__()
+        self._processing = processing
 
     @singledispatchmethod
     def process(self, o: ufl.core.expr.Expr) -> ufl.core.expr.Expr:
@@ -797,9 +889,20 @@ class IntermediateCoefficientReplacer(DAGTraverser):
     @process.register(ufl.Interpolate)
     def _(self, o: ufl.Interpolate) -> ufl.core.expr.Expr:
         """Handle an interpolation."""
-        if interpolation_arguments(o):
-            return self.reuse_if_untouched(o)
-        return ProxyCoefficient(interpolation_target_space(o), o)
+        if not interpolation_arguments(o):
+            return ProxyCoefficient(interpolation_target_space(o), o)
+        # An interpolation nested in an expression merely linear in an argument
+        # is classified along with it, from the same processing.
+        o = typing.cast(ufl.Interpolate, self.reuse_if_untouched(o))
+        argument = _classify_interpolation(o, self._processing)
+        check_interpolation(o, argument)
+        if argument is None:
+            return o
+        # Interpolating the argument itself is a fixed map between the
+        # reference elements, by the same pull back.
+        return typing.cast(
+            ufl.core.expr.Expr, o._ufl_expr_reconstruct_(ufl.classes.ReferenceValue(argument))
+        )
 
     @process.register(ufl.core.expr.Expr)
     def _(self, o: ufl.core.expr.Expr) -> ufl.core.expr.Expr:

@@ -708,43 +708,55 @@ def test_interpolate_second_derivative(compile_args, dtype, ngrads, block_size):
 
 
 @pytest.mark.parametrize("do_cancel_jacobian_products", [False, True])
-@pytest.mark.parametrize("family", ["Lagrange", "N1curl"])
-def test_interpolate_argument_is_compile_time(family, do_cancel_jacobian_products):
+@pytest.mark.parametrize("scalar_type", [np.float64, np.complex128])
+@pytest.mark.parametrize("measure", ["dx", "ds", "expression"])
+@pytest.mark.parametrize("family", ["Lagrange", "N1curl", "RT", "Regge", "HHJ"])
+def test_interpolate_argument_is_compile_time(
+    family, measure, scalar_type, do_cancel_jacobian_products
+):
     """Interpolating an argument itself must not need a table built per cell.
 
-    The operand is compared against the argument as it stands after the pull
-    backs, which lower the geometry of a Piola map, and after cancelling
-    Jacobian products, which removes its component tensors, so the comparison
-    has to be made up to both.
+    UFL leaves the argument mapped by its own pull back and the inverse of the
+    target's, with the geometry of a Piola map lowered, and reduces it to its
+    reference value only if Jacobian products are cancelled. The analysis
+    recognises it either way, and rewrites it into its reference value.
     """
     cell = "triangle"
     domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(2,)))
     V_a = ufl.FunctionSpace(domain, basix.ufl.element(family, cell, 2))
     V_t = ufl.FunctionSpace(domain, basix.ufl.element(family, cell, 1))
+    argument = ufl.TestFunction(V_a)
 
-    interpolated = ufl.Interpolate(ufl.TrialFunction(V_a), V_t)
-    integrand = interpolated
-    if integrand.ufl_shape:
-        integrand = sum(integrand[i] for i in range(integrand.ufl_shape[0]))
+    interpolated = ufl.Interpolate(argument, V_t)
+    integrand = sum(interpolated[i] for i in np.ndindex(interpolated.ufl_shape))
+    if measure == "expression":
+        points = np.array([[0.25, 0.25]])
+        analysis = ffcx.analysis.analyze_ufl_objects([(integrand, points)], scalar_type)
+        integrands = [expression for expression, _, _ in analysis.expressions]
+    else:
+        form = ufl.conj(integrand) * ufl.Measure(measure, domain=domain)
+        analysis = ffcx.analysis.analyze_ufl_objects(
+            [form], scalar_type, do_cancel_jacobian_products
+        )
+        integrands = [
+            integral.integrand()
+            for form_data in analysis.form_data
+            for integral_data in form_data.integral_data
+            for integral in integral_data.integrals
+        ]
 
-    form = ufl.algorithms.compute_form_data(
-        integrand * ufl.dx,
-        do_apply_function_pullbacks=True,
-        do_apply_geometry_lowering=True,
-        preserve_geometry_types=(ufl.classes.Jacobian,),
-        do_cancel_jacobian_products=do_cancel_jacobian_products,
-    )
-    interpolations = [
+    interpolations = {
         node
-        for integral_data in form.integral_data
-        for integral in integral_data.integrals
-        for node in ufl.corealg.traversal.unique_pre_traversal(integral.integrand())
+        for integrand in integrands
+        for node in ufl.corealg.traversal.unique_pre_traversal(integrand)
         if isinstance(node, ufl.Interpolate)
-    ]
-    assert interpolations
-    for node in interpolations:
-        assert ffcx.analysis.interpolated_argument(node) is not None
-        assert not ffcx.analysis.interpolation_has_runtime_table(node)
+    }
+    assert len(interpolations) == 1
+    (node,) = interpolations
+    assert node.ufl_operands[0] == ufl.classes.ReferenceValue(argument)
+    assert ffcx.analysis.interpolated_argument(node) == argument
+    assert not ffcx.analysis.interpolation_has_runtime_table(node)
+    assert not analysis.interpolation_kernels
 
 
 def _integral(module, form, subdomain_id=-1):
