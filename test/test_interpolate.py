@@ -727,7 +727,7 @@ def test_interpolate_argument_is_compile_time(family, do_cancel_jacobian_product
     if integrand.ufl_shape:
         integrand = sum(integrand[i] for i in range(integrand.ufl_shape[0]))
 
-    form = ffcx.analysis.compute_form_data(
+    form = ffcx.analysis._compute_form_data(
         integrand * ufl.dx,
         do_apply_function_pullbacks=True,
         do_apply_geometry_lowering=True,

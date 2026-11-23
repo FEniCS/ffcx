@@ -553,7 +553,7 @@ def _analyze_expression(
     lowered = ufl.algorithms.apply_algebra_lowering.apply_algebra_lowering(expression)
     assert isinstance(lowered, ufl.core.expr.Expr)
     # An interpolation is linear in the expression it interpolates, so a
-    # derivative is pushed into it, see `compute_form_data`.
+    # derivative is pushed into it, see `_compute_form_data`.
     expression = ufl.algorithms.apply_derivatives.apply_derivatives(lowered)
     # Interpolations of an expression become proxy coefficients, which are
     # evaluated by an expression kernel of their own.
@@ -614,7 +614,7 @@ def _analyze_form(
     complex_mode = np.issubdtype(scalar_type, np.complexfloating)
 
     # Compute form metadata
-    form_data: FormData = compute_form_data(
+    form_data: FormData = _compute_form_data(
         form,
         do_apply_function_pullbacks=True,
         do_apply_integral_scaling=True,
@@ -846,7 +846,7 @@ def replace_ufl_operands(form: ufl.Form) -> ufl.Form:
     return ufl.algorithms.map_integrands.map_integrands(rule, form)  # type: ignore
 
 
-def compute_form_data(form: ufl.Form, **kwargs: typing.Any) -> FormData:
+def _compute_form_data(form: ufl.Form, **kwargs: typing.Any) -> FormData:
     """Compute form data, with interpolations of expressions as proxy coefficients.
 
     Wraps {py:func}`ufl.algorithms.compute_form_data`, which it passes
@@ -865,8 +865,8 @@ def compute_form_data(form: ufl.Form, **kwargs: typing.Any) -> FormData:
     # An interpolation is linear in the expression it interpolates, so UFL
     # pushes a derivative into it: d/du I(g(u))[v] = I(dg/du[v]). This has to
     # happen before the interpolation is replaced, since a proxy coefficient is
-    # opaque to differentiation. `compute_form_data` repeats both steps, which
-    # is idempotent.
+    # opaque to differentiation. `ufl.algorithms.compute_form_data` repeats both
+    # steps, which is idempotent.
     form = apply_derivatives(apply_algebra_lowering(form))
     form = replace_ufl_operands(form)
 
