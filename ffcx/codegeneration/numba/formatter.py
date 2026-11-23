@@ -15,6 +15,16 @@ from ffcx.codegeneration.interface import Formatter as FormatterInterface
 from ffcx.codegeneration.utils import dtype_to_scalar_dtype
 
 
+def expression_kernel_name(expression_name: str) -> str:
+    """Name of the kernel of an interpolation, generated from its expression.
+
+    It is a `numba.njit` compiled function on arrays rather than a
+    `tabulate_tensor` on raw pointers, which a kernel can not pass for its
+    local arrays.
+    """
+    return f"_tabulate_tensor_{expression_name}"
+
+
 def build_initializer_lists(values: npt.NDArray) -> str:
     """Build list of values."""
     arr = "["
@@ -105,7 +115,8 @@ class Formatter(FormatterInterface):
     @__call__.register
     def _(self, call: L.CallOp) -> str:
         """Format a call to a (sub-)kernel."""
-        raise NotImplementedError("Sub-kernel is not supported by the numba backend.")
+        args = ", ".join(self(arg) for arg in call.args)
+        return f"{expression_kernel_name(call.func)}({args})\n"
 
     @__call__.register
     def _(self, arr: L.ArrayAccess) -> str:

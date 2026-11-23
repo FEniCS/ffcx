@@ -14,7 +14,7 @@ from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.common import template_keys, tensor_sizes
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
 from ffcx.codegeneration.numba import expression_template
-from ffcx.codegeneration.numba.formatter import Formatter
+from ffcx.codegeneration.numba.formatter import Formatter, expression_kernel_name
 from ffcx.ir.representation import ExpressionIR
 
 logger = logging.getLogger("ffcx")
@@ -37,6 +37,21 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     d["factory_name"] = factory_name
     parts = eg.generate()
 
+    format = Formatter(options["scalar_type"])  # type: ignore
+    body = format(parts)
+    body = "\n".join(["    " + line for line in body.split("\n")])
+
+    if ir.is_interpolation_kernel:
+        # A kernel on arrays, which the kernels holding the interpolation call
+        # with their local arrays, see `Formatter`. It is not exported.
+        kernel = {
+            "factory_name": factory_name,
+            "kernel_name": expression_kernel_name(factory_name),
+            "tabulate_expression": body,
+        }
+        assert set(kernel) == template_keys(expression_template.interpolation_kernel)
+        return (expression_template.interpolation_kernel.format_map(kernel),)
+
     # tabulate_expression
     sizes = tensor_sizes(ir)
     header = f"""
@@ -47,10 +62,6 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     entity_local_index = numba.carray(_entity_local_index, ({sizes.local_index}))
     quadrature_permutation = numba.carray(_quadrature_permutation, ({sizes.permutation}))
     """
-    format = Formatter(options["scalar_type"])  # type: ignore
-    body = format(parts)
-    body = "\n".join(["    " + line for line in body.split("\n")])
-
     d["tabulate_expression"] = header + body
 
     # TODO: original_coefficient_positions_init
