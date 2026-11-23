@@ -869,9 +869,7 @@ def _compute_expression_ir(
     ir["coefficient_names"] = [
         object_names.get(id(obj), f"w{j}") for j, obj in enumerate(coefficients)
     ]
-    ir["interpolation"] = _compute_interpolation_ir(
-        kernel_interpolations([expr], ufl.algorithms.extract_coefficients(expr)), kernel_names
-    )
+    ir["interpolation"] = _compute_interpolation_ir(kernel_interpolations([expr]), kernel_names)
 
     if cell is not None:
         if (tdim := cell.topological_dimension) == (pdim := points.shape[1]):

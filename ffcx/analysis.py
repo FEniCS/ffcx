@@ -24,7 +24,6 @@ import basix.ufl
 import numpy as np
 import numpy.typing as npt
 import ufl.algorithms
-from ufl.algorithms.apply_algebra_lowering import apply_algebra_lowering
 from ufl.algorithms.apply_derivatives import apply_derivatives
 from ufl.algorithms.apply_function_pullbacks import apply_interpolate_pullbacks
 from ufl.algorithms.apply_geometry_lowering import apply_geometry_lowering
@@ -67,7 +66,6 @@ class UFLData(typing.NamedTuple):
 
 def kernel_interpolations(
     expressions: typing.Iterable[ufl.core.expr.Expr],
-    coefficients: typing.Iterable[ufl.Coefficient],
 ) -> list[ProxyCoefficient | ufl.Interpolate]:
     """Collect what needs an expression kernel evaluated at interpolation points.
 
@@ -79,11 +77,19 @@ def kernel_interpolations(
 
     Args:
         expressions: Processed expressions, such as the integrands of a form.
-        coefficients: The coefficients of the expressions.
+
+    Returns:
+        The proxy coefficients, ordered by count, followed by the interpolations
+        whose table is built for each cell, in the order they are met.
     """
-    collected: list[ProxyCoefficient | ufl.Interpolate] = [
-        coefficient for coefficient in coefficients if isinstance(coefficient, ProxyCoefficient)
-    ]
+    expressions = list(expressions)
+    proxies = {
+        coefficient
+        for expression in expressions
+        for coefficient in ufl.algorithms.extract_coefficients(expression)
+        if isinstance(coefficient, ProxyCoefficient)
+    }
+    collected: list[ProxyCoefficient | ufl.Interpolate] = list(sorted_by_count(proxies))
     seen = set()
     for expression in expressions:
         for node in unique_pre_traversal(expression):
@@ -106,13 +112,10 @@ def integral_interpolations(
     count, which is also the order they are numbered in within the kernel.
 
     Args:
-        itg_data: The integral data of a processed form.
+        itg_data: The integral data of a form analysed by `_analyze_form`,
+            whose integrands hold the proxy coefficients.
     """
-    assert itg_data.integral_coefficients is not None
-    return kernel_interpolations(
-        [integral.integrand() for integral in itg_data.integrals],
-        sorted_by_count(itg_data.integral_coefficients),
-    )
+    return kernel_interpolations(integral.integrand() for integral in itg_data.integrals)
 
 
 def required_coefficients(expression: ufl.core.expr.Expr) -> list[ufl.Coefficient]:
@@ -241,13 +244,12 @@ def interpolated_argument(interpolation: ufl.Interpolate) -> ufl.Argument | None
     domain = ufl.domain.extract_unique_domain(argument) or space.ufl_domain()
     # The argument as it stands in the operand. `apply_interpolate_pullbacks`
     # maps the operand onto the reference cell of the target element, and
-    # `apply_function_pullbacks` later represents the argument itself in
-    # reference value, through its own pull back. Both forms are met: an
-    # expression is checked between the two passes, and a form after them.
-    # Cancelling Jacobian products in a form then removes the two pull backs
-    # entirely, which `check_interpolation` requires to be the same.
+    # `apply_function_pullbacks` then represents the argument itself in
+    # reference value, through its own pull back. Interpolations are only
+    # classified after both passes. Cancelling Jacobian products in a form
+    # then removes the two pull backs entirely, which `check_interpolation`
+    # requires to be the same.
     mapped = (
-        target.pullback.apply_inverse(argument, domain),
         ufl.classes.ReferenceValue(argument),
         target.pullback.apply_inverse(
             source.pullback.apply(ufl.classes.ReferenceValue(argument), domain), domain
@@ -336,6 +338,29 @@ def check_interpolation(interpolation: ufl.Interpolate) -> None:
             )
 
 
+def check_proxy_targets(o: ufl.Form | ufl.core.expr.Expr) -> None:
+    """Check that each interpolation of an expression lands in a supported space.
+
+    Such an interpolation becomes a `ProxyCoefficient`, whose dofs are built by
+    `ffcx.codegeneration.interpolation` from a single basix element, which a
+    mixed, symmetric or quadrature space lacks. This is checked before UFL maps
+    the interpolations onto their reference cells, which fails for some of them.
+
+    Args:
+        o: A form or an expression, as given.
+    """
+    expressions = [itg.integrand() for itg in o.integrals()] if isinstance(o, ufl.Form) else [o]
+    for expression in expressions:
+        for node in unique_pre_traversal(expression):
+            if not isinstance(node, ufl.Interpolate) or interpolation_arguments(node):
+                continue
+            pullback = node.ufl_element().pullback
+            if not isinstance(pullback, _PROXY_PULLBACKS):
+                raise NotImplementedError(
+                    f"Interpolating an expression into a {pullback} space is not supported."
+                )
+
+
 def interpolation_target_space(
     interpolation: ProxyCoefficient | ufl.Interpolate,
 ) -> ufl.FunctionSpace:
@@ -420,49 +445,22 @@ def analyze_ufl_objects(
             if interpolation in interpolation_kernels:
                 continue
             processed, points, mapped = _analyze_interpolation(interpolation, scalar_type)
+            # A proxy coefficient is not a coefficient of the form, so its
+            # element is not among those of the form data.
+            target = interpolation.ufl_element()
+            assert isinstance(target, basix.ufl._ElementBase)
+            elements.append(target)
             elements.extend(ufl.algorithms.extract_elements(mapped))
             elements.extend(ufl.algorithms.extract_elements(processed))
-            add_interpolation_kernels(
-                kernel_interpolations([processed], ufl.algorithms.extract_coefficients(processed))
-            )
+            add_interpolation_kernels(kernel_interpolations([processed]))
             interpolation_kernels[interpolation] = len(processed_expressions)
             processed_expressions.append((processed, points, mapped))
 
+    # The coefficients that the interpolations read are coefficients of the
+    # form, which UFL collects from inside the interpolations it processed.
     for data in form_data:
-        # The coefficients that the interpolations in each integral read must be
-        # passed to it, even if the integrand does not hold them itself.
-        interpolated_coefficients: list[set[ufl.Coefficient]] = []
         for itg_data in data.integral_data:
-            interpolations = integral_interpolations(itg_data)
-            add_interpolation_kernels(interpolations)
-            interpolated_coefficients.append(
-                {c for i in interpolations for c in interpolation_coefficients(i)}
-            )
-
-        # Update form data for new set of reduced coefficients. A proxy
-        # coefficient is built inside the kernel from the coefficients it
-        # interpolates, which take its place, so it is not one of the form.
-        data._reduced_coefficients = sorted_by_count(
-            {c for c in data.reduced_coefficients if not isinstance(c, ProxyCoefficient)}.union(
-                *interpolated_coefficients
-            )
-        )
-        # NOTE: Could have been simpler if we had extracted the elements from
-        # reduced_coefficients rather than going through coefficient_elements.
-        data._coefficient_elements = tuple(c.ufl_element() for c in data.reduced_coefficients)
-        for itg_data, interpolated in zip(data.integral_data, interpolated_coefficients):
-            assert itg_data.integral_coefficients is not None
-            itg_data.enabled_coefficients = [
-                coeff in itg_data.integral_coefficients or coeff in interpolated
-                for coeff in data.reduced_coefficients
-            ]
-
-        # Update original coefficient position in form
-        data._original_coefficient_positions = [
-            i
-            for i, c in enumerate(data.original_form.coefficients())
-            if c in data.reduced_coefficients
-        ]
+            add_interpolation_kernels(integral_interpolations(itg_data))
 
     for original_expression, points in expressions:
         processed_expression = _analyze_expression(original_expression, scalar_type)
@@ -470,11 +468,7 @@ def analyze_ufl_objects(
         # coargument of an interpolation that is not inside another expression
         # as a free argument, which clashes with those of nested ones.
         elements += ufl.algorithms.extract_elements(processed_expression)
-        add_interpolation_kernels(
-            kernel_interpolations(
-                [processed_expression], ufl.algorithms.extract_coefficients(processed_expression)
-            )
-        )
+        add_interpolation_kernels(kernel_interpolations([processed_expression]))
         processed_expressions += [(processed_expression, points, original_expression)]
 
     elements += ufl.algorithms.analysis.extract_sub_elements(elements)
@@ -512,25 +506,13 @@ def _analyze_interpolation(
         The processed expression, the interpolation points of the target
         element, and the expression on the reference cell of the target element.
     """
+    # `apply_interpolate_pullbacks` has mapped the expression onto the reference
+    # cell of the target element, which is what its dual basis evaluates, and
+    # `apply_function_pullbacks` has represented what it holds in reference value.
     expression = interpolated_expression(interpolation)
-    target_space = interpolation_target_space(interpolation)
-    element = target_space.ufl_element()
-    if isinstance(interpolation, ProxyCoefficient):
-        # The dofs are built by `ffcx.codegeneration.interpolation` from a single
-        # basix element, which a mixed, symmetric or quadrature space lacks.
-        if not isinstance(element.pullback, _PROXY_PULLBACKS):
-            raise NotImplementedError(
-                f"Interpolating an expression into a {element.pullback} space is not supported."
-            )
-        # Map the expression onto the reference cell of the target element,
-        # which is what its dual basis evaluates. An interpolation that stayed
-        # in the integrands was mapped there by `apply_interpolate_pullbacks`.
-        expression = element.pullback.apply_inverse(expression, target_space.ufl_domain())
-    processed = _analyze_expression(
-        expression,
-        scalar_type,
-        do_apply_function_pullbacks=isinstance(interpolation, ProxyCoefficient),
-    )
+    processed = _analyze_expression(expression, scalar_type, do_apply_function_pullbacks=False)
+    element = interpolation.ufl_element()
+    assert isinstance(element, basix.ufl._ElementBase)
     return processed, element.basix_element.points, expression
 
 
@@ -544,27 +526,22 @@ def _analyze_expression(
     Args:
         expression: The expression to process.
         scalar_type: The scalar type to compile for.
-        do_apply_function_pullbacks: Represent the form arguments and
-            coefficients in reference value. This is already done for the
-            operand of an interpolation that stayed in a form, which is
-            collected after the form has been processed.
+        do_apply_function_pullbacks: Evaluate the interpolations on the
+            reference cells of their target elements, and represent the form
+            arguments and coefficients in reference value. This is already done
+            for the expression an interpolation interpolates, which is taken
+            from a processed form or expression.
     """
     preserve_geometry_types = (ufl.classes.Jacobian,)
     lowered = ufl.algorithms.apply_algebra_lowering.apply_algebra_lowering(expression)
     assert isinstance(lowered, ufl.core.expr.Expr)
-    # An interpolation is linear in the expression it interpolates, so a
-    # derivative is pushed into it, see `_compute_form_data`.
+    # An interpolation is linear in the expression it interpolates, so UFL
+    # pushes a derivative into it.
     expression = ufl.algorithms.apply_derivatives.apply_derivatives(lowered)
-    # Interpolations of an expression become proxy coefficients, which are
-    # evaluated by an expression kernel of their own.
-    expression = typing.cast(ufl.core.expr.Expr, IntermediateCoefficientReplacer()(expression))
     if do_apply_function_pullbacks:
-        # Evaluate the interpolations that are left, which are the ones holding
-        # an argument, on the reference cell of their target element.
+        check_proxy_targets(expression)
+        # The same passes, in the same order, as `ufl.algorithms.compute_form_data`
         expression = apply_interpolate_pullbacks(expression)
-        for node in unique_pre_traversal(expression):
-            if isinstance(node, ufl.Interpolate):
-                check_interpolation(node)
         expression = ufl.algorithms.apply_function_pullbacks.apply_function_pullbacks(expression)
     expression = ufl.algorithms.apply_geometry_lowering.apply_geometry_lowering(
         expression, preserve_geometry_types
@@ -579,6 +556,28 @@ def _analyze_expression(
     if not np.issubdtype(scalar_type, np.complexfloating):
         expression = ufl.algorithms.remove_complex_nodes.remove_complex_nodes(expression)
 
+    return _replace_interpolations(expression)
+
+
+def _replace_interpolations(
+    expression: ufl.core.expr.Expr, replacer: IntermediateCoefficientReplacer | None = None
+) -> ufl.core.expr.Expr:
+    """Replace the interpolations of an expression by proxy coefficients.
+
+    Each one is evaluated by an expression kernel of its own. The
+    interpolations that are left hold an argument, and are checked to be
+    supported.
+
+    Args:
+        expression: A processed expression, or integrand of a processed form.
+        replacer: The replacer to use. One that is shared between expressions
+            replaces an interpolation they share by the same proxy coefficient.
+    """
+    replacer = replacer or IntermediateCoefficientReplacer()
+    expression = typing.cast(ufl.core.expr.Expr, replacer(expression))
+    for node in unique_pre_traversal(expression):
+        if isinstance(node, ufl.Interpolate):
+            check_interpolation(node)
     return expression
 
 
@@ -613,8 +612,13 @@ def _analyze_form(
     # Check for complex mode
     complex_mode = np.issubdtype(scalar_type, np.complexfloating)
 
+    # Interpolations of an expression are left in the form for UFL to process,
+    # so that it accounts for the coefficients they read, and replaced by proxy
+    # coefficients below. Fail early for the ones that cannot be.
+    check_proxy_targets(form)
+
     # Compute form metadata
-    form_data: FormData = _compute_form_data(
+    form_data: FormData = ufl.algorithms.compute_form_data(
         form,
         do_apply_function_pullbacks=True,
         do_apply_integral_scaling=True,
@@ -626,9 +630,9 @@ def _analyze_form(
         complex_mode=complex_mode,
     )
 
-    # Store original form, prior to replacement of interpolate,
-    # to ensure we get the correct signature and coefficient numbering
-    form_data._original_form = form
+    # Shared between the integrals, so that an interpolation they share is
+    # replaced by the same proxy coefficient
+    replacer = IntermediateCoefficientReplacer()
 
     # Determine unique quadrature degree and quadrature scheme
     # per each integral data
@@ -644,12 +648,17 @@ def _analyze_form(
         for i, integral in enumerate(integral_data.integrals):
             metadata = integral.metadata()
 
+            # Interpolations of an expression become proxy coefficients. UFL
+            # has mapped each onto the reference cell of its target element,
+            # and represented what it reads in reference value.
+            integrand = _replace_interpolations(integral.integrand(), replacer)
+
             # Extract from the integrand, an expression, so that the
             # Coargument of an interpolation in it counts as bound, as it is
             # in the form. Passed the integral, UFL takes it for a free
             # argument, which clashes with the form's own argument of that
             # number once a derivative has been pushed into the interpolation.
-            elements = ufl.algorithms.extract_elements(integral.integrand())
+            elements = ufl.algorithms.extract_elements(integrand)
 
             # Vertex integrals do not support discontinuous integrands.
             if integral.integral_type() == "vertex":
@@ -714,7 +723,9 @@ def _analyze_form(
                     }
                 )
 
-            integral_data.integrals[i] = integral.reconstruct(metadata=metadata)
+            integral_data.integrals[i] = integral.reconstruct(
+                integrand=integrand, metadata=metadata
+            )
 
     return form_data
 
@@ -734,148 +745,63 @@ def _has_custom_integrals(
 
 
 class ProxyCoefficient(ufl.Coefficient):
-    """Proxy coefficient to replace operands that require custom treatement."""
+    """A coefficient that stands for an interpolation of an expression.
 
-    _operator: ufl.core.expr.Expr
+    Its degrees of freedom are built in the kernel, by evaluating the expression
+    at the interpolation points of the target element, see
+    `ffcx.codegeneration.interpolation`.
+    """
 
-    def __init__(self, V: ufl.FunctionSpace, operator: ufl.core.expr.Expr):
-        """Initialise."""
+    _operator: ufl.Interpolate
+
+    def __init__(self, V: ufl.FunctionSpace, operator: ufl.Interpolate):
+        """Initialise.
+
+        Args:
+            V: The space interpolated into.
+            operator: The interpolation, of an expression already mapped onto
+                the reference cell of the target element.
+        """
         self._operator = operator
         super().__init__(V)
 
     @property
     def operand(self) -> ufl.core.expr.Expr:
-        """The operand that this proxy coefficient is replacing."""
+        """The expression interpolated, on the reference cell of the target element."""
         return self._operator.ufl_operands[0]
 
     @property
-    def operator(self) -> ufl.core.expr.Expr:
-        """The kind of the operand that this proxy coefficient is replacing."""
+    def operator(self) -> ufl.Interpolate:
+        """The interpolation that this proxy coefficient stands for."""
         return self._operator
 
 
 class IntermediateCoefficientReplacer(DAGTraverser):
-    """Replace operands requiring intermediate coefficients with intermediate objects."""
+    """Replace interpolations of an expression by proxy coefficients.
 
-    def __init__(
-        self,
-        compress: bool | None = True,
-        visited_cache: dict[tuple, ufl.core.expr.Expr | ufl.form.BaseForm] | None = None,
-        result_cache: dict[
-            ufl.core.expr.Expr | ufl.form.BaseForm, ufl.core.expr.Expr | ufl.form.BaseForm
-        ]
-        | None = None,
-    ) -> None:
-        """Initialise.
-
-        Args:
-            compress: If True, ``result_cache`` will be used.
-            visited_cache: cache of intermediate results;
-                expr -> r = self.process(expr, ...).
-            result_cache: cache of result objects for memory reuse, r -> r.
-
-        """
-        super().__init__(compress=compress, visited_cache=visited_cache, result_cache=result_cache)
+    An interpolation holding an argument is left in place: it is a modified
+    terminal, see `ffcx.ir.analysis.modified_terminals`. Interpolations nested in
+    the expression of a replaced one are left too, and replaced when that
+    expression is compiled into a kernel of its own.
+    """
 
     @singledispatchmethod
-    def process(
-        self,
-        o: ufl.core.expr.Expr,
-        reference_value: bool | None = False,
-        reference_grad: int | None = 0,
-        restricted: str | None = None,
-    ) -> ufl.core.expr.Expr:
-        """Replace averaged arguments with intermediate space.
+    def process(self, o: ufl.core.expr.Expr) -> ufl.core.expr.Expr:
+        """Replace the interpolations of an expression.
 
         Args:
-            o: `ufl.core.expr.Expr` to be processed.
-            reference_value: Whether `ReferenceValue` has been applied or not.
-            reference_grad: Number of `ReferenceGrad` operators that have been applied.
-            restricted: '+', '-', or None.
+            o: The expression.
         """
         return typing.cast(ufl.core.expr.Expr, super().process(o))
 
     @process.register(ufl.Interpolate)
-    def _(
-        self,
-        o: ufl.Interpolate,
-        reference_value: bool | None = False,
-        reference_grad: int | None = 0,
-        restricted: str | None = None,
-    ) -> ufl.core.expr.Expr:
-        """Handle Interpolate."""
-        (operand,) = o.ufl_operands
-        if ufl.algorithms.extract_arguments(operand):
-            # An interpolation holding an argument stays in the integrand: it is
-            # a modified terminal, see `ffcx.ir.analysis.modified_terminals`.
-            return self.reuse_if_untouched(
-                o,
-                reference_value=reference_value,
-                reference_grad=reference_grad,
-                restricted=restricted,
-            )
+    def _(self, o: ufl.Interpolate) -> ufl.core.expr.Expr:
+        """Handle an interpolation."""
+        if interpolation_arguments(o):
+            return self.reuse_if_untouched(o)
         return ProxyCoefficient(interpolation_target_space(o), o)
 
     @process.register(ufl.core.expr.Expr)
-    def _(
-        self,
-        o: ufl.Argument,
-        reference_value: bool | None = False,
-        reference_grad: int | None = 0,
-        restricted: str | None = None,
-    ) -> ufl.core.expr.Expr:
-        """Handle anything else in UFL."""
-        return self.reuse_if_untouched(
-            o,
-            reference_value=reference_value,
-            reference_grad=reference_grad,
-            restricted=restricted,
-        )
-
-
-def replace_ufl_operands(form: ufl.Form) -> ufl.Form:
-    """Parse UFL form and and add placeholder coefficients.
-
-    Args:
-        form: UFL form
-
-    Return:
-        The modified form with operands replaced.
-    """
-    rule = IntermediateCoefficientReplacer()
-    return ufl.algorithms.map_integrands.map_integrands(rule, form)  # type: ignore
-
-
-def _compute_form_data(form: ufl.Form, **kwargs: typing.Any) -> FormData:
-    """Compute form data, with interpolations of expressions as proxy coefficients.
-
-    Wraps {py:func}`ufl.algorithms.compute_form_data`, which it passes
-    ``kwargs`` on to, after replacing each interpolation that holds no argument
-    by a `ProxyCoefficient`. The remaining interpolations, which hold an
-    argument, are evaluated on the reference cell of their target element by
-    UFL, and checked here.
-
-    Note:
-        The `FormData.original_form` returned holds the proxy coefficients.
-
-    Args:
-        form: The form to compute form data for.
-        kwargs: Options of {py:func}`ufl.algorithms.compute_form_data`.
-    """
-    # An interpolation is linear in the expression it interpolates, so UFL
-    # pushes a derivative into it: d/du I(g(u))[v] = I(dg/du[v]). This has to
-    # happen before the interpolation is replaced, since a proxy coefficient is
-    # opaque to differentiation. `ufl.algorithms.compute_form_data` repeats both
-    # steps, which is idempotent.
-    form = apply_derivatives(apply_algebra_lowering(form))
-    form = replace_ufl_operands(form)
-
-    form_data = ufl.algorithms.compute_form_data(form, **kwargs)
-
-    if kwargs.get("do_apply_function_pullbacks", False):
-        for itg_data in form_data.integral_data:
-            for integral in itg_data.integrals:
-                for node in unique_pre_traversal(integral.integrand()):
-                    if isinstance(node, ufl.Interpolate):
-                        check_interpolation(node)
-    return form_data
+    def _(self, o: ufl.core.expr.Expr) -> ufl.core.expr.Expr:
+        """Handle anything else."""
+        return self.reuse_if_untouched(o)

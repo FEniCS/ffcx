@@ -632,9 +632,7 @@ def test_kernel_interpolations():
     analysis = ffcx.analysis.analyze_ufl_objects([(expression, POINTS)], np.float64)
     processed, _, _ = analysis.expressions[-1]
 
-    interpolations = ffcx.analysis.kernel_interpolations(
-        [processed], ufl.algorithms.extract_coefficients(processed)
-    )
+    interpolations = ffcx.analysis.kernel_interpolations([processed])
     assert len(interpolations) == 2
     proxy, table = interpolations
     assert isinstance(proxy, ffcx.analysis.ProxyCoefficient)
