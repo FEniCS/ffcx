@@ -482,6 +482,26 @@ class ArithmeticBinOp(BinOp):
         self.dtype = merge_dtypes([self.lhs.dtype, self.rhs.dtype])
 
 
+class CallOp(LExprOperator):
+    """A call to a (sub-)kernel.
+
+    Each formatter names the kernel from the name of the expression it is
+    generated from.
+    """
+
+    op = ""
+
+    def __init__(self, function: str, args):
+        """Initialise.
+
+        Args:
+            function: Name of the expression the kernel is generated from.
+            args: The arguments, as those of a `tabulate_tensor`.
+        """
+        self.func = function
+        self.args = [as_lexpr(arg) for arg in args]
+
+
 class NaryOp(LExprOperator):
     """Base class for special n-ary operators."""
 

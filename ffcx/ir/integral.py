@@ -19,6 +19,7 @@ from ufl.checks import is_cellwise_constant
 from ufl.classes import QuadratureWeight
 from ufl.corealg.traversal import unique_pre_traversal
 
+from ffcx.analysis import ProxyCoefficient
 from ffcx.definitions import entity_types, supported_integral_types
 from ffcx.ir.analysis.factorization import compute_argument_factorization
 from ffcx.ir.analysis.graph import ExpressionGraph, build_scalar_graph
@@ -130,6 +131,14 @@ class CommonExpressionIR(typing.NamedTuple):
     coefficient_numbering: dict[ufl.Coefficient, int]
     # Each coefficient is accessed from a given offset in the input array
     coefficient_offsets: dict[ufl.Coefficient, int]
+
+    proxy_coefficient_numbering: dict[
+        ProxyCoefficient, int
+    ]  # For coefficients that are accessed via a proxy
+    proxy_coefficient_offsets: dict[
+        ProxyCoefficient, int
+    ]  # For coefficients that are accessed via a proxy
+
     original_constant_offsets: dict[ufl.Constant, int]
     unique_tables: dict[basix.CellType, npt.NDArray[np.float64]]
     unique_table_types: dict[basix.CellType, dict[str, str]]

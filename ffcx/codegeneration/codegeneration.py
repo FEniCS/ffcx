@@ -32,9 +32,9 @@ class CodeBlocks(typing.NamedTuple):
     """
 
     file_pre: list[tuple[str, str]]
+    expressions: list[tuple[str, str]]
     integrals: list[tuple[str, str]]
     forms: list[tuple[str, str]]
-    expressions: list[tuple[str, str]]
     file_post: list[tuple[str, str]]
 
 
