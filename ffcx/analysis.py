@@ -97,6 +97,24 @@ def kernel_interpolations(
     return collected
 
 
+def integral_interpolations(
+    itg_data: ufl.algorithms.domain_analysis.IntegralData,
+) -> list[ProxyCoefficient | ufl.Interpolate]:
+    """Collect what needs an expression kernel evaluated in an integral.
+
+    See `kernel_interpolations`. The proxy coefficients come first, ordered by
+    count, which is also the order they are numbered in within the kernel.
+
+    Args:
+        itg_data: The integral data of a processed form.
+    """
+    assert itg_data.integral_coefficients is not None
+    return kernel_interpolations(
+        [integral.integrand() for integral in itg_data.integrals],
+        sorted_by_count(itg_data.integral_coefficients),
+    )
+
+
 def required_coefficients(expression: ufl.core.expr.Expr) -> list[ufl.Coefficient]:
     """Get the coefficients that evaluating an expression reads, sorted by count.
 
@@ -415,19 +433,19 @@ def analyze_ufl_objects(
         # passed to it, even if the integrand does not hold them itself.
         interpolated_coefficients: list[set[ufl.Coefficient]] = []
         for itg_data in data.integral_data:
-            assert itg_data.integral_coefficients is not None
-            interpolations = kernel_interpolations(
-                [integral.integrand() for integral in itg_data.integrals],
-                [c for c in data.reduced_coefficients if c in itg_data.integral_coefficients],
-            )
+            interpolations = integral_interpolations(itg_data)
             add_interpolation_kernels(interpolations)
             interpolated_coefficients.append(
                 {c for i in interpolations for c in interpolation_coefficients(i)}
             )
 
-        # Update form data for new set of reduced coefficients
+        # Update form data for new set of reduced coefficients. A proxy
+        # coefficient is built inside the kernel from the coefficients it
+        # interpolates, which take its place, so it is not one of the form.
         data._reduced_coefficients = sorted_by_count(
-            set(data.reduced_coefficients).union(*interpolated_coefficients)
+            {c for c in data.reduced_coefficients if not isinstance(c, ProxyCoefficient)}.union(
+                *interpolated_coefficients
+            )
         )
         # NOTE: Could have been simpler if we had extracted the elements from
         # reduced_coefficients rather than going through coefficient_elements.

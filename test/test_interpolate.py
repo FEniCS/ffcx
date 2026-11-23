@@ -5,6 +5,8 @@ import ufl
 
 import ffcx.analysis
 import ffcx.codegeneration.jit
+import ffcx.ir.representation
+import ffcx.options
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 
 
@@ -993,3 +995,46 @@ def test_interpolation_on_interior_facet(compile_args):
 
     with pytest.raises(NotImplementedError, match="restricted to '-'"):
         tabulate(ufl.Interpolate(u, V)("-") * ufl.dS, 1)
+
+
+def test_proxy_coefficients_are_not_form_coefficients():
+    """A proxy coefficient is internal to the kernel, not a coefficient of the form.
+
+    The coefficients it interpolates take its place: they are numbered, named,
+    hashed and enabled as any other coefficient of the form.
+    """
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    V = ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", "triangle", 2))
+    Q = ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", "triangle", 1))
+    u, f, g = ufl.Coefficient(V), ufl.Coefficient(Q), ufl.Coefficient(Q)
+    v = ufl.TestFunction(V)
+    # `f` is only read by the interpolation, `g` only by the second integral
+    form = ufl.Interpolate(u**2 * f, Q) * v * ufl.dx + g * v * ufl.dx(1)
+
+    options = ffcx.options.get_options()
+    analysis = ffcx.analysis.analyze_ufl_objects([form], options["scalar_type"])
+    ir = ffcx.ir.representation.compute_ir(analysis, {}, "test", options, None)
+
+    (form_ir,) = ir.forms
+    assert form_ir.num_coefficients == 3
+    assert len(form_ir.coefficient_names) == 3
+    assert form_ir.original_coefficient_positions == [0, 1, 2]
+    assert len(form_ir.finite_element_hashes) == form_ir.rank + 3
+
+    subdomains = dict(zip(form_ir.integral_names["cell"], form_ir.subdomain_ids["cell"]))
+    enabled = {
+        subdomains[integral.expression.name]: integral.enabled_coefficients
+        for integral in ir.integrals
+    }
+    assert enabled == {-1: [True, True, False], 1: [False, False, True]}
+    for integral in ir.integrals:
+        assert not any(
+            isinstance(c, ffcx.analysis.ProxyCoefficient)
+            for c in integral.expression.coefficient_numbering
+        )
+    (proxies,) = (
+        integral.interpolation.proxies
+        for integral in ir.integrals
+        if integral.interpolation.proxies
+    )
+    assert len(proxies) == 1

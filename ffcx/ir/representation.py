@@ -40,6 +40,7 @@ from ffcx import naming
 from ffcx.analysis import (
     ProxyCoefficient,
     UFLData,
+    integral_interpolations,
     interpolation_coefficients,
     interpolation_constants,
     interpolation_dof_elements,
@@ -578,28 +579,32 @@ def _compute_integral_ir(
         # input coefficient data a coefficient should start.
         coefficient_numbering: dict[ufl.Coefficient, int] = {}
         coefficient_offsets: dict[ufl.Coefficient, int] = {}
-        proxy_coefficient_numbering: dict[ProxyCoefficient, int] = {}
-        _proxy_coefficient_offsets: dict[ProxyCoefficient, int] = {}
-        _offset_c = 0
-        _offset_p = 0
+        _offset = 0
         width = 2 if integral_type in ("interior_facet") else 1
         for i, (coeff, el) in enumerate(
             zip(form_data.reduced_coefficients, form_data.coefficient_elements)
         ):
-            if isinstance(coeff, ProxyCoefficient):
-                proxy_coefficient_numbering[coeff] = i
-                _proxy_coefficient_offsets[coeff] = _offset_p
-                _offset_p += width * element_dimensions[el]
-            else:
-                coefficient_numbering[coeff] = i
-                coefficient_offsets[coeff] = _offset_c
-                _offset_c += width * element_dimensions[el]
+            coefficient_numbering[coeff] = i
+            coefficient_offsets[coeff] = _offset
+            _offset += width * element_dimensions[el]
+
+        # The proxy coefficients are not coefficients of the form, but built in
+        # the kernel into an array of their own, see
+        # `ffcx.codegeneration.interpolation`.
+        interpolations = integral_interpolations(itg_data)
+        proxy_coefficient_numbering: dict[ProxyCoefficient, int] = {}
+        proxy_coefficient_offsets: dict[ProxyCoefficient, int] = {}
+        _offset = 0
+        for i, proxy in enumerate(c for c in interpolations if isinstance(c, ProxyCoefficient)):
+            proxy_coefficient_numbering[proxy] = i
+            proxy_coefficient_offsets[proxy] = _offset
+            _offset += width * element_dimensions[proxy.ufl_element()]
 
         # Add Coefficient numbering and offsets to IR
         expression_ir["coefficient_numbering"] = coefficient_numbering
         expression_ir["coefficient_offsets"] = coefficient_offsets
         expression_ir["proxy_coefficient_numbering"] = proxy_coefficient_numbering
-        expression_ir["proxy_coefficient_offsets"] = _proxy_coefficient_offsets
+        expression_ir["proxy_coefficient_offsets"] = proxy_coefficient_offsets
 
         # Similar procedure with constants, but they are not removed
         # as they usually contain very little data.
@@ -631,14 +636,7 @@ def _compute_integral_ir(
 
         # The interpolations evaluated in this integral, in the order they were
         # collected in `ffcx.analysis.analyze_ufl_objects`.
-        assert itg_data.integral_coefficients is not None
-        ir["interpolation"] = _compute_interpolation_ir(
-            kernel_interpolations(
-                [integral.integrand() for integral in itg_data.integrals],
-                [c for c in form_data.reduced_coefficients if c in itg_data.integral_coefficients],
-            ),
-            kernel_names,
-        )
+        ir["interpolation"] = _compute_interpolation_ir(interpolations, kernel_names)
 
         expression_ir.update(integral_ir)
 
