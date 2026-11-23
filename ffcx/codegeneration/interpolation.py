@@ -111,7 +111,7 @@ def _call_kernel(
     statements.append(
         L.Statement(
             L.CallOp(
-                f"{kernel.name}.tabulate_tensor",
+                kernel.name,
                 (
                     values,
                     coefficients,

@@ -163,6 +163,10 @@ class ExpressionIR(typing.NamedTuple):
     constant_names: list[str]
     name_from_uflfile: str
     interpolation: InterpolationIR
+    #: Whether it evaluates an interpolation for the kernels that hold it,
+    #: rather than being an expression asked for. Such a kernel is internal to
+    #: the generated code, and not exported as an expression.
+    is_interpolation_kernel: bool
 
 
 class DataIR(typing.NamedTuple):
@@ -934,4 +938,5 @@ def _compute_expression_ir(
 
     base_ir.update(expression_ir)
     ir["expression"] = CommonExpressionIR(**base_ir)
+    ir["is_interpolation_kernel"] = is_interpolation_kernel
     return ExpressionIR(**ir)

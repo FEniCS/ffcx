@@ -246,17 +246,14 @@ class Formatter(FormatterInterface):
 
     @__call__.register
     def _(self, call: L.CallOp) -> str:
-        """Format a call to the `tabulate_tensor` of a generated expression.
+        """Format a call to the kernel of an interpolation.
 
-        The expression is generated earlier in the same file, so its kernel is
-        called by name. Called through the function pointer of its
-        `ufcx_expression`, which is not const, it could not be inlined.
+        The kernel is a static function generated earlier in the same file,
+        see `ffcx.codegeneration.C.expression`, so it is called by name and
+        can be inlined.
         """
-        expression, _, kernel = call.func.rpartition(".")
-        if not expression or kernel != "tabulate_tensor":
-            raise NotImplementedError(f"Can not format call to {call.func}")
         args = ", ".join(self(arg) for arg in call.args)
-        return f"tabulate_tensor_{expression}({args});\n"
+        return f"tabulate_tensor_{call.func}({args});\n"
 
     @__call__.register
     def _(self, arr: L.ArrayAccess) -> str:

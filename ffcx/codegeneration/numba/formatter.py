@@ -16,11 +16,11 @@ from ffcx.codegeneration.utils import dtype_to_scalar_dtype
 
 
 def expression_kernel_name(expression_name: str) -> str:
-    """Name of the array based kernel of a generated expression.
+    """Name of the kernel of an interpolation, generated from its expression.
 
-    The `tabulate_tensor` of an expression takes raw pointers, which a kernel
-    can not pass for its local arrays. Generated code calls this `numba.njit`
-    compiled kernel instead, which takes the arrays.
+    It is a `numba.njit` compiled function on arrays rather than a
+    `tabulate_tensor` on raw pointers, which a kernel can not pass for its
+    local arrays.
     """
     return f"_tabulate_tensor_{expression_name}"
 
@@ -114,12 +114,9 @@ class Formatter(FormatterInterface):
 
     @__call__.register
     def _(self, call: L.CallOp) -> str:
-        """Format a call to the `tabulate_tensor` of a generated expression."""
-        expression, _, kernel = call.func.rpartition(".")
-        if not expression or kernel != "tabulate_tensor":
-            raise NotImplementedError(f"Can not format call to {call.func}")
+        """Format a call to the kernel of an interpolation."""
         args = ", ".join(self(arg) for arg in call.args)
-        return f"{expression_kernel_name(expression)}({args})\n"
+        return f"{expression_kernel_name(call.func)}({args})\n"
 
     @__call__.register
     def _(self, arr: L.ArrayAccess) -> str:

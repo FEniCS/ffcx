@@ -46,6 +46,14 @@ def generator(ir: ExpressionIR, options):
 
     format = Formatter(options["scalar_type"])
     d["tabulate_expression"] = format(parts)
+    d["scalar_type"] = dtype_to_c_type(options["scalar_type"])
+    d["geom_type"] = dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"]))
+
+    if ir.is_interpolation_kernel:
+        # Called by name from the kernels that hold the interpolation, which
+        # are generated after it in the same file, so nothing is declared.
+        d = {key: d[key] for key in template_keys(expression_template.interpolation_kernel)}
+        return "", expression_template.interpolation_kernel.format_map(d)
 
     if len(ir.original_coefficient_positions) > 0:
         d["original_coefficient_positions"] = f"original_coefficient_positions_{factory_name}"
@@ -82,8 +90,6 @@ def generator(ir: ExpressionIR, options):
     d["num_constants"] = len(ir.constant_names)
     d["num_points"] = points.shape[0]
     d["entity_dimension"] = points.shape[1]
-    d["scalar_type"] = dtype_to_c_type(options["scalar_type"])
-    d["geom_type"] = dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"]))
     d["np_scalar_type"] = np.dtype(options["scalar_type"]).name
 
     d["rank"] = len(ir.expression.tensor_shape)

@@ -483,12 +483,21 @@ class ArithmeticBinOp(BinOp):
 
 
 class CallOp(LExprOperator):
-    """A function call operator."""
+    """A call to the kernel of an interpolation, generated in the same file.
+
+    Each formatter names the kernel from the name of the expression it is
+    generated from.
+    """
 
     op = ""
 
-    def __init__(self, function, args):
-        """Initialise."""
+    def __init__(self, function: str, args):
+        """Initialise.
+
+        Args:
+            function: Name of the expression the kernel is generated from.
+            args: The arguments, as those of a `tabulate_tensor`.
+        """
         self.func = function
         self.args = [as_lexpr(arg) for arg in args]
 

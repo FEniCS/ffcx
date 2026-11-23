@@ -37,23 +37,32 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     d["factory_name"] = factory_name
     parts = eg.generate()
 
-    # The body goes into a kernel on arrays, which the kernels of integrals and
-    # expressions holding an interpolation of this expression call. Its
-    # `tabulate_tensor` wraps the raw pointers it is given into arrays and
-    # calls it.
-    d["kernel_name"] = expression_kernel_name(factory_name)
     format = Formatter(options["scalar_type"])  # type: ignore
     body = format(parts)
-    d["tabulate_expression"] = "\n".join(["    " + line for line in body.split("\n")])
+    body = "\n".join(["    " + line for line in body.split("\n")])
 
+    if ir.is_interpolation_kernel:
+        # A kernel on arrays, which the kernels holding the interpolation call
+        # with their local arrays, see `Formatter`. It is not exported.
+        kernel = {
+            "factory_name": factory_name,
+            "kernel_name": expression_kernel_name(factory_name),
+            "tabulate_expression": body,
+        }
+        assert set(kernel) == template_keys(expression_template.interpolation_kernel)
+        return (expression_template.interpolation_kernel.format_map(kernel),)
+
+    # tabulate_expression
     sizes = tensor_sizes(ir)
-    d["unpack_arguments"] = f"""\
+    header = f"""
     A = numba.carray(_A, ({sizes.A}))
     w = numba.carray(_w, ({sizes.w}))
     c = numba.carray(_c, ({sizes.c}))
     coordinate_dofs = numba.carray(_coordinate_dofs, ({sizes.coords}))
     entity_local_index = numba.carray(_entity_local_index, ({sizes.local_index}))
-    quadrature_permutation = numba.carray(_quadrature_permutation, ({sizes.permutation}))"""
+    quadrature_permutation = numba.carray(_quadrature_permutation, ({sizes.permutation}))
+    """
+    d["tabulate_expression"] = header + body
 
     # TODO: original_coefficient_positions_init
     originals = ", ".join(str(i) for i in ir.original_coefficient_positions)
