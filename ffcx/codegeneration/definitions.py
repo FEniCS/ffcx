@@ -48,15 +48,37 @@ def create_quadrature_index(quadrature_rule, quadrature_index_symbol):
     return L.MultiIndex(indices, ranges)
 
 
-def create_dof_index(tabledata, dof_index_symbol):
-    """Create a multi index for the coefficient dofs."""
+def create_dof_index(
+    tabledata: UniqueTableReferenceT, dof_index_symbol: L.Symbol, slot: int = 0
+) -> L.MultiIndex:
+    """Create a multi index for the dofs of a table.
+
+    Args:
+        tabledata: The table reference.
+        dof_index_symbol: The symbol of the dof index.
+        slot: The element tensor axis the index runs over. A table standing
+            for an interpolation of an expression linear in several arguments
+            spans one axis per argument, each with its own dof extent.
+
+    Example:
+        For a P2 table on a triangle and the symbol ``j``, the index is ``j``
+        over ``range(6)``. With 1D tensor factors of three and four dofs it is
+        ``j0`` over ``range(3)`` and ``j1`` over ``range(4)``. The table of an
+        interpolation of an expression bilinear in a P1 test and a P2 trial
+        function has ``dof_dims == (3, 6)``, so at slot 0 the index ``i`` runs
+        over ``range(3)`` and at slot 1 the index ``j`` over ``range(6)``.
+    """
     name = dof_index_symbol.name
-    if tabledata.has_tensor_factorisation:
-        dim = len(tabledata.tensor_factors)
-        ranges = [factor.values.shape[-1] for factor in tabledata.tensor_factors]
-        indices = [L.Symbol(f"{name}{i}", dtype=L.DataType.INT) for i in range(dim)]
+    factors = tabledata.tensor_factors
+    if factors is not None:
+        ranges = [factor.values.shape[-1] for factor in factors]
+        indices = [L.Symbol(f"{name}{i}", dtype=L.DataType.INT) for i in range(len(factors))]
     else:
-        ranges = [tabledata.values.shape[-1]]
+        interpolation = tabledata.interpolation
+        if interpolation is not None and len(interpolation.dof_dims) > 1:
+            ranges = [interpolation.dof_dims[slot]]
+        else:
+            ranges = [tabledata.values.shape[-1]]
         indices = [L.Symbol(name, dtype=L.DataType.INT)]
 
     return L.MultiIndex(indices, ranges)

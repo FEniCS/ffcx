@@ -14,6 +14,7 @@ import numpy as np
 import numpy.typing as npt
 import ufl
 
+from ffcx.analysis import interpolation_has_runtime_table
 from ffcx.definitions import entity_types
 from ffcx.element_interface import basix_index
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal, modified_terminal_arguments
@@ -53,6 +54,28 @@ class ModifiedTerminalElement(typing.NamedTuple):
     fc: int
 
 
+class InterpolatedTableT(typing.NamedTuple):
+    """Data for an element table that has to be built for each cell.
+
+    Interpolating an expression that is only linear in an argument brings
+    coefficients into the interpolation, so the argument's table depends on the
+    cell. It is ``table[q, j...] = sum_p contraction[q, p] * E[p, flat_component, j...]``,
+    where ``E`` is the interpolated expression evaluated at the target element's
+    interpolation points for each dof of each argument it is linear in. There is
+    one dof axis per argument, so an expression bilinear in two arguments gives
+    a table that is a dense element tensor block.
+    """
+
+    #: The interpolation the table stands for.
+    interpolation: ufl.Interpolate
+    #: The target element table contracted with the interpolation matrix.
+    contraction: npt.NDArray[np.float64]
+    #: Component of the interpolated expression that the table takes.
+    flat_component: int
+    #: Number of degrees of freedom on each dof axis, one per argument.
+    dof_dims: tuple[int, ...] = ()
+
+
 class UniqueTableReferenceT(typing.NamedTuple):
     """Unique table reference."""
 
@@ -68,6 +91,8 @@ class UniqueTableReferenceT(typing.NamedTuple):
     block_size: int | None = None
     tensor_factors: list["UniqueTableReferenceT"] | None = None
     tensor_permutation: np.typing.NDArray[np.int32] | None = None
+    #: Set when the table has to be built for each cell rather than tabulated.
+    interpolation: InterpolatedTableT | None = None
 
     @property
     def has_tensor_factorisation(self):
@@ -383,19 +408,21 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
     return output
 
 
-def _interpolated_element(interpolation: ufl.Interpolate) -> basix.ufl._ElementBase:
-    """Get the element whose dofs the tables of an interpolation are indexed by.
+def interpolated_elements(interpolation: ufl.Interpolate) -> tuple[basix.ufl._ElementBase, ...]:
+    """Get the elements whose dofs the tables of an interpolation are indexed by.
 
-    Only an interpolation of an argument itself reaches the tables, see
-    `ffcx.analysis`, so this is the element of that argument.
+    One for each argument the interpolated expression is linear in, ordered by
+    argument number, see `modified_terminal_arguments`.
 
     Args:
         interpolation: The interpolation.
     """
-    (argument,) = modified_terminal_arguments(interpolation)
-    element = argument.ufl_function_space().ufl_element()
-    assert isinstance(element, basix.ufl._ElementBase)
-    return element
+    elements = []
+    for argument in modified_terminal_arguments(interpolation):
+        element = argument.ufl_function_space().ufl_element()
+        assert isinstance(element, basix.ufl._ElementBase)
+        elements.append(element)
+    return tuple(elements)
 
 
 def _interpolation_operator(
@@ -416,7 +443,8 @@ def _interpolation_operator(
     assert isinstance(target_element, basix.ufl._ElementBase)
     # The elements whose dofs the component tables are indexed by. Compile-time
     # tables are rank 1, and source and target have the same block size.
-    source, _, _ = _interpolated_element(interpolation).get_component_element(flat_component)
+    (dof_element,) = interpolated_elements(interpolation)
+    source, _, _ = dof_element.get_component_element(flat_component)
     target, _, _ = target_element.get_component_element(flat_component)
     return basix.compute_interpolation_operator(source.basix_element, target.basix_element)
 
@@ -491,7 +519,8 @@ def build_optimized_tables(
         # The element whose dofs the table is indexed by. For an interpolation
         # this is the argument's element, not the element that is tabulated.
         interpolation = mt.terminal if isinstance(mt.terminal, ufl.Interpolate) else None
-        dof_element = element if interpolation is None else _interpolated_element(interpolation)
+        dof_elements = () if interpolation is None else interpolated_elements(interpolation)
+        dof_element = element if interpolation is None else dof_elements[0]
         interpolated_from = None if interpolation is None else interpolation_numbers[interpolation]
 
         # Build name for this particular table
@@ -683,6 +712,47 @@ def build_optimized_tables(
                 flat_component,
                 codim,
             )
+        if interpolation is not None and interpolation_has_runtime_table(interpolation):
+            # The interpolated expression brings coefficients along, so the
+            # table is only known per cell. Contract the target table with the
+            # interpolation matrix here; the generated code contracts that with
+            # the expression evaluated at the interpolation points.
+            # The contraction is that of the first entity, which only holds
+            # for tables evaluated in the cell.
+            if entity_type != "cell" or integral_type not in ("cell", "expression"):
+                raise NotImplementedError(
+                    "Interpolating an expression that is only linear in the argument is "
+                    "only supported in cell integrals and in expressions evaluated in "
+                    f"cells, not for {integral_type} on {entity_type}s."
+                )
+            # The table is read by quadrature point, see `ttype` below, which
+            # the single row of an averaged table has none of.
+            if avg:
+                raise NotImplementedError(
+                    "Averaging an interpolation of an expression that is only linear "
+                    "in the argument is not supported."
+                )
+            component_element, _, _ = element.get_component_element(flat_component)
+            interpolation_matrix = component_element.basix_element.interpolation_matrix
+            contraction = t["array"][0, 0] @ interpolation_matrix
+            dof_dims = tuple(dof.dim for dof in dof_elements)
+            mt_tables[mt] = UniqueTableReferenceT(
+                name=name,
+                # A placeholder of the leading dof axis' extent: the values are
+                # filled per cell, and a rank 2 table is read directly rather
+                # than through `table_access`.
+                values=np.zeros((1, 1, contraction.shape[0], dof_dims[0])),
+                offset=0,
+                block_size=1,
+                # Same for every entity, but varies with the quadrature point.
+                ttype="uniform",
+                is_permuted=False,
+                interpolation=InterpolatedTableT(
+                    interpolation, contraction, flat_component, dof_dims
+                ),
+            )
+            continue
+
         if interpolation is not None:
             # Interpolation is linear in the argument, so its table is the
             # target space table contracted with the reference interpolation

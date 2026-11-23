@@ -273,8 +273,11 @@ def compute_argument_factorization(S, rank):
 
         if si in arg_indices:
             assert len(deps) == 0
-            # v is a modified Argument
-            factors = {(si,): one_index}
+            # v is a modified Argument. An interpolation stands for every
+            # argument its expression is linear in, so it takes that many
+            # element tensor axes: repeat the vertex once per axis.
+            slots = len(modified_terminal_arguments(strip_modified_terminal(v)))
+            factors = {(si,) * slots: one_index}
         else:
             fac = [S.nodes[d]["factors"] for d in deps]
             if not any(fac):

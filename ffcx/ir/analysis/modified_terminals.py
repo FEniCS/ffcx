@@ -118,10 +118,12 @@ class ModifiedTerminal:
         The key is based on the properties of the modified terminal.
         Used in factorization but moved here for closeness with ModifiedTerminal attributes.
         """
-        (argument,) = modified_terminal_arguments(self.terminal)
-        n = argument.number()
+        arguments = modified_terminal_arguments(self.terminal)
+        assert arguments
+        # An interpolation may stand for several arguments; order by the first.
+        n = arguments[0].number()
         assert n >= 0
-        p = argument.part()
+        p = arguments[0].part()
         rv = self.reference_value
         # bs = self.base_shape
         # c = self.component

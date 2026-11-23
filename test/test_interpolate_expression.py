@@ -293,6 +293,142 @@ def test_interpolate_argument(compile_args, elements, derivative):
     np.testing.assert_allclose(A, A_ref @ operator, atol=1e-12)
 
 
+@pytest.mark.parametrize("dtype", ["float64", "float32"])
+@pytest.mark.parametrize("target_degree", [1, 2])
+def test_interpolate_linear_in_argument(compile_args, dtype, target_degree):
+    """An expression linear in an argument needs its table built for each cell.
+
+    ``A[q, j] = sum_i (u phi_j)(x_i) psi_i(X_q)`` for the target's nodes ``x_i``.
+    """
+    mesh = domain()
+    V_t, V_a = space(mesh, "Lagrange", target_degree), space(mesh, "Lagrange", 2)
+    u, v = ufl.Coefficient(V_a), ufl.TestFunction(V_a)
+    x = ufl.SpatialCoordinate(mesh)
+    compiled, module = compile_expressions(
+        [(ufl.Interpolate((u + x[0]) * v, V_t), POINTS)], compile_args, dtype
+    )
+    element_a, element_t = V_a.ufl_element(), V_t.ufl_element()
+    w = coefficient_values(element_a)
+    A = tabulate(module, compiled[0], (len(POINTS), element_a.dim), dtype, coefficients=w)
+
+    nodes = element_t.basix_element.points
+    phi = element_a.basix_element.tabulate(0, nodes)[0][:, :, 0]
+    scale = lagrange_values(element_a, w, nodes)[:, 0] + physical(nodes)[:, 0]
+    psi = element_t.basix_element.tabulate(0, POINTS)[0][:, :, 0]
+    expected = psi @ (scale[:, None] * phi)
+    np.testing.assert_allclose(A, expected, **tolerance(dtype))
+
+
+def test_interpolate_linear_in_argument_blocked(compile_args):
+    """A table built for each cell, for a blocked target and argument."""
+    mesh = domain()
+    V = space(mesh, "Lagrange", 1, shape=(2,))
+    u, v = ufl.Coefficient(V), ufl.TestFunction(V)
+    expression = ufl.as_vector((u[0] * v[0], u[1] * v[1] + u[0] * v[1]))
+    compiled, module = compile_expressions([(ufl.Interpolate(expression, V), POINTS)], compile_args)
+    element = V.ufl_element()
+    w = coefficient_values(element)
+    A = tabulate(module, compiled[0], (len(POINTS), 2, element.dim), coefficients=w)
+
+    # The target is P1, so the interpolant is linear between its vertex values
+    nodes = element.sub_elements[0].basix_element.points
+    phi = element.sub_elements[0].basix_element.tabulate(0, nodes)[0][:, :, 0]
+    u_nodes = lagrange_values(element, w, nodes)
+    values = np.zeros((len(nodes), 2, element.dim))  # [node][component][dof]
+    for j in range(element.dim):
+        node, component = divmod(j, 2)
+        if component == 0:
+            values[:, 0, j] = u_nodes[:, 0] * phi[:, node]
+        else:
+            values[:, 1, j] = (u_nodes[:, 1] + u_nodes[:, 0]) * phi[:, node]
+    psi = element.sub_elements[0].basix_element.tabulate(0, POINTS)[0][:, :, 0]
+    np.testing.assert_allclose(A, np.einsum("qn,ncj->qcj", psi, values), atol=1e-12)
+
+
+def finite_difference(evaluate, w, step=1e-6):
+    """Central differences of ``evaluate`` with respect to each entry of ``w``."""
+    columns = []
+    for k in range(len(w)):
+        direction = np.zeros_like(w)
+        direction[k] = step
+        columns.append((evaluate(w + direction) - evaluate(w - direction)) / (2 * step))
+    return np.stack(columns, axis=-1)
+
+
+@pytest.mark.parametrize("ngrads", [0, 1])
+@pytest.mark.parametrize("block_size", [1, 2])
+def test_derivative_of_interpolation(compile_args, ngrads, block_size):
+    """Differentiating an expression through an interpolation.
+
+    ``d/du I(g(u))[v] = I(dg/du[v])``, which is linear in the argument and so
+    needs its table built for each cell. Checked against finite differences of
+    the expression itself.
+
+    UFL takes an interpolation that is the whole expression for a form, whose
+    coargument is numbered 0, so the derivative is taken in the direction of an
+    argument numbered 1.
+    """
+    mesh = domain()
+    shape = () if block_size == 1 else (block_size,)
+    V_a = space(mesh, "Lagrange", 1, shape=shape)
+    V_t = space(mesh, "Lagrange", 2 if block_size == 1 else 1, shape=shape)
+    u, v = ufl.Coefficient(V_a), ufl.TrialFunction(V_a)
+    x = ufl.SpatialCoordinate(mesh)
+    if block_size == 1:
+        g = u * u * x[0]
+    else:
+        g = ufl.as_vector((u[0] * u[1], u[1] * u[1] + x[1]))
+    expression = ufl.Interpolate(g, V_t)
+    if ngrads:
+        expression = ufl.grad(expression)
+    derivative = ufl.derivative(expression, u, v)
+
+    compiled, module = compile_expressions(
+        [(expression, POINTS), (derivative, POINTS)], compile_args
+    )
+    n = V_a.ufl_element().dim
+    shape = (len(POINTS), int(np.prod(expression.ufl_shape)))
+    w = coefficient_values(V_a.ufl_element())
+    A = tabulate(module, compiled[1], (*shape, n), coefficients=w)
+    expected = finite_difference(lambda w: tabulate(module, compiled[0], shape, coefficients=w), w)
+    assert np.abs(expected).max() > 1e-3
+    np.testing.assert_allclose(A, expected, atol=1e-7)
+
+
+@pytest.mark.parametrize("ngrads", [0, 1])
+def test_second_derivative_of_interpolation(compile_args, ngrads):
+    """Two derivatives give an interpolation bilinear in two arguments.
+
+    Its table is a dense block, with one axis per argument, built for each cell.
+    Checked against finite differences of the first derivative.
+
+    The interpolation is scaled so that it is not the whole expression, which
+    UFL would take for a form whose coargument clashes with an argument.
+    """
+    mesh = domain()
+    V_a, V_t = space(mesh, "Lagrange", 1), space(mesh, "Lagrange", 2)
+    u = ufl.Coefficient(V_a)
+    v0, v1 = ufl.TestFunction(V_a), ufl.TrialFunction(V_a)
+    x = ufl.SpatialCoordinate(mesh)
+    expression = ufl.Interpolate(u**3, V_t)
+    if ngrads:
+        expression = ufl.grad(expression)[0]
+    expression = expression * (1 + x[0])
+    first = ufl.derivative(expression, u, v0)
+    second = ufl.derivative(first, u, v1)
+
+    compiled, module = compile_expressions([(first, POINTS), (second, POINTS)], compile_args)
+    assert compiled[1].rank == 2
+    n = V_a.ufl_element().dim
+    w = coefficient_values(V_a.ufl_element())
+    A = tabulate(module, compiled[1], (len(POINTS), 1, n, n), coefficients=w)
+    expected = finite_difference(
+        lambda w: tabulate(module, compiled[0], (len(POINTS), 1, n), coefficients=w), w
+    )
+    assert np.abs(expected).max() > 1e-3
+    np.testing.assert_allclose(A, expected, atol=1e-7)
+
+
 def test_interpolation_coefficient_order(compile_args):
     """Coefficients inside and outside of an interpolation are passed once each.
 
@@ -439,14 +575,21 @@ def test_unsupported_interpolations():
     V = space(mesh, "Lagrange", 1)
     u, v = ufl.Coefficient(V), ufl.TestFunction(V)
 
-    # An expression that is only linear in the argument would need its table
-    # built for each cell
-    with pytest.raises(NotImplementedError, match="the expression is the argument itself"):
-        ffcx.codegeneration.jit.compile_expressions([(ufl.Interpolate(u * v, V), POINTS)])
+    # A table built for each cell is only contracted for the cell itself
+    with pytest.raises(NotImplementedError, match="only linear in the argument"):
+        ffcx.codegeneration.jit.compile_expressions(
+            [(ufl.Interpolate(u * v, V), np.array([[0.5]]))]
+        )
 
-    # Including one whose argument is shaped differently from the space
+    # Mapping an expression that is only linear in the argument onto the
+    # reference cell of a Piola mapped space is not implemented
     W = space(mesh, "N1curl", 1)
-    with pytest.raises(NotImplementedError, match="the expression is the argument itself"):
+    with pytest.raises(NotImplementedError, match="space is only supported"):
+        ffcx.codegeneration.jit.compile_expressions(
+            [(ufl.Interpolate(u * ufl.TestFunction(W), W), POINTS)]
+        )
+    # Including one whose argument is shaped differently from the space
+    with pytest.raises(NotImplementedError, match="space is only supported"):
         ffcx.codegeneration.jit.compile_expressions([(ufl.Interpolate(ufl.grad(v), W), POINTS)])
 
     # The dofs of a proxy coefficient are built from a single basix element
@@ -467,6 +610,14 @@ def test_unsupported_interpolations():
                 [(ufl.Interpolate(expression, target), POINTS)]
             )
 
+    # As is the kernel evaluating an expression that is only linear in the
+    # argument at the interpolation points of the target
+    quadrature = ufl.FunctionSpace(mesh, basix.ufl.quadrature_element(CELL, degree=2))
+    real = ufl.FunctionSpace(mesh, basix.ufl.real_element(CELL, ()))
+    for target in [quadrature, real]:
+        with pytest.raises(NotImplementedError, match="space is not supported"):
+            ffcx.codegeneration.jit.compile_forms([ufl.Interpolate(u * v, target) * ufl.dx])
+
 
 def test_kernel_interpolations():
     """What needs an expression kernel of its own, and what it reads."""
@@ -479,16 +630,21 @@ def test_kernel_interpolations():
         z
         * ufl.Interpolate(c * u * u, V1)  # a proxy coefficient
         * ufl.Interpolate(v, V1)  # a table known at compile time
+        + ufl.Interpolate(u * v, V1)  # a table built for each cell
     )
     analysis = ffcx.analysis.analyze_ufl_objects([(expression, POINTS)], np.float64)
     processed, _, _ = analysis.expressions[-1]
 
-    (proxy,) = ffcx.analysis.kernel_interpolations([processed])
+    interpolations = ffcx.analysis.kernel_interpolations([processed])
+    assert len(interpolations) == 2
+    proxy, table = interpolations
     assert isinstance(proxy, ffcx.analysis.ProxyCoefficient)
-    assert set(analysis.interpolation_kernels) == {proxy}
+    assert isinstance(table, ufl.Interpolate)
+    assert set(analysis.interpolation_kernels) == {proxy, table}
 
     assert ffcx.analysis.interpolation_coefficients(proxy) == [u]
     assert ffcx.analysis.interpolation_constants(proxy) == [c]
+    assert ffcx.analysis.interpolation_coefficients(table) == [u]
     # The proxy coefficient stands for what it is evaluated from
     assert ffcx.analysis.required_coefficients(processed) == [u, z]
     assert ffcx.analysis.required_constants(processed) == [c]
