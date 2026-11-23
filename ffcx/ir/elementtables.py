@@ -1,4 +1,4 @@
-# Copyright (C) 2013-2017 Martin Sandve Alnæs
+# Copyright (C) 2013-2026 Martin Sandve Alnæs, Jørgen S. Dokken and Paul T. Kühner
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
@@ -8,6 +8,7 @@
 import logging
 import typing
 
+import basix
 import basix.ufl
 import numpy as np
 import numpy.typing as npt
@@ -15,7 +16,7 @@ import ufl
 
 from ffcx.definitions import entity_types
 from ffcx.element_interface import basix_index
-from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
+from ffcx.ir.analysis.modified_terminals import ModifiedTerminal, modified_terminal_arguments
 from ffcx.ir.representationutils import (
     QuadratureRule,
     create_quadrature_points_and_weights,
@@ -47,7 +48,7 @@ class ModifiedTerminalElement(typing.NamedTuple):
     """Modified terminal element."""
 
     element: basix.ufl._ElementBase
-    averaged: str
+    averaged: str | None
     local_derivatives: tuple[int, ...]
     fc: int
 
@@ -220,17 +221,21 @@ def get_ffcx_table_values(
 def generate_psi_table_name(
     quadrature_rule: QuadratureRule,
     element_counter,
-    averaged: str,
+    averaged: str | None,
     entity_type: entity_types,
     derivative_counts,
     flat_component,
+    interpolated_from: int | None = None,
 ):
     """Generate a name for the psi table.
 
     Format:
-        FE#_C#_D###[_AC|_AF|][_F|V][_Q#], where '#' will be an integer value and:
+        FE#[_I#]_C#_D###[_AC|_AF|][_F|V][_Q#], where '#' will be an integer value and:
         - FE is a simple counter to distinguish the various bases, it will be
           assigned in an arbitrary fashion.
+        - I marks that the table is an interpolation into FE#, numbered by the
+          order the interpolations appear in the integral. Two interpolations
+          into the same space would otherwise share a name.
         - C is the component number if any (this does not yet take into account
           tensor valued functions)
         - D is the number of derivatives in each spatial direction if any.
@@ -241,8 +246,23 @@ def generate_psi_table_name(
         - V marks that the first array dimension enumerates vertices on the cell
         - Q unique ID of quadrature rule, to distinguish between tables
           in a mixed quadrature rule setting
+    Args:
+        quadrature_rule: The quadrature rule the table is evaluated at.
+        element_counter: The number of the element the table is for.
+        averaged: The entity the values are averaged over, ``"cell"`` or ``"facet"``,
+            or ``None``.
+        entity_type: The type of entity the table is evaluated on.
+        derivative_counts: The number of derivatives in each reference direction.
+        flat_component: The flat component of the table, or ``None``.
+        interpolated_from: The number of the interpolation the table is for, or
+            ``None`` if it is not for an interpolation.
+
+    Returns:
+        The table name.
     """
     name = f"FE{element_counter:d}"
+    if interpolated_from is not None:
+        name += f"_I{interpolated_from:d}"
     if flat_component is not None:
         name += f"_C{flat_component:d}"
     if any(derivative_counts):
@@ -253,20 +273,25 @@ def generate_psi_table_name(
     return name
 
 
-def get_modified_terminal_element(mt) -> ModifiedTerminalElement | None:
+def get_modified_terminal_element(mt: ModifiedTerminal) -> ModifiedTerminalElement | None:
     """Get modified terminal element."""
+    terminal = mt.terminal
     gd = mt.global_derivatives
     ld = mt.local_derivatives
-    domain = ufl.domain.extract_unique_domain(mt.terminal)
+    domain = ufl.domain.extract_unique_domain(terminal)
     # Extract element from FormArguments and relevant GeometricQuantities
-    if isinstance(mt.terminal, ufl.classes.FormArgument):
+    # `FormArgument` does not declare `ufl_element`, but its subclasses do.
+    if isinstance(terminal, ufl.Argument | ufl.Coefficient | ufl.Interpolate):
         if gd and mt.reference_value:
             raise RuntimeError("Global derivatives of reference values not defined.")
         elif ld and not mt.reference_value:
             raise RuntimeError("Local derivatives of global values not defined.")
-        element = mt.terminal.ufl_function_space().ufl_element()  # type: ignore
+        # An interpolation is tabulated in the space it interpolates into. The
+        # resulting table is contracted with the interpolation operator in
+        # `build_optimized_tables`.
+        element = terminal.ufl_element()
         fc = mt.flat_component
-    elif isinstance(mt.terminal, ufl.classes.SpatialCoordinate):
+    elif isinstance(terminal, ufl.classes.SpatialCoordinate):
         if mt.reference_value:
             raise RuntimeError("Not expecting reference value of x.")
         if gd:
@@ -280,7 +305,7 @@ def get_modified_terminal_element(mt) -> ModifiedTerminalElement | None:
             fc = mt.flat_component  # x-component
             assert len(mt.component) == 1
             assert mt.component[0] == mt.flat_component
-    elif isinstance(mt.terminal, ufl.classes.Jacobian):
+    elif isinstance(terminal, ufl.classes.Jacobian):
         if mt.reference_value:
             raise RuntimeError("Not expecting reference value of J.")
         if gd:
@@ -296,6 +321,7 @@ def get_modified_terminal_element(mt) -> ModifiedTerminalElement | None:
 
     assert (mt.averaged is None) or not (ld or gd)
     assert isinstance(domain, ufl.Mesh)
+    assert isinstance(element, basix.ufl._ElementBase)
 
     # Change derivatives format for table lookup
     tdim = domain.topological_dimension
@@ -357,6 +383,44 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
     return output
 
 
+def _interpolated_element(interpolation: ufl.Interpolate) -> basix.ufl._ElementBase:
+    """Get the element whose dofs the tables of an interpolation are indexed by.
+
+    Only an interpolation of an argument itself reaches the tables, see
+    `ffcx.analysis`, so this is the element of that argument.
+
+    Args:
+        interpolation: The interpolation.
+    """
+    (argument,) = modified_terminal_arguments(interpolation)
+    element = argument.ufl_function_space().ufl_element()
+    assert isinstance(element, basix.ufl._ElementBase)
+    return element
+
+
+def _interpolation_operator(
+    interpolation: ufl.Interpolate, flat_component: int
+) -> npt.NDArray[np.float64]:
+    """Build the reference interpolation operator of an interpolation.
+
+    Args:
+        interpolation: The interpolation.
+        flat_component: The flat component the table is for, of the target and,
+            as both have the same block size, of the source.
+
+    Returns:
+        The matrix mapping the dofs a component table of the source element is
+        indexed by onto those of the interpolation target element.
+    """
+    target_element = interpolation.ufl_element()
+    assert isinstance(target_element, basix.ufl._ElementBase)
+    # The elements whose dofs the component tables are indexed by. Compile-time
+    # tables are rank 1, and source and target have the same block size.
+    source, _, _ = _interpolated_element(interpolation).get_component_element(flat_component)
+    target, _, _ = target_element.get_component_element(flat_component)
+    return basix.compute_interpolation_operator(source.basix_element, target.basix_element)
+
+
 def build_optimized_tables(
     quadrature_rule: QuadratureRule,
     cell: ufl.Cell | None,
@@ -403,6 +467,13 @@ def build_optimized_tables(
     # Build element numbering using topological ordering so subelements
     # get priority
     all_elements = [res[0] for res in analysis.values()]
+    # Number the interpolations by the order they appear in, so that two
+    # interpolations into the same space get different table names.
+    interpolations = dict.fromkeys(
+        mt.terminal for mt in modified_terminals if isinstance(mt.terminal, ufl.Interpolate)
+    )
+    interpolation_numbers = {interpolation: i for i, interpolation in enumerate(interpolations)}
+
     unique_elements = ufl.algorithms.sort_elements(
         set(ufl.algorithms.analysis.extract_sub_elements(all_elements))
     )
@@ -417,6 +488,12 @@ def build_optimized_tables(
     for mt, (element, avg, local_derivatives, flat_component) in analysis.items():
         # Generate table and store table name with modified terminal
 
+        # The element whose dofs the table is indexed by. For an interpolation
+        # this is the argument's element, not the element that is tabulated.
+        interpolation = mt.terminal if isinstance(mt.terminal, ufl.Interpolate) else None
+        dof_element = element if interpolation is None else _interpolated_element(interpolation)
+        interpolated_from = None if interpolation is None else interpolation_numbers[interpolation]
+
         # Build name for this particular table
         element_number = element_numbers[element]
         name = generate_psi_table_name(
@@ -426,6 +503,7 @@ def build_optimized_tables(
             entity_type,
             local_derivatives,
             flat_component,
+            interpolated_from,
         )
 
         # FIXME - currently just recalculate the tables every time,
@@ -605,6 +683,18 @@ def build_optimized_tables(
                 flat_component,
                 codim,
             )
+        if interpolation is not None:
+            # Interpolation is linear in the argument, so its table is the
+            # target space table contracted with the reference interpolation
+            # operator. The dof axis then runs over the argument's own dofs, so
+            # the offset and stride into the dof array are its element's.
+            _, source_offset, source_stride = dof_element.get_component_element(flat_component)
+            t = {
+                "array": t["array"] @ _interpolation_operator(interpolation, flat_component),
+                "offset": source_offset,
+                "stride": source_stride,
+            }
+
         # Clean up table
         tbl = clamp_table_small_numbers(t["array"], rtol=rtol, atol=atol)
         tabletype = analyse_table_type(tbl)
@@ -643,6 +733,10 @@ def build_optimized_tables(
             and factors is not None
             and len(factors) == 1
             and quadrature_rule.has_tensor_factors
+            # The table of an interpolation is contracted with the
+            # interpolation operator, which the 1D tables of its target
+            # element leave out, so it is accessed whole.
+            and interpolation is None
         ):
             tensor_factors = []
             for i, j in enumerate(factors[0]):
@@ -668,9 +762,12 @@ def build_optimized_tables(
                     mt_tables[ut.name] = ut
                     tensor_n += 1
 
-        if mt.restriction == "-" and isinstance(mt.terminal, ufl.classes.FormArgument):
-            # offset = 0 or number of element dofs, if restricted to "-"
-            cell_offset = element.dim
+        if mt.restriction == "-" and isinstance(
+            mt.terminal, ufl.classes.FormArgument | ufl.Interpolate
+        ):
+            # offset = 0 or number of element dofs, if restricted to "-". For an
+            # interpolation these are the dofs of the argument it interpolates.
+            cell_offset = dof_element.dim
 
         offset = cell_offset + t["offset"]
         block_size = t["stride"]

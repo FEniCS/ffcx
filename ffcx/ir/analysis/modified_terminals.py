@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2026 Martin Sandve Alnæs, Jørgen S. Dokken
+# Copyright (C) 2011-2026 Martin Sandve Alnæs, Jørgen S. Dokken and Paul T. Kühner
 #
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
@@ -6,24 +6,34 @@
 """Modified terminals."""
 
 import logging
+from typing import TypeAlias
 
+from ufl.algorithms.analysis import extract_type
 from ufl.classes import (
     Argument,
     CellAvg,
+    Coefficient,
+    Expr,
     FacetAvg,
     FixedIndex,
-    FormArgument,
     Grad,
     Indexed,
+    Interpolate,
     Jacobian,
     ReferenceGrad,
     ReferenceValue,
     Restricted,
     SpatialCoordinate,
+    Terminal,
 )
 from ufl.utils.indexflattening import flatten_multiindex, shape_to_strides
 
 logger = logging.getLogger("ffcx")
+
+CoreTerminal: TypeAlias = Terminal | Interpolate
+"""The core of a modified terminal.
+A :class:`ufl.core.terminal.Terminal`, or an :class:`ufl.Interpolate`.
+"""
 
 
 class ModifiedTerminal:
@@ -31,10 +41,10 @@ class ModifiedTerminal:
 
     def __init__(
         self,
-        expr,
-        terminal,
+        expr: Expr,
+        terminal: CoreTerminal,
         reference_value: bool,
-        base_shape,
+        base_shape: tuple[int, ...],
         component: tuple[int, ...],
         flat_component: int,
         global_derivatives: tuple[int, ...],
@@ -45,8 +55,9 @@ class ModifiedTerminal:
         """Initialise.
 
         Args:
-            expr: The original UFL expression
-            terminal: the underlying Terminal object
+            expr: The original :class:`ufl.core.expr.Expr`
+            terminal: the core terminal, a :class:`ufl.core.terminal.Terminal` or an
+                :class:`ufl.Interpolate`
             reference_value: whether this is represented in reference frame
             base_shape: base shape
             component: the global component of the Terminal
@@ -107,11 +118,10 @@ class ModifiedTerminal:
         The key is based on the properties of the modified terminal.
         Used in factorization but moved here for closeness with ModifiedTerminal attributes.
         """
-        t = self.terminal
-        assert isinstance(t, Argument)
-        n = t.number()
+        (argument,) = modified_terminal_arguments(self.terminal)
+        n = argument.number()
         assert n >= 0
-        p = t.part()
+        p = argument.part()
         rv = self.reference_value
         # bs = self.base_shape
         # c = self.component
@@ -142,49 +152,84 @@ class ModifiedTerminal:
         )
 
 
-def is_modified_terminal(v):
-    """Check if v is a terminal or a terminal wrapped in terminal modifier types."""
+def modified_terminal_arguments(terminal: CoreTerminal) -> tuple[Argument, ...]:
+    """Get the arguments that the core terminal of a modified terminal depends on.
+
+    Each argument of a form owns one axis of the local tensor, ordered by argument
+    number. The axis runs over the argument's basis functions on the cell of the
+    integration entity, or on both cells for an interior facet integral.
+
+    An argument depends on itself and contributes along its own axis.
+    An :class:`ufl.Interpolate` depends on the arguments of the expression it
+    interpolates and contributes along their axes, without adding an axis of its own.
+    The :class:`ufl.Coargument` in its dual slot is contracted by the surrounding
+    expression, so it is not among them. Any other terminal depends on none.
+
+    Args:
+        terminal: The core terminal of a modified terminal.
+
+    Returns:
+        The arguments, ordered by number and part.
+    """
+    arguments = extract_type(terminal, Argument, base_form_op_as_expr=True)
+    return tuple(
+        sorted(arguments, key=lambda a: (a.number(), -1 if a.part() is None else a.part()))
+    )
+
+
+def is_modified_terminal(v: Expr) -> bool:
+    """Check if v is a terminal or a terminal wrapped in terminal modifier types.
+
+    An interpolation counts as a terminal: the expression it interpolates is
+    evaluated separately, at the interpolation points of its target element.
+    """
     while not v._ufl_is_terminal_:
-        if v._ufl_is_terminal_modifier_:
+        if isinstance(v, Interpolate):
+            return True
+        elif v._ufl_is_terminal_modifier_:
             v = v.ufl_operands[0]
         else:
             return False
     return True
 
 
-def strip_modified_terminal(v):
-    """Extract core Terminal from a modified terminal or return None."""
+def strip_modified_terminal(v: Expr) -> CoreTerminal | None:
+    """Extract the core terminal from a modified terminal, or return None."""
     while not v._ufl_is_terminal_:
-        if v._ufl_is_terminal_modifier_:
+        if isinstance(v, Interpolate):
+            return v
+        elif v._ufl_is_terminal_modifier_:
             v = v.ufl_operands[0]
         else:
             return None
+    assert isinstance(v, Terminal)
     return v
 
 
-def analyse_modified_terminal(expr):
+def analyse_modified_terminal(expr: Expr) -> ModifiedTerminal:
     """Analyse a so-called 'modified terminal' expression.
 
     Return its properties in more compact form as a ModifiedTerminal object.
 
-    A modified terminal expression is an object of a Terminal subtype,
-    wrapped in terminal modifier types.
+    A modified terminal expression is a core terminal, a
+    :class:`ufl.core.terminal.Terminal` or an :class:`ufl.Interpolate`, wrapped in
+    terminal modifier types.
 
     The wrapper types can include 0-* Grad or ReferenceGrad objects,
     and 0-1 ReferenceValue, 0-1 Restricted, 0-1 Indexed,
     and 0-1 FacetAvg or CellAvg objects.
     """
     # Data to determine
-    component = None
-    global_derivatives = []
-    local_derivatives = []
+    component: list[int] | None = None
+    global_derivatives: list[int] = []
+    local_derivatives: list[int] = []
     reference_value = None
     restriction = None
     averaged = None
 
     # Start with expr and strip away layers of modifiers
     t = expr
-    while not t._ufl_is_terminal_:
+    while not (t._ufl_is_terminal_ or isinstance(t, Interpolate)):
         if isinstance(t, Indexed):
             if component is not None:
                 raise RuntimeError("Got twice indexed terminal.")
@@ -245,10 +290,11 @@ def analyse_modified_terminal(expr):
             )
         else:
             raise RuntimeError(f"Unexpected type {type(t)} object {t}.")
+    assert isinstance(t, Terminal | Interpolate)
 
     # Make canonical representation of derivatives
-    global_derivatives = tuple(sorted(global_derivatives))
-    local_derivatives = tuple(sorted(local_derivatives))
+    sorted_global_derivatives = tuple(sorted(global_derivatives))
+    sorted_local_derivatives = tuple(sorted(local_derivatives))
 
     # Make reference_value true or false
     reference_value = reference_value or False
@@ -263,41 +309,41 @@ def analyse_modified_terminal(expr):
             raise RuntimeError("Global derivatives of local value is not legal.")
 
     # Make sure component is an integer tuple
-    if component is None:
-        component = ()
-    else:
-        component = tuple(component)
+    component_tuple: tuple[int, ...] = () if component is None else tuple(component)
 
     # Get the shape of the core terminal or its reference value, this is
     # the shape that component refers to. Form arguments are read in
     # reference value, with the pull backs of their elements applied and
     # any symmetry with them, so their components carry no symmetry.
-    if isinstance(t, FormArgument):
+    if isinstance(t, Argument | Coefficient | Interpolate):
         if not reference_value:
             raise RuntimeError(f"Expected the reference value of {t}: pull backs not applied.")
-        base_shape = t.ufl_function_space().ufl_element().reference_value_shape
+        # An interpolation is a finite element field of its target space.
+        base_shape = t.ufl_element().reference_value_shape
     else:
         base_shape = t.ufl_shape
 
     # Assert that component is within the shape of the (reference)
     # terminal
-    if len(component) != len(base_shape):
+    if len(component_tuple) != len(base_shape):
         raise RuntimeError("Length of component does not match rank of (reference) terminal.")
-    if not all(c >= 0 and c < d for c, d in zip(component, base_shape)):
-        raise RuntimeError("Component indices {component} are outside value shape {base_shape}.")
+    if not all(c >= 0 and c < d for c, d in zip(component_tuple, base_shape)):
+        raise RuntimeError(
+            f"Component indices {component_tuple} are outside value shape {base_shape}."
+        )
 
     # Flatten component
-    flat_component = flatten_multiindex(component, shape_to_strides(base_shape))
+    flat_component = flatten_multiindex(component_tuple, shape_to_strides(base_shape))
 
     return ModifiedTerminal(
         expr,
         t,
         reference_value,
         base_shape,
-        component,
+        component_tuple,
         flat_component,
-        global_derivatives,
-        local_derivatives,
+        sorted_global_derivatives,
+        sorted_local_derivatives,
         averaged,
         restriction,
     )
