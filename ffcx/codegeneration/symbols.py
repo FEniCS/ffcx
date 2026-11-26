@@ -157,10 +157,16 @@ class FFCXBackendSymbols:
         return self.coordinate_dofs[3 * dof + component + offset]
 
     def coefficient_dof_access(self, coefficient, dof_index):
-        """Coefficient DOF access."""
+        """Coefficient DOF access.
+
+        The dofs of a proxy coefficient are not passed to the kernel, but built
+        in it into an array of their own, see `ffcx.codegeneration.interpolation`.
+        """
+        if coefficient in self.proxy_coefficient_offsets:
+            offset = self.proxy_coefficient_offsets[coefficient]
+            return self.proxy_coefficients[offset + dof_index]
         offset = self.coefficient_offsets[coefficient]
-        w = self.coefficients
-        return w[offset + dof_index]
+        return self.coefficients[offset + dof_index]
 
     def coefficient_dof_access_blocked(
         self, coefficient: ufl.Coefficient, index, block_size, dof_offset
@@ -175,19 +181,11 @@ class FFCXBackendSymbols:
 
     def coefficient_value(self, mt):
         """Symbol for variable holding value or derivative component of coefficient."""
-        c = self.coefficient_numbering[mt.terminal]
-        return L.Symbol(format_mt_name(f"w{c:d}", mt), dtype=L.DataType.SCALAR)
-
-    def proxy_coefficient_dof_access(self, coefficient, dof_index):
-        """Coefficient DOF access."""
-        offset = self.proxy_coefficient_offsets[coefficient]
-        z = self.proxy_coefficients
-        return z[offset + dof_index]
-
-    def proxy_coefficient_value(self, mt):
-        """Symbol for variable holding value or derivative component of proxy coefficient."""
-        c = self.proxy_coefficient_numbering[mt.terminal]
-        return L.Symbol(format_mt_name(f"pw{c:d}", mt), dtype=L.DataType.SCALAR)
+        if mt.terminal in self.proxy_coefficient_numbering:
+            name = f"pw{self.proxy_coefficient_numbering[mt.terminal]:d}"
+        else:
+            name = f"w{self.coefficient_numbering[mt.terminal]:d}"
+        return L.Symbol(format_mt_name(name, mt), dtype=L.DataType.SCALAR)
 
     def constant_index_access(self, constant, index):
         """Constant index access."""

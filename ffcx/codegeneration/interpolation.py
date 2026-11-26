@@ -142,7 +142,7 @@ def _proxy_coefficients(
     """Generate the degrees of freedom of the proxy coefficients.
 
     They are written where they are read from, see
-    `ffcx.codegeneration.symbols.FFCXBackendSymbols.proxy_coefficient_dof_access`.
+    `ffcx.codegeneration.symbols.FFCXBackendSymbols.coefficient_dof_access`.
     """
     if not kernels:
         return []

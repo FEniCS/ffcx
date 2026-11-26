@@ -5,6 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import math
+import re
 import sys
 
 import basix.ufl
@@ -17,6 +18,7 @@ import ffcx.codegeneration.jit
 import ffcx.ir.representation
 import ffcx.options
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
+from ffcx.compiler import compile_ufl_objects
 
 
 def cell_to_gdim(cell_type):
@@ -204,14 +206,19 @@ def sum_factorisation_forms(cell_type, P):
     }
 
 
-def tabulate_kernel(kernel, module, form, num_coefficients, cell_type, dtype):
-    """Tabulate the cell integral kernel of a form on a distorted cell."""
+def tabulate_kernel(kernel, module, form, num_coefficients, cell_type, dtype, w=None):
+    """Tabulate the cell integral kernel of a form on a distorted cell.
+
+    The coefficient values are ``w``, or spread over [0.3, 1.7] if not given.
+    """
     xdtype = dtype_to_scalar_dtype(dtype)
     coords = distorted_cell(cell_type, xdtype)
     A = np.zeros(
         math.prod(a.ufl_function_space().ufl_element().dim for a in form.arguments()), dtype
     )
-    w = np.linspace(0.3, 1.7, max(num_coefficients, 1)).astype(dtype)
+    if w is None:
+        w = np.linspace(0.3, 1.7, max(num_coefficients, 1))
+    w = np.asarray(w).astype(dtype)
     c = np.zeros(1, dtype=dtype)
     ffi = module.ffi
     c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
@@ -507,3 +514,65 @@ def test_sum_factorisation_quadrature_rules(name, cell_type, compile_args, tmp_p
     }[name]
     args = (form, num_coefficients, cell_type, "float64")
     assert_matches_fused_loop(args, compile_args, tmp_path)
+
+
+@pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
+def test_sum_factorised_interpolation(cell_type, compile_args, tmp_path):
+    """An interpolation into a tensor product space is evaluated one direction at a time.
+
+    The interpolation becomes a proxy coefficient, whose dofs are built in the
+    kernel. The space is nodal, so the dofs of the interpolation of sin(f) are
+    sin of the dofs of f, and the kernel matches one given those as an ordinary
+    coefficient.
+    """
+    gdim = cell_to_gdim(cell_type)
+    variant = basix.LagrangeVariant.gll_warped
+    mesh = ufl.Mesh(create_tensor_product_element(cell_type, 1, variant, shape=(gdim,)))
+    V = ufl.FunctionSpace(mesh, create_tensor_product_element(cell_type, 2, variant))
+    f, g, h = ufl.Coefficient(V), ufl.Coefficient(V), ufl.Coefficient(V)
+    u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
+
+    def form(p):
+        """A form reading the value and a derivative of p, next to a coefficient."""
+        return (h * p + p.dx(0)) * u * v * ufl.dx
+
+    proxy_form, reference_form = form(ufl.Interpolate(ufl.sin(f), V)), form(g)
+    assert sum_factorised(proxy_form, "float64")
+
+    # The coefficients are numbered in order of creation: (f, h) and (g, h)
+    dim = V.ufl_element().dim
+    w_f, w_h = np.linspace(0.3, 1.7, dim), np.linspace(-0.4, 0.9, dim)
+    tensors = [
+        tabulate_kernel(
+            *generate_kernel(
+                [a],
+                "float64",
+                {"scalar_type": "float64", "sum_factorization": sum_factorization},
+                compile_args,
+                tmp_path / name,
+            ),
+            a,
+            2 * dim,
+            cell_type,
+            "float64",
+            w=np.concatenate([w, w_h]),
+        )
+        for name, a, w, sum_factorization in (
+            ("reference", reference_form, np.sin(w_f), True),
+            ("fused_loop", proxy_form, w_f, False),
+            ("sum_factorised", proxy_form, w_f, True),
+        )
+    ]
+    for A in tensors[1:]:
+        assert_close(A, tensors[0])
+
+    # The proxy coefficient is evaluated in the same section as the coefficient
+    code, _ = compile_ufl_objects([proxy_form], options=ffcx.options.get_options({}))
+    sections = re.findall(
+        r"// Section: Coefficient\n\s*// Inputs: .*\n\s*// Outputs: (.*)", code[1]
+    )
+    outputs = [output.split(", ") for output in sections]
+    assert any(
+        any(o.startswith("pw") for o in output) and any(o.startswith("w") for o in output)
+        for output in outputs
+    )
