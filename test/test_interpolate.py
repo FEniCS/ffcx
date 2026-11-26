@@ -820,6 +820,84 @@ def test_interpolation_on_interior_facet(compile_args):
     np.testing.assert_allclose(A, A_ref, rtol=1e-13)
 
 
+@pytest.mark.parametrize("measure", ["ds", "dP", "dr"])
+def test_interpolation_on_cell_entities(compile_args, measure):
+    """Interpolations in exterior facet, vertex and ridge integrals.
+
+    Each integral is tabulated on every entity of its kind of a tetrahedron.
+    Interpolating into the space the argument or coefficient lives in is the
+    identity, so each form must match the one without the interpolation. The
+    dofs of a proxy coefficient are built on the cell, and the proxy is then
+    read on the entity, also when it is interpolated into another space: into
+    P1, a P2 coefficient keeps its vertex dofs.
+    """
+    cell = "tetrahedron"
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(3,)))
+    V = ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", cell, 2))
+    V1 = ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", cell, 1))
+    v, u, f, g = ufl.TestFunction(V), ufl.TrialFunction(V), ufl.Coefficient(V), ufl.Coefficient(V1)
+    x = ufl.SpatialCoordinate(domain)
+    dm = ufl.Measure(measure, domain=domain)
+    integral_type = {"ds": "exterior_facet", "dP": "vertex", "dr": "ridge"}[measure]
+    num_entities = {"ds": 4, "dP": 4, "dr": 6}[measure]
+
+    coords = np.array(
+        [[0.1, 0.2, 0.0], [2.0, 0.3, 0.1], [0.4, 1.7, 0.2], [0.3, 0.4, 1.5]], dtype=np.float64
+    ).flatten()
+    w = np.random.default_rng(5).random(V.ufl_element().dim)
+    perm = np.zeros(1, dtype=np.uint8)
+
+    def tabulate(form, shape, coefficients):
+        """Tabulate the integral of a form on each entity of the cell."""
+        (compiled,), module, _ = ffcx.codegeneration.jit.compile_forms(
+            [form], cffi_extra_compile_args=compile_args
+        )
+        ffi = module.ffi
+        offsets = compiled.form_integral_offsets
+        integral = compiled.form_integrals[offsets[getattr(module.lib, integral_type)]]
+        tensors = np.zeros((num_entities, *np.atleast_1d(shape)))
+        for entity, A in enumerate(tensors):
+            entity_index = np.array([entity], dtype=np.int32)
+            integral.tabulate_tensor_float64(
+                ffi.cast("double *", A.ctypes.data),
+                ffi.cast("double *", coefficients.ctypes.data),
+                ffi.NULL,
+                ffi.cast("double *", coords.ctypes.data),
+                ffi.cast("int *", entity_index.ctypes.data),
+                ffi.cast("uint8_t *", perm.ctypes.data),
+                ffi.NULL,
+            )
+        return tensors
+
+    def check(form, form_ref, shape, coefficients=w, coefficients_ref=w, **tolerance):
+        A, A_ref = tabulate(form, shape, coefficients), tabulate(form_ref, shape, coefficients_ref)
+        assert np.abs(A_ref).max() > 1e-3
+        # The entities differ, so the entity index is read
+        assert not np.allclose(A_ref, A_ref[0])
+        np.testing.assert_allclose(A, A_ref, **tolerance)
+
+    dim = V.ufl_element().dim
+    # The table of an interpolated argument
+    check(ufl.Interpolate(v, V) * (1 + x[0]) * dm, v * (1 + x[0]) * dm, dim, atol=1e-14)
+    # The tables of both interpolated arguments
+    check(
+        ufl.Interpolate(v, V) * ufl.Interpolate(u, V) * (1 + x[0]) * dm,
+        v * u * (1 + x[0]) * dm,
+        (dim, dim),
+        atol=1e-14,
+    )
+    # A proxy coefficient, with its dofs built on the cell
+    check(ufl.Interpolate(f, V) * (1 + x[0]) * dm, f * (1 + x[0]) * dm, 1, rtol=1e-13)
+    # A proxy coefficient in another space: the vertex dofs of f come first
+    check(
+        ufl.Interpolate(f, V1) * (1 + x[0]) * dm,
+        g * (1 + x[0]) * dm,
+        1,
+        coefficients_ref=w[: V1.ufl_element().dim],
+        rtol=1e-13,
+    )
+
+
 @pytest.mark.parametrize(
     "dtype",
     [
