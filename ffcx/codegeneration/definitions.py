@@ -7,6 +7,7 @@
 
 import logging
 import math
+import typing
 
 import ufl
 
@@ -61,10 +62,27 @@ def create_dof_index(tabledata, dof_index_symbol):
     return L.MultiIndex(indices, ranges)
 
 
+def _section_name(mt: ModifiedTerminal) -> str:
+    """Name of the section defining a terminal.
+
+    A proxy coefficient is named as a coefficient, so that its sections are
+    fused with theirs, see `ffcx.codegeneration.optimizer.optimize`.
+    """
+    if isinstance(mt.terminal, ufl.Coefficient):
+        return "Coefficient"
+    return type(mt.terminal).__name__
+
+
 class FFCXBackendDefinitions:
     """FFCx specific code definitions."""
 
     entity_type: entity_types
+    handler_lookup: dict[
+        ufl.core.ufl_type.UFLType,
+        typing.Callable[
+            [ModifiedTerminal, UniqueTableReferenceT, QuadratureRule, L.Symbol], list[L.Section]
+        ],
+    ]
 
     def __init__(self, entity_type: entity_types, integral_type: str, access, options):
         """Initialise."""
@@ -183,7 +201,7 @@ class FFCXBackendDefinitions:
         body = [L.AssignAdd(access, dof_access * FE)]
         code = [L.create_nested_for_loops([ic], body)]
 
-        name = type(mt.terminal).__name__
+        name = _section_name(mt)
         input = [dof_access.array, *tables]
         output = [access]
         annotations = [L.Annotation.fuse]
@@ -191,7 +209,6 @@ class FFCXBackendDefinitions:
         # assert input and output are Symbol objects
         assert all(isinstance(i, L.Symbol) for i in input)
         assert all(isinstance(o, L.Symbol) for o in output)
-
         return [L.Section(name, code, declaration, input, output, annotations)]
 
     def _define_coordinate_dofs_lincomb(
@@ -445,7 +462,7 @@ class FFCXBackendDefinitions:
             code += a_loop(q_loop(body))
             source, stride, offset = stage, 1, 0
 
-        terminal = type(mt.terminal).__name__
+        terminal = _section_name(mt)
         evaluation = L.Section(
             f"{terminal} on the tensor product rule",
             code,

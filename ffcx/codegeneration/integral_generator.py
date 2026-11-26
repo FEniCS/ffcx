@@ -23,6 +23,7 @@ import ufl
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.definitions import create_dof_index, create_quadrature_index
+from ffcx.codegeneration.interpolation import generate_interpolations
 from ffcx.codegeneration.optimizer import (
     expr_key,
     optimize,
@@ -285,6 +286,9 @@ class IntegralGenerator:
         # quadloops
         all_preparts = []
         all_quadparts = []
+
+        # Evaluate the interpolations, for the proxy coefficients
+        all_preparts += generate_interpolations(self.ir.interpolation, self.backend)
 
         # Pre-definitions are collected across all quadrature loops to
         # improve re-use and avoid name clashes

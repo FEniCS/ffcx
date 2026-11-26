@@ -15,6 +15,7 @@ import ufl
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.backend import FFCXBackend
+from ffcx.codegeneration.interpolation import generate_interpolations
 from ffcx.codegeneration.lnodes import LNode
 from ffcx.ir.representation import ExpressionIR
 
@@ -48,6 +49,10 @@ class ExpressionGenerator:
             self.ir.expression.integrand.values(),
             self.ir.expression.integration_domain_coordinate_element,
         )
+
+        # Evaluate the interpolations, for the proxy coefficients
+        parts += generate_interpolations(self.ir.interpolation, self.backend)
+
         parts += self.generate_piecewise_partition()
 
         all_preparts = []
@@ -187,7 +192,7 @@ class ExpressionGenerator:
         components = ufl.product(self.ir.expression.shape)
 
         num_points = self.quadrature_rule[1].points.shape[0]
-        A_shape = [num_points, components] + self.ir.expression.tensor_shape
+        A_shape = [num_points, components] + list(self.ir.expression.tensor_shape)
         A = self.backend.symbols.element_tensor
         iq = self.backend.symbols.quadrature_loop_index
 

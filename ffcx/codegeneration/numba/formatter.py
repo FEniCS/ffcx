@@ -103,6 +103,11 @@ class Formatter(FormatterInterface):
         return f"{symbol} = {av}\n"
 
     @__call__.register
+    def _(self, call: L.CallOp) -> str:
+        """Format a call to a (sub-)kernel."""
+        raise NotImplementedError("Sub-kernel is not supported by the numba backend.")
+
+    @__call__.register
     def _(self, arr: L.ArrayAccess) -> str:
         """Format array access."""
         array = self(arr.array)

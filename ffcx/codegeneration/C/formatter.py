@@ -245,6 +245,12 @@ class Formatter(FormatterInterface):
         return f"{cstr}{typename} {symbol}{dims} = {vals};\n"
 
     @__call__.register
+    def _(self, call: L.CallOp) -> str:
+        """Format a call to a (sub-)kernel."""
+        args = ", ".join(self(arg) for arg in call.args)
+        return f"tabulate_tensor_{call.func}({args});\n"
+
+    @__call__.register
     def _(self, arr: L.ArrayAccess) -> str:
         """Format an array access."""
         name = self(arr.array)

@@ -61,12 +61,22 @@ def format_mt_name(basename, mt):
 class FFCXBackendSymbols:
     """FFCx specific symbol definitions. Provides non-ufl symbols."""
 
-    def __init__(self, coefficient_numbering, coefficient_offsets, original_constant_offsets):
+    def __init__(
+        self,
+        coefficient_numbering,
+        coefficient_offsets,
+        original_constant_offsets,
+        proxy_coefficient_numbering,
+        proxy_coefficient_offsets,
+    ):
         """Initialise."""
         self.coefficient_numbering = coefficient_numbering
         self.coefficient_offsets = coefficient_offsets
 
         self.original_constant_offsets = original_constant_offsets
+
+        self.proxy_coefficient_numbering = proxy_coefficient_numbering
+        self.proxy_coefficient_offsets = proxy_coefficient_offsets
 
         # Keep tabs on tables, so the symbols can be reused
         self.quadrature_weight_tables = {}
@@ -78,6 +88,7 @@ class FFCXBackendSymbols:
         # Symbols for the tabulate_tensor function arguments
         self.element_tensor = L.Symbol("A", dtype=L.DataType.SCALAR)
         self.coefficients = L.Symbol("w", dtype=L.DataType.SCALAR)
+        self.proxy_coefficients = L.Symbol("pw", dtype=L.DataType.SCALAR)
         self.constants = L.Symbol("c", dtype=L.DataType.SCALAR)
         self.coordinate_dofs = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
         self.entity_local_index = L.Symbol("entity_local_index", dtype=L.DataType.INT)
@@ -146,10 +157,16 @@ class FFCXBackendSymbols:
         return self.coordinate_dofs[3 * dof + component + offset]
 
     def coefficient_dof_access(self, coefficient, dof_index):
-        """Coefficient DOF access."""
+        """Coefficient DOF access.
+
+        The dofs of a proxy coefficient are not passed to the kernel, but built
+        in it into an array of their own, see `ffcx.codegeneration.interpolation`.
+        """
+        if coefficient in self.proxy_coefficient_offsets:
+            offset = self.proxy_coefficient_offsets[coefficient]
+            return self.proxy_coefficients[offset + dof_index]
         offset = self.coefficient_offsets[coefficient]
-        w = self.coefficients
-        return w[offset + dof_index]
+        return self.coefficients[offset + dof_index]
 
     def coefficient_dof_access_blocked(
         self, coefficient: ufl.Coefficient, index, block_size, dof_offset
@@ -164,8 +181,11 @@ class FFCXBackendSymbols:
 
     def coefficient_value(self, mt):
         """Symbol for variable holding value or derivative component of coefficient."""
-        c = self.coefficient_numbering[mt.terminal]
-        return L.Symbol(format_mt_name(f"w{c:d}", mt), dtype=L.DataType.SCALAR)
+        if mt.terminal in self.proxy_coefficient_numbering:
+            name = f"pw{self.proxy_coefficient_numbering[mt.terminal]:d}"
+        else:
+            name = f"w{self.coefficient_numbering[mt.terminal]:d}"
+        return L.Symbol(format_mt_name(name, mt), dtype=L.DataType.SCALAR)
 
     def constant_index_access(self, constant, index):
         """Constant index access."""
