@@ -533,7 +533,7 @@ def _compute_integral_ir(
         expression_ir["original_constant_offsets"] = original_constant_offsets
 
         # Create map from number of quadrature points -> integrand
-        integrand_map: dict[basix.CellType, dict[QuadratureRule, Expr]] = {
+        integrand_map: dict[basix.CellType | str, dict[QuadratureRule, Expr]] = {
             cell_type: {rule: integral.integrand() for rule, integral in cell_integrals.items()}
             for cell_type, cell_integrals in sorted_integrals.items()
         }

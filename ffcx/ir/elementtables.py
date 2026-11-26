@@ -359,7 +359,7 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
 
 def build_optimized_tables(
     quadrature_rule: QuadratureRule,
-    cell: ufl.Cell,
+    cell: ufl.Cell | None,
     integral_type: typing.Literal["interior_facet", "exterior_facet", "ridge", "cell", "vertex"],
     entity_type: entity_types,
     modified_terminals: typing.Iterable[ModifiedTerminal],
@@ -395,7 +395,11 @@ def build_optimized_tables(
         res = get_modified_terminal_element(mt)
         if res:
             analysis[mt] = res
-
+    if cell is None:
+        # An expression without a domain, such as a literal, needs no tables
+        if analysis:
+            raise ValueError("Element tables are needed, but there is no cell to evaluate them on.")
+        return {}
     # Build element numbering using topological ordering so subelements
     # get priority
     all_elements = [res[0] for res in analysis.values()]
@@ -410,12 +414,7 @@ def build_optimized_tables(
     all_tensor_factors: list[UniqueTableReferenceT] = []
     tensor_n = 0
 
-    for mt in modified_terminals:
-        res = analysis.get(mt)
-        if not res:
-            continue
-        element, avg, local_derivatives, flat_component = res
-
+    for mt, (element, avg, local_derivatives, flat_component) in analysis.items():
         # Generate table and store table name with modified terminal
 
         # Build name for this particular table
