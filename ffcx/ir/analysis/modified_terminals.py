@@ -21,7 +21,7 @@ from ufl.classes import (
     Restricted,
     SpatialCoordinate,
 )
-from ufl.permutation import build_component_numbering
+from ufl.utils.indexflattening import flatten_multiindex, shape_to_strides
 
 logger = logging.getLogger("ffcx")
 
@@ -35,7 +35,6 @@ class ModifiedTerminal:
         terminal,
         reference_value: bool,
         base_shape,
-        base_symmetry,
         component: tuple[int, ...],
         flat_component: int,
         global_derivatives: tuple[int, ...],
@@ -50,9 +49,8 @@ class ModifiedTerminal:
             terminal: the underlying Terminal object
             reference_value: whether this is represented in reference frame
             base_shape: base shape
-            base_symmetry: base symmetry
             component: the global component of the Terminal
-            flat_component: flattened local component of the Terminal, considering symmetry
+            flat_component: flattened local component of the Terminal
             global_derivatives: each entry is a derivative in that global direction
             local_derivatives: each entry is a derivative in that local direction
             averaged: Entity to average over (None, 'facet' or 'cell')
@@ -70,7 +68,6 @@ class ModifiedTerminal:
         # Get the shape of the core terminal or its reference value,
         # this is the shape that component and flat_component refers to
         self.base_shape = base_shape
-        self.base_symmetry = base_symmetry
 
         # Components
         self.component = component
@@ -96,7 +93,6 @@ class ModifiedTerminal:
         t = self.terminal  # FIXME: Terminal is not sortable...
         rv = self.reference_value
         # bs = self.base_shape
-        # bsy = self.base_symmetry
         # c = self.component
         fc = self.flat_component
         gd = self.global_derivatives
@@ -118,7 +114,6 @@ class ModifiedTerminal:
         p = t.part()
         rv = self.reference_value
         # bs = self.base_shape
-        # bsy = self.base_symmetry
         # c = self.component
         fc = self.flat_component
         gd = self.global_derivatives
@@ -274,19 +269,14 @@ def analyse_modified_terminal(expr):
         component = tuple(component)
 
     # Get the shape of the core terminal or its reference value, this is
-    # the shape that component refers to
+    # the shape that component refers to. Form arguments are read in
+    # reference value, with the pull backs of their elements applied and
+    # any symmetry with them, so their components carry no symmetry.
     if isinstance(t, FormArgument):
-        element = t.ufl_function_space().ufl_element()
-        if reference_value:
-            # Ignoring symmetry, assuming already applied in conversion
-            # to reference frame
-            base_symmetry = {}
-            base_shape = element.reference_value_shape
-        else:
-            base_symmetry = element.symmetry()
-            base_shape = t.ufl_shape
+        if not reference_value:
+            raise RuntimeError(f"Expected the reference value of {t}: pull backs not applied.")
+        base_shape = t.ufl_function_space().ufl_element().reference_value_shape
     else:
-        base_symmetry = {}
         base_shape = t.ufl_shape
 
     # Assert that component is within the shape of the (reference)
@@ -297,15 +287,13 @@ def analyse_modified_terminal(expr):
         raise RuntimeError("Component indices {component} are outside value shape {base_shape}.")
 
     # Flatten component
-    vi2si, _ = build_component_numbering(base_shape, base_symmetry)
-    flat_component = vi2si[component]
+    flat_component = flatten_multiindex(component, shape_to_strides(base_shape))
 
     return ModifiedTerminal(
         expr,
         t,
         reference_value,
         base_shape,
-        base_symmetry,
         component,
         flat_component,
         global_derivatives,

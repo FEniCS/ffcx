@@ -119,7 +119,7 @@ class ValueNumberer:
 
         return symbols
 
-    # Handle modified terminals with element symmetries and second derivative symmetries!
+    # Handle modified terminals with second derivative symmetries!
     # terminals are implemented separately, or maybe they don't need to be?
 
     def _modified_terminal(self, v):
@@ -136,12 +136,12 @@ class ValueNumberer:
             averaged: None, 'facet' or 'cell'
             restriction: None, '+' or '-'
             component: tuple of ints, the global component of the Terminal
-                flat_component: single int, flattened local component of the
-            Terminal, considering symmetry
+            flat_component: single int, flattened local component of the Terminal
         """
         # (1) mt.terminal.ufl_shape defines a core indexing space UNLESS mt.reference_value,
         #     in which case the reference value shape of the element must be used.
-        # (2) mt.terminal.ufl_element().symmetry() defines core symmetries
+        # (2) a form argument is read in reference value, where the symmetry of its
+        #     element has been applied by its pull back, so its components carry no symmetry
         # (3) averaging and restrictions define distinct symbols, no additional symmetries
         # (4) two or more grad/reference_grad defines distinct symbols with additional symmetries
 
@@ -170,16 +170,13 @@ class ValueNumberer:
         # Get base shape without the derivative axes
         base_components = ufl.permutation.compute_indices(mt.base_shape)
 
-        # Build symbols with symmetric components and derivatives skipped
+        # Build symbols with symmetric derivatives skipped
         symbols = []
         mapped_symbols = {}
         for bc in base_components:
             for dc in d_components:
-                # Build mapped component mc with symmetries from element
-                # and derivatives combined
-                mbc = mt.base_symmetry.get(bc, bc)
-                mdc = tuple(sorted(dc))
-                mc = mbc + mdc
+                # Build mapped component mc with the derivatives sorted, as they commute
+                mc = bc + tuple(sorted(dc))
 
                 # Get existing symbol or create new and store with
                 # mapped component mc as key
