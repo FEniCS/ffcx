@@ -111,7 +111,7 @@ def _call_kernel(
                     values,
                     coefficients,
                     constants,
-                    _shift(symbols.coordinate_dofs, side * _num_coordinate_dofs(kernel)),
+                    _shift(symbols.coordinate_dofs, side * _num_coordinate_dofs(kernel, backend)),
                     _shift(symbols.entity_local_index, side),
                     _shift(symbols.quadrature_permutation, side),
                     L.Symbol("custom_data", dtype=L.DataType.SCALAR),
@@ -127,11 +127,17 @@ def _shift(pointer: L.Symbol, offset: int) -> L.LExpr:
     return pointer if offset == 0 else L.Add(pointer, offset)
 
 
-def _num_coordinate_dofs(kernel: InterpolationKernelIR) -> int:
-    """The number of entries of `coordinate_dofs` for one cell, three per node."""
-    domain = ufl.domain.extract_unique_domain(kernel.interpolation)
-    assert isinstance(domain, ufl.Mesh)
-    element = domain.ufl_coordinate_element()
+def _num_coordinate_dofs(kernel: InterpolationKernelIR, backend: FFCXBackend) -> int:
+    """The number of entries of `coordinate_dofs` for one cell, three per node.
+
+    The layout is that of the calling kernel, whose integration domain differs
+    from the domain of the target space when that is a submesh of facets.
+    """
+    element = backend.access.integration_domain_coordinate_element
+    if element is None:
+        domain = ufl.domain.extract_unique_domain(kernel.interpolation)
+        assert isinstance(domain, ufl.Mesh)
+        element = domain.ufl_coordinate_element()
     assert isinstance(element, basix.ufl._ElementBase)
     return 3 * int(element.basix_element.dim)
 

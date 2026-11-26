@@ -819,6 +819,18 @@ def test_interpolation_on_interior_facet(compile_args):
     A_ref = tabulate(2 * f("+") * f("-") * ufl.dS, 1)
     np.testing.assert_allclose(A, A_ref, rtol=1e-13)
 
+    # A proxy coefficient in a space on a submesh of facets, built on each
+    # side's cell. Its nodes are those of V on the facet, so it is the trace of
+    # the interpolation into V. The expression reads the geometry, so building
+    # the '-' side from the coordinates of the wrong cell shows.
+    facets = ufl.Mesh(basix.ufl.element("Lagrange", "interval", 1, shape=(2,)))
+    V_facet = ufl.FunctionSpace(facets, basix.ufl.element("Lagrange", "interval", 2))
+    expression = f * (1 + x[1])
+    for side in ("+", "-"):
+        A = tabulate(ufl.Interpolate(expression, V_facet)(side) * (1 + x[0]) * ufl.dS, 1)
+        A_ref = tabulate(ufl.Interpolate(expression, V)(side) * (1 + x[0]) * ufl.dS, 1)
+        np.testing.assert_allclose(A, A_ref, rtol=1e-13)
+
 
 @pytest.mark.parametrize("measure", ["ds", "dP", "dr"])
 def test_interpolation_on_cell_entities(compile_args, measure):
@@ -894,6 +906,23 @@ def test_interpolation_on_cell_entities(compile_args, measure):
         g * (1 + x[0]) * dm,
         1,
         coefficients_ref=w[: V1.ufl_element().dim],
+        rtol=1e-13,
+    )
+    if measure == "dP":
+        # A coefficient on a submesh of vertices is not supported yet in a
+        # vertex integral, interpolated or not.
+        return
+    # A proxy coefficient in a space on a submesh of the entities, built on the
+    # entity of the cell. Its nodes are those of V on the entity, so it is the
+    # trace of the interpolation into V.
+    entity_cell = {"ds": "triangle", "dr": "interval"}[measure]
+    submesh = ufl.Mesh(basix.ufl.element("Lagrange", entity_cell, 1, shape=(3,)))
+    V_entity = ufl.FunctionSpace(submesh, basix.ufl.element("Lagrange", entity_cell, 2))
+    expression = f * (1 + x[1])
+    check(
+        ufl.Interpolate(expression, V_entity) * (1 + x[0]) * dm,
+        ufl.Interpolate(expression, V) * (1 + x[0]) * dm,
+        1,
         rtol=1e-13,
     )
 

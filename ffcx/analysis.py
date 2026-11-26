@@ -368,8 +368,10 @@ def interpolation_target_space(
     if isinstance(interpolation, ProxyCoefficient):
         return typing.cast(ufl.FunctionSpace, interpolation.ufl_function_space())
     # `ufl_function_space()` is the dual of the source space for an interpolation
-    # of a test function, so build the target space from the target element.
-    domain = ufl.domain.extract_unique_domain(interpolation)
+    # of a test function, so build the target space from the target element. Its
+    # domain is that of the dual slot, which differs from the domain of the
+    # operand when interpolating into a space on a submesh.
+    domain = interpolation.argument_slots()[0].ufl_function_space().ufl_domain()
     return ufl.FunctionSpace(domain, interpolation.ufl_element())
 
 
