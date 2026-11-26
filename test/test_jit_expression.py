@@ -1059,3 +1059,27 @@ def test_peak_expression_rejects_data_on_entities_of_other_dimension(cellname):
     expr = c * ufl.SpatialCoordinate(mesh)[0]
     with pytest.raises(ValueError, match="Cannot evaluate an expression on peaks"):
         ffcx.codegeneration.jit.compile_expressions([(expr, np.zeros((1, 0)))])
+
+
+def test_expression_without_domain(compile_args):
+    # A literal has no domain, so no cell, and needs no element tables
+    points = np.array([[0.0, 0.0], [1.0, 0.0]])
+    obj, _, _ = ffcx.codegeneration.jit.compile_expressions(
+        [(ufl.as_ufl(2.0), points)], cffi_extra_compile_args=compile_args
+    )
+    assert obj[0] is not None
+
+
+def test_element_tables_need_a_cell():
+    from ffcx.ir.analysis.modified_terminals import analyse_modified_terminal
+    from ffcx.ir.elementtables import build_optimized_tables
+    from ffcx.ir.representationutils import QuadratureRule
+
+    e = basix.ufl.element("P", "triangle", 1)
+    mesh = ufl.Mesh(basix.ufl.element("P", "triangle", 1, shape=(2,)))
+    f = ufl.Coefficient(ufl.FunctionSpace(mesh, e))
+    mt = analyse_modified_terminal(ufl.classes.ReferenceValue(f))
+    rule = QuadratureRule(np.array([[1 / 3, 1 / 3]]), np.array([0.5]))
+    hash(rule)  # rules are hashed as dict keys before their tables are built
+    with pytest.raises(ValueError, match="no cell"):
+        build_optimized_tables(rule, None, "cell", "cell", [mt], {}, False, False)
