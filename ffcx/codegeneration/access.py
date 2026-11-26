@@ -98,7 +98,11 @@ class FFCXBackendAccess:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
     ):
-        """Access a coefficient created by the form compiler to contain an intermediate coefficient/expression, for instance by an interpolation.."""
+        """Access a proxy coefficient.
+
+        Created by the form compiler to contain an intermediate coefficient/expression, for instance
+        by an interpolation.
+        """
         ttype = tabledata.ttype
         assert ttype != "zeros"
 
