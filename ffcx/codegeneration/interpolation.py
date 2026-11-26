@@ -9,10 +9,13 @@ A sub-kernel is generated ahead of the kernels that call it, in the same file,
 see `ffcx.analysis.analyze_ufl_objects`. Integral and expression kernels call
 their sub-kernels before anything that reads what they build:
 
-- A proxy coefficient takes the place of an interpolation of an expression. Its
-  sub-kernel evaluates the expression at the interpolation points of the target
-  element, and the degrees of freedom are the interpolation matrix of the
-  target element applied to the values it writes.
+- A proxy coefficient takes the place of an interpolation, or an integral, of
+  an expression, see `ffcx.analysis.ProxyCoefficient`. The sub-kernel of an
+  interpolation evaluates the expression at the interpolation points of the
+  target element, and the degrees of freedom are the interpolation matrix of
+  the target element applied to the values it writes. The sub-kernel of an
+  integral is the cell kernel of a linear form, whose vector is the degrees of
+  freedom.
 - An interpolation of an expression that is only linear in an argument has its
   element table built for each cell, by contracting the values its sub-kernel
   writes for each degree of freedom of the argument with the target element
@@ -185,11 +188,28 @@ def _proxy_coefficients(kernels: list[SubKernelIR], backend: FFCXBackend) -> lis
             label = f"proxy{i}" if side == 0 else f"proxy{i}_{side}"
             values, declarations, statements = _call_kernel(kernel, label, backend, side)
             offset = offsets[proxy] + side * proxy.ufl_element().dim
-            statements += _interpolate(proxy, values, pw, offset, label, declarations)
+            if proxy.is_interpolation:
+                statements += _interpolate(proxy, values, pw, offset, label, declarations)
+            else:
+                # The vector of the linear form is the degrees of freedom
+                statements += _copy(values, pw, offset, proxy.ufl_element().dim)
             parts.append(
                 L.Section(f"Proxy coefficient {i}", statements, declarations, input=[], output=[])
             )
     return parts
+
+
+def _copy(values: L.Symbol, dofs: L.Symbol, offset: int, size: int) -> list[L.LNode]:
+    """Copy the values a sub-kernel writes into the degrees of freedom of a proxy.
+
+    Args:
+        values: The array the kernel writes.
+        dofs: The array to write the degrees of freedom of the proxy to.
+        offset: Where the degrees of freedom of the proxy start in ``dofs``.
+        size: The number of degrees of freedom.
+    """
+    j = L.Symbol("aj", dtype=L.DataType.INT)
+    return [L.ForRange(j, 0, size, [L.Assign(dofs[offset + j], values[j])])]
 
 
 def _interpolate(
@@ -215,9 +235,9 @@ def _interpolate(
     # component is interpolated with.
     basix_element = element.basix_element
     block_size = element.block_size
-    j = L.Symbol("aj", dtype=L.DataType.INT)
     if basix_element.interpolation_is_identity:
-        return [L.ForRange(j, 0, element.dim, [L.Assign(dofs[offset + j], values[j])])]
+        return _copy(values, dofs, offset, element.dim)
+    j = L.Symbol("aj", dtype=L.DataType.INT)
 
     # The matrix is ordered [dof][component][point], while the values are
     # [point][component][block component].

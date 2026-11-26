@@ -18,7 +18,7 @@ from importlib import import_module
 
 import numpy.typing as npt
 
-from ffcx.ir.representation import DataIR
+from ffcx.ir.representation import DataIR, IntegralIR
 from ffcx.options import get_language
 
 logger = logging.getLogger("ffcx")
@@ -27,11 +27,13 @@ logger = logging.getLogger("ffcx")
 class CodeBlocks(typing.NamedTuple):
     """Storage of code blocks of the form (declaration, implementation).
 
-    Blocks for integrals, forms and expressions, and start and end of
-    file output.
+    Blocks for sub-kernels, integrals, forms and expressions, and start and
+    end of file output. The sub-kernels come first, each ahead of the kernels
+    that call it.
     """
 
     file_pre: list[tuple[str, str]]
+    sub_kernels: list[tuple[str, str]]
     expressions: list[tuple[str, str]]
     integrals: list[tuple[str, str]]
     forms: list[tuple[str, str]]
@@ -53,6 +55,15 @@ def generate_code(
     expression_generator = mod.expression.generator
     file_generator = mod.file.generator
 
+    code_sub_kernels = []
+    for sub_kernel_ir in ir.sub_kernels:
+        if isinstance(sub_kernel_ir, IntegralIR):
+            code_sub_kernels += [
+                integral_generator(sub_kernel_ir, domain, options)
+                for domain in set(i[0] for i in sub_kernel_ir.expression.integrand.keys())
+            ]
+        else:
+            code_sub_kernels.append(expression_generator(sub_kernel_ir, options))
     code_integrals = [
         integral_generator(integral_ir, domain, options)
         for integral_ir in ir.integrals
@@ -65,6 +76,7 @@ def generate_code(
     code_file_pre, code_file_post = file_generator(options)
     return CodeBlocks(
         file_pre=[code_file_pre],
+        sub_kernels=code_sub_kernels,
         integrals=code_integrals,
         forms=code_forms,
         expressions=code_expressions,

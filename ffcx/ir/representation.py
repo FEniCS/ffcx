@@ -119,7 +119,9 @@ class SubKernelIR(typing.NamedTuple):
     contiguous arrays. The sub-kernel of an interpolation evaluates the
     interpolated expression at the interpolation points of the target element,
     and writes ``[point][component][dof]...``, with one dof axis for each
-    argument the expression is linear in.
+    argument the expression is linear in. The sub-kernel of an integral
+    assembles the vector of the linear form, which is the degrees of freedom of
+    the proxy.
     """
 
     #: What the sub-kernel builds: the degrees of freedom of a proxy
@@ -132,7 +134,8 @@ class SubKernelIR(typing.NamedTuple):
     #: The constants the kernel reads, in the order it reads them
     constants: list[ufl.Constant]
     #: Shape of the values the kernel writes: the number of points, the
-    #: reference value size and the number of dofs of each argument
+    #: reference value size and the number of dofs of each argument, or the
+    #: number of degrees of freedom of the proxy coefficient of an integral
     shape: tuple[int, ...]
 
 
@@ -148,6 +151,10 @@ class IntegralIR(typing.NamedTuple):
     sub_kernels: list[SubKernelIR]
     kernel_name: str | None
     kernel_name_is_explicit: bool
+    #: Whether it assembles an integral proxy coefficient for the kernels that
+    #: hold it, rather than being an integral of a form asked for. Such a
+    #: kernel is internal to the generated code, and not exported as an integral.
+    is_sub_kernel: bool = False
 
 
 class ExpressionIR(typing.NamedTuple):
@@ -169,6 +176,8 @@ class ExpressionIR(typing.NamedTuple):
 class DataIR(typing.NamedTuple):
     """Intermediate representation of data."""
 
+    #: The sub-kernels of the proxy coefficients, each ahead of the kernels that call it
+    sub_kernels: list[IntegralIR | ExpressionIR]
     integrals: list[IntegralIR]
     forms: list[FormIR]
     expressions: list[ExpressionIR]
@@ -312,18 +321,66 @@ def compute_ir(
                 prefix,
             )
 
-    # The sub-kernels of the proxy coefficients are named apart from the
-    # expressions that were asked for, which they could otherwise share a
-    # signature with while being compiled differently. Interpolations that
-    # differ only in their coefficients share a kernel.
-    kernel_indices = set(analysis.sub_kernels.values())
-    expression_names = [
-        naming.expression_name(
-            (org_expr, points), f"{prefix}_sub_kernel" if i in kernel_indices else prefix
-        )
-        for i, (_, points, org_expr) in enumerate(analysis.expressions)
-    ]
-    sub_kernel_names = {target: expression_names[i] for target, i in analysis.sub_kernels.items()}
+    # The sub-kernels, each ahead of the kernels that call it. They are named
+    # apart from the integrals and expressions that were asked for, which they
+    # could otherwise share a signature with while being compiled differently.
+    # Targets that compile to the same kernel share it, such as interpolations
+    # that differ only in their coefficients, or the volumes of the cell
+    # averages on a domain.
+    sub_kernel_names: dict[ProxyCoefficient | ufl.Interpolate, str] = {}
+    ir_sub_kernels: list[IntegralIR | ExpressionIR] = []
+    generated: set[str] = set()
+    for i, sub_kernel in enumerate(analysis.sub_kernels):
+        ir_sub_kernel: IntegralIR | ExpressionIR
+        if sub_kernel.form_data is not None:
+            (itg_data,) = sub_kernel.form_data.integral_data
+            name = naming.integral_name(
+                sub_kernel.form_data.original_form,
+                itg_data.integral_type,
+                0,
+                itg_data.subdomain_id,
+                f"{prefix}_sub_kernel",
+            )
+            # The kernel of a cell integral is named after its cell too
+            cell = basix_cell_from_string(itg_data.domain.ufl_cell().cellname)
+            sub_kernel_names[sub_kernel.target] = f"{name}_{cell.name}"
+            if name in generated:
+                continue
+            (ir_sub_kernel,) = _compute_integral_ir(
+                sub_kernel.form_data,
+                i,
+                analysis.element_numbers.keys(),
+                {(i, 0): name},
+                sub_kernel_names,
+                object_names,
+                prefix,
+                options,
+                visualise,
+                is_sub_kernel=True,
+            )
+            assert {domain for domain, _ in ir_sub_kernel.expression.integrand} == {cell}
+        else:
+            assert sub_kernel.expression is not None
+            _, points, original = sub_kernel.expression
+            name = naming.expression_name((original, points), f"{prefix}_sub_kernel")
+            sub_kernel_names[sub_kernel.target] = name
+            if name in generated:
+                continue
+            ir_sub_kernel = _compute_expression_ir(
+                sub_kernel.expression,
+                i,
+                name,
+                True,
+                prefix,
+                analysis,
+                options,
+                visualise,
+                object_names,
+                sub_kernel_names,
+            )
+        generated.add(name)
+        ir_sub_kernels.append(ir_sub_kernel)
+
     irs = [
         _compute_integral_ir(
             fd,
@@ -373,18 +430,18 @@ def compute_ir(
         for (i, fd) in enumerate(analysis.form_data)
     ]
     ir_expressions = []
-    generated: set[str] = set()
+    generated = set()
     for i, expr in enumerate(analysis.expressions):
-        if expression_names[i] in generated:
-            # Generated once, before any kernel that calls it
+        name = naming.expression_name((expr[2], expr[1]), prefix)
+        if name in generated:
             continue
-        generated.add(expression_names[i])
+        generated.add(name)
         ir_expressions.append(
             _compute_expression_ir(
                 expr,
                 i,
-                expression_names[i],
-                i in kernel_indices,
+                name,
+                False,
                 prefix,
                 analysis,
                 options,
@@ -394,6 +451,7 @@ def compute_ir(
             )
         )
     return DataIR(
+        sub_kernels=ir_sub_kernels,
         integrals=ir_integrals,
         forms=ir_forms,
         expressions=ir_expressions,
@@ -410,6 +468,7 @@ def _compute_integral_ir(
     prefix: str,
     options,
     visualise,
+    is_sub_kernel: bool = False,
 ) -> list[IntegralIR]:
     """Compute intermediate representation for form integrals.
 
@@ -429,6 +488,8 @@ def _compute_integral_ir(
             values at -1, 0 or 1.
         visualise: If set, the image format in which to store the graph
             representation of each integrand, e.g. "pdf" or "png"
+        is_sub_kernel: Whether the form assembles an integral proxy coefficient
+            for the kernels that hold it, rather than being asked for.
 
     Returns:
          A list of intermediate representations for each integral of the Form.
@@ -471,6 +532,7 @@ def _compute_integral_ir(
             "rank": form_data.rank,
             "enabled_coefficients": itg_data.enabled_coefficients,
             "part": TensorPart.from_str(options["part"]),
+            "is_sub_kernel": is_sub_kernel,
         }
 
         # Use an explicit metadata name when supplied. Otherwise, derive a
@@ -579,12 +641,17 @@ def _compute_integral_ir(
         coefficient_offsets: dict[ufl.Coefficient, int] = {}
         _offset = 0
         width = 2 if integral_type in ("interior_facet") else 1
-        for i, (coeff, el) in enumerate(
-            zip(form_data.reduced_coefficients, form_data.coefficient_elements)
-        ):
+        # A sub-kernel is passed the coefficients of its form as given, in the
+        # order that its callers pack them, see `ffcx.analysis.sub_kernel_coefficients`.
+        coefficients = (
+            required_coefficients(form_data.original_form)
+            if is_sub_kernel
+            else form_data.reduced_coefficients
+        )
+        for i, coeff in enumerate(coefficients):
             coefficient_numbering[coeff] = i
             coefficient_offsets[coeff] = _offset
-            _offset += width * element_dimensions[el]
+            _offset += width * element_dimensions[coeff.ufl_element()]
 
         # The proxy coefficients are not coefficients of the form, but built in
         # the kernel into an array of their own, see
@@ -661,14 +728,16 @@ def _compute_sub_kernel_irs(
     for target in targets:
         element = target.ufl_element()
         assert isinstance(element, basix.ufl._ElementBase)
-        # The values of the expression at the points of the target element
-        shape: tuple[int, ...] = (
-            element.basix_element.points.shape[0],
-            element.reference_value_size,
-        )
-        if isinstance(target, ufl.Interpolate):
-            # One dof axis for each argument the expression is linear in
-            shape += tuple(e.dim for e in interpolated_elements(target))
+        shape: tuple[int, ...]
+        if isinstance(target, ProxyCoefficient) and not target.is_interpolation:
+            # The vector of the linear form
+            shape = (element.dim,)
+        else:
+            # The values of the expression at the points of the target element
+            shape = (element.basix_element.points.shape[0], element.reference_value_size)
+            if isinstance(target, ufl.Interpolate):
+                # One dof axis for each argument the expression is linear in
+                shape += tuple(e.dim for e in interpolated_elements(target))
         sub_kernels.append(
             SubKernelIR(
                 target=target,
@@ -782,7 +851,8 @@ def _compute_expression_ir(
     Args:
         analysis_expr: The processed expression, its evaluation points and the
             expression it was processed from.
-        index: Index of the expression in `analysis.expressions`.
+        index: Index of the expression in `analysis.expressions`, or of its
+            sub-kernel in `analysis.sub_kernels`.
         name: Name of the expression kernel.
         is_sub_kernel: Whether the expression evaluates an interpolation, for
             the kernels of the integrals and expressions that hold it, rather
