@@ -159,39 +159,6 @@ def test_expression(scalar_type: str, generate_poisson: ModuleType) -> None:
     assert np.allclose(e, e_expected)
 
 
-def generate(
-    forms: dict[str, ufl.Form], namespace: str, scalar_type: str, tmp_path: Path
-) -> ModuleType:
-    """Generate the numba module of forms, named by their keys."""
-    options = ffcx.options.get_options({"language": "numba", "scalar_type": scalar_type})
-    names = {id(form): name for name, form in forms.items()}
-    (source,), (suffix,) = compile_ufl_objects(
-        list(forms.values()), options, object_names=names, namespace=namespace
-    )
-    path = tmp_path / f"{namespace}{suffix}"
-    path.write_text(source)
-    return load_module(path)
-
-
-def tabulate(
-    tabulate_tensor, A: npt.NDArray, w: npt.NDArray, c: npt.NDArray, coords: npt.NDArray
-) -> None:
-    """Compile a `tabulate_tensor` of a generated module and call it on a cell."""
-    kernel = wrap_kernel(A.dtype.type, coords.dtype.type)(tabulate_tensor)
-    entity_local_index = np.zeros((2,), dtype=np.intc)
-    quadrature_permutation = np.zeros((2,), dtype=np.uint8)
-    # Calling `kernel` itself runs the Python function, `ctypes` the compiled one.
-    kernel.ctypes(
-        as_C_array(A),
-        as_C_array(w),
-        as_C_array(c),
-        as_C_array(coords),
-        as_C_array(entity_local_index),
-        as_C_array(quadrature_permutation),
-        None,
-    )
-
-
 @pytest.mark.parametrize("scalar_type", ["float32", "float64"])
 @pytest.mark.parametrize("element", [("Lagrange", 1), ("DG", 0)], ids=["P1", "DG0"])
 def test_interpolation(scalar_type: str, element: tuple[str, int], tmp_path: Path) -> None:
@@ -203,24 +170,28 @@ def test_interpolation(scalar_type: str, element: tuple[str, int], tmp_path: Pat
     evaluations, so `I(f) = sum_i f(x_i) phi_i` over its interpolation points
     `x_i`, and both forms are checked by hand.
     """
-    cell = "triangle"
-    mesh = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(2,)))
-    V = ufl.FunctionSpace(mesh, basix.ufl.element("Lagrange", cell, 2))
-    W = ufl.FunctionSpace(mesh, basix.ufl.element(element[0], cell, element[1]))
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    V = ufl.FunctionSpace(mesh, basix.ufl.element("Lagrange", "triangle", 2))
+    W = ufl.FunctionSpace(mesh, basix.ufl.element(element[0], "triangle", element[1]))
     u = ufl.Coefficient(V)
     J = ufl.Interpolate(u**2, W) * ufl.dx
     dJ = ufl.derivative(J, u, ufl.TestFunction(V))
-    module = generate({"J": J, "dJ": dJ}, "interpolation", scalar_type, tmp_path)
+
+    options = ffcx.options.get_options({"language": "numba", "scalar_type": scalar_type})
+    (source,), (suffix,) = compile_ufl_objects(
+        [J, dJ], options, object_names={id(J): "J", id(dJ): "dJ"}, namespace="interpolation"
+    )
+    path = tmp_path / f"interpolation{suffix}"
+    path.write_text(source)
+    module = load_module(path)
 
     dtype = np.dtype(scalar_type).type
     dtype_r = dtype_to_scalar_dtype(dtype)
     w = np.array([0.5, -1.0, 2.0, 0.3, 0.7, -0.2], dtype=dtype)
-    c = np.empty((0,), dtype=dtype)
     coords = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [0.0, 3.0, 0.0]], dtype=dtype_r)
 
-    # The basis of V at the interpolation points of W, `[point][dof]`, and
-    # the integrals of the basis of W over the cell
-    element_V, element_W = V.ufl_element().basix_element, W.ufl_element().basix_element
+    element_V = V.ufl_element().basix_element
+    element_W = W.ufl_element().basix_element
     phi_V = element_V.tabulate(0, element_W.points)[0, :, :, 0]
     u_x = phi_V @ w.astype(np.float64)
     points, weights = basix.make_quadrature(element_W.cell_type, element_W.degree)
@@ -231,9 +202,20 @@ def test_interpolation(scalar_type: str, element: tuple[str, int], tmp_path: Pat
         "dJ": int_phi_W @ (2 * u_x[:, None] * phi_V),
     }
 
-    tol = 10 * np.finfo(dtype).eps
+    c = np.empty((0,), dtype=dtype)
+    entity_local_index = np.zeros((2,), dtype=np.intc)
+    quadrature_permutation = np.zeros((2,), dtype=np.uint8)
     for name, values in expected.items():
         A = np.zeros(np.shape(values), dtype=dtype)
         integral = getattr(module, f"form_interpolation_{name}").form_integrals[0]
-        tabulate(integral.tabulate_tensor, A, w, c, coords)
-        np.testing.assert_allclose(A, values, rtol=tol, atol=tol)
+        kernel = wrap_kernel(dtype, dtype_r)(integral.tabulate_tensor)
+        kernel.ctypes(
+            as_C_array(A),
+            as_C_array(w),
+            as_C_array(c),
+            as_C_array(coords),
+            as_C_array(entity_local_index),
+            as_C_array(quadrature_permutation),
+            None,
+        )
+        np.testing.assert_allclose(A, values, atol=10 * np.finfo(dtype).eps)
