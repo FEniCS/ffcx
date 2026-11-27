@@ -14,7 +14,7 @@ import numpy as np
 import numpy.typing as npt
 import ufl
 
-from ffcx.analysis import interpolation_has_runtime_table
+from ffcx.analysis import interpolation_block, interpolation_has_runtime_table
 from ffcx.definitions import entity_types
 from ffcx.element_interface import basix_index
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal, modified_terminal_arguments
@@ -59,21 +59,29 @@ class InterpolatedTableT(typing.NamedTuple):
 
     Interpolating an expression that is only linear in an argument brings
     coefficients into the interpolation, so the argument's table depends on the
-    cell. It is ``table[q, j...] = sum_p contraction[q, p] * E[p, flat_component, j...]``,
+    cell. It is
+    ``table[q, j...] = sum_{k, p} contraction[q, k * P + p] * E[p0 + p, components[k], j...]``,
     where ``E`` is the interpolated expression evaluated at the target element's
-    interpolation points for each dof of each argument it is linear in. There is
-    one dof axis per argument, so an expression bilinear in two arguments gives
-    a table that is a dense element tensor block.
+    interpolation points for each dof of each argument it is linear in, and
+    ``p0`` and ``P`` are the first and the number of points of the sub-element
+    holding the components, for a mixed element.
+    There is one dof axis per argument, so an expression bilinear in two
+    arguments gives a table that is a dense element tensor block.
     """
 
     #: The interpolation the table stands for.
     interpolation: ufl.Interpolate
     #: The target element table contracted with the interpolation matrix.
     contraction: npt.NDArray[np.float64]
-    #: Component of the interpolated expression that the table takes.
-    flat_component: int
+    #: Components of the interpolated expression that the table takes: the one
+    #: of its block for a blocked element, and all of them for a vector valued
+    #: element, whose degrees of freedom mix them, e.g. tangential moments.
+    components: tuple[int, ...]
     #: Number of degrees of freedom on each dof axis, one per argument.
     dof_dims: tuple[int, ...] = ()
+    #: The first point of the sub-element holding the components, for a mixed
+    #: element.
+    point_offset: int = 0
 
 
 class UniqueTableReferenceT(typing.NamedTuple):
@@ -733,8 +741,21 @@ def build_optimized_tables(
                     "in the argument is not supported."
                 )
             component_element, _, _ = element.get_component_element(flat_component)
-            interpolation_matrix = component_element.basix_element.interpolation_matrix
-            contraction = t["array"][0, 0] @ interpolation_matrix
+            if component_element.has_custom_quadrature:
+                # The degrees of freedom of a quadrature element are its values
+                num_points = component_element.custom_quadrature()[0].shape[0]
+                matrix, value_size = np.eye(num_points), 1
+            else:
+                basix_element = component_element.basix_element
+                matrix = basix_element.interpolation_matrix
+                value_size = int(np.prod(basix_element.value_shape, dtype=int))
+            # Columns [component][point], those of the interpolation matrix
+            contraction = t["array"][0, 0] @ matrix
+            point_offset, component_offset = interpolation_block(element, flat_component)
+            if value_size == 1:
+                components: tuple[int, ...] = (flat_component,)
+            else:
+                components = tuple(range(component_offset, component_offset + value_size))
             dof_dims = tuple(dof.dim for dof in dof_elements)
             mt_tables[mt] = UniqueTableReferenceT(
                 name=name,
@@ -748,7 +769,7 @@ def build_optimized_tables(
                 ttype="uniform",
                 is_permuted=False,
                 interpolation=InterpolatedTableT(
-                    interpolation, contraction, flat_component, dof_dims
+                    interpolation, contraction, components, dof_dims, point_offset
                 ),
             )
             continue

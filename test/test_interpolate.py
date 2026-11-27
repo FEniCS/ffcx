@@ -588,22 +588,135 @@ def test_interpolate_derivative_piola(compile_args, dtype, derivative, rank, fam
     np.testing.assert_allclose(A, A_ref @ interpolation, atol=tol)
 
 
-@pytest.mark.parametrize("family", ["N1curl", "RT"])
-def test_interpolate_derivative_piola_runtime_table(family):
-    """A table built for each cell is not mapped onto a Piola mapped target.
+def _assert_derivatives_exact(J, u, compile_args):
+    """Check the residual and Jacobian of a functional cubic in ``u`` on a triangle.
 
-    Differentiating a non-linear interpolated expression gives an interpolation
-    that is only linear in the argument, whose table is built for each cell.
-    That is only supported for an identity mapped target.
+    A four-point difference of ``J`` gives the residual exactly, and a central
+    difference of the residual, which is quadratic, gives the Jacobian.
+    """
+    V = u.ufl_function_space()
+    F = ufl.derivative(J, u, ufl.TestFunction(V))
+    H = ufl.derivative(F, u, ufl.TrialFunction(V))
+    compiled, module, _ = ffcx.codegeneration.jit.compile_forms(
+        [J, F, H], cffi_extra_compile_args=compile_args
+    )
+    ffi = module.ffi
+    coords = np.array([[0.1, 0.2, 0.0], [2.0, 0.3, 0.0], [0.4, 1.7, 0.0]]).flatten()
+    n = V.ufl_element().dim
+
+    def tabulate(form, w, size):
+        A = np.zeros(size)
+        _integral(module, form).tabulate_tensor_float64(
+            ffi.cast("double *", A.ctypes.data),
+            ffi.cast("double *", w.ctypes.data),
+            ffi.NULL,
+            ffi.cast("double *", coords.ctypes.data),
+            ffi.NULL,
+            ffi.NULL,
+            ffi.NULL,
+        )
+        return A
+
+    def J_at(w):
+        return tabulate(compiled[0], w, 1)[0]
+
+    w = np.random.default_rng(0).uniform(0.5, 1.5, n)
+    unit = np.eye(n)
+    residual = tabulate(compiled[1], w, n)
+    residual_fd = np.array(
+        [(8 * (J_at(w + e) - J_at(w - e)) - (J_at(w + 2 * e) - J_at(w - 2 * e))) / 12 for e in unit]
+    )
+    jacobian = tabulate(compiled[2], w, n * n).reshape(n, n)
+    jacobian_fd = np.array(
+        [(tabulate(compiled[1], w + e, n) - tabulate(compiled[1], w - e, n)) / 2 for e in unit]
+    ).T
+    for value, value_fd in ((residual, residual_fd), (jacobian, jacobian_fd)):
+        assert np.abs(value_fd).max() > 1e-3
+        np.testing.assert_allclose(value, value_fd, atol=1e-11 * np.abs(value_fd).max())
+
+
+@pytest.mark.parametrize(
+    "source, target",
+    [
+        (("Lagrange", 2, (2,)), ("N1curl", 1)),
+        (("Lagrange", 2, (2,)), ("RT", 1)),
+        (("DG", 1, (2,)), ("RT", 2)),
+        (("N1curl", 2, None), ("N1curl", 1)),
+    ],
+    ids=["P2-N1curl1", "P2-RT1", "DG1-RT2", "N1curl2-N1curl1"],
+)
+def test_interpolate_derivative_piola_runtime_table(compile_args, source, target):
+    """Derivatives of interpolations into a Piola mapped space, with tables built per cell.
+
+    ``J(u) = |I(u)|^2 + c . I(|u|^2 u)`` interpolates ``u`` itself, from a space
+    with another pull back unless both are N1curl, and an expression non-linear
+    in ``u``. Their derivatives have tables built for each cell, whose
+    interpolation matrix mixes the components of the expression.
     """
     cell = "triangle"
     domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(2,)))
-    V_a = ufl.FunctionSpace(domain, basix.ufl.element(family, cell, 1))
-    V_t = ufl.FunctionSpace(domain, basix.ufl.element(family, cell, 2))
-    u, du = ufl.Coefficient(V_a), ufl.TestFunction(V_a)
-    J = ufl.derivative(ufl.Interpolate(ufl.inner(u, u) * u, V_t)[0] * ufl.dx, u, du)
-    with pytest.raises(NotImplementedError, match="only supported when the expression is"):
-        ffcx.analysis.analyze_ufl_objects([J], np.float64)
+    (family_s, degree_s, shape_s), (family_t, degree_t) = source, target
+    V = ufl.FunctionSpace(domain, basix.ufl.element(family_s, cell, degree_s, shape=shape_s))
+    W = ufl.FunctionSpace(domain, basix.ufl.element(family_t, cell, degree_t))
+    u = ufl.Coefficient(V)
+    Iu, Inonlinear = ufl.Interpolate(u, W), ufl.Interpolate(ufl.inner(u, u) * u, W)
+    c = ufl.as_vector((1.0, -2.0))
+    _assert_derivatives_exact(
+        (ufl.inner(Iu, Iu) + ufl.dot(c, Inonlinear)) * ufl.dx(degree=4), u, compile_args
+    )
+
+
+@pytest.mark.parametrize(
+    "symmetric",
+    [
+        False,
+        # Basix reports the reference value of a symmetric element with the
+        # shape of the block, which UFL's inverse pull back cannot fill, see
+        # https://github.com/FEniCS/basix/issues/1124
+        pytest.param(
+            True,
+            marks=pytest.mark.xfail(
+                strict=True,
+                raises=NotImplementedError,
+                reason="Basix symmetric elements report a block-shaped reference value, "
+                "https://github.com/FEniCS/basix/issues/1124",
+            ),
+        ),
+    ],
+)
+def test_interpolate_derivative_mixed_runtime_table(compile_args, symmetric):
+    """Derivatives of interpolations into a mixed space, with tables built per cell.
+
+    The space is vector DG1 x (RT x quadrature), with symmetric tensor P1 added
+    to the inner mixed element if ``symmetric``: a nested mixed element with a
+    blocked sub-element whose interpolation matrix is not the identity, a Piola
+    mapped sub-element, and a quadrature sub-element, whose rule the integral
+    takes. ``J(u) = |I(L u)|^2 + c . I(|u|^2 L u)``, with ``L`` linear, has
+    derivatives whose tables are built for each cell, each reading the block of
+    its sub-element.
+    """
+    cell = "triangle"
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(2,)))
+    DG1 = basix.ufl.element(
+        "DG", cell, 1, shape=(2,), lagrange_variant=basix.LagrangeVariant.legendre
+    )
+    RT = basix.ufl.element("RT", cell, 1)
+    Q = basix.ufl.quadrature_element(cell, degree=2)
+    S = basix.ufl.element("Lagrange", cell, 1, shape=(2, 2), symmetry=True)
+    sub_elements = [RT, Q, S] if symmetric else [RT, Q]
+    W = ufl.FunctionSpace(
+        domain, basix.ufl.mixed_element([DG1, basix.ufl.mixed_element(sub_elements)])
+    )
+    V = ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", cell, 2, shape=(2,)))
+    u = ufl.Coefficient(V)
+    # DG1, RT and the quadrature space, then the symmetric tensor
+    components = [u[0], u[1], u[0], u[1], u[0]] + ([u[0], u[1], u[1], u[0]] if symmetric else [])
+    Lu = ufl.as_vector(components)
+    c = ufl.as_vector([float(i + 1) for i in range(len(components))])
+    ILu, Inonlinear = ufl.Interpolate(Lu, W), ufl.Interpolate(ufl.inner(u, u) * Lu, W)
+    _assert_derivatives_exact(
+        (ufl.inner(ILu, ILu) + ufl.dot(c, Inonlinear)) * ufl.dx, u, compile_args
+    )
 
 
 @pytest.mark.parametrize("dtype", ["float64", "float32"])

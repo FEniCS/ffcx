@@ -569,6 +569,25 @@ def test_interpolation_on_facet(compile_args, facet):
     np.testing.assert_allclose(A, A_ref, atol=1e-12)
 
 
+@pytest.mark.parametrize("degree", [1, 2])
+def test_interpolate_gradient_into_n1curl(compile_args, degree):
+    """Gradients of Lagrange functions lie in N1curl, so interpolating them is exact.
+
+    The interpolation of ``grad(v)`` has a table built for each cell, whose
+    interpolation matrix mixes the components of the expression.
+    """
+    mesh = domain()
+    V, W = space(mesh, "Lagrange", degree), space(mesh, "N1curl", degree)
+    v = ufl.TestFunction(V)
+    compiled, module = compile_expressions(
+        [(ufl.Interpolate(ufl.grad(v), W), POINTS), (ufl.grad(v), POINTS)], compile_args
+    )
+    shape = (len(POINTS), 2, V.ufl_element().dim)
+    A, A_ref = (tabulate(module, expression, shape) for expression in compiled)
+    assert np.abs(A_ref).max() > 0.1
+    np.testing.assert_allclose(A, A_ref, atol=1e-12)
+
+
 def test_unsupported_interpolations():
     """Interpolations that cannot be compiled are reported as such."""
     mesh = domain()
@@ -580,30 +599,6 @@ def test_unsupported_interpolations():
         ffcx.codegeneration.jit.compile_expressions(
             [(ufl.Interpolate(u * v, V), np.array([[0.5]]))]
         )
-
-    # Mapping an expression that is only linear in the argument onto the
-    # reference cell of a Piola mapped space is not implemented
-    W = space(mesh, "N1curl", 1)
-    with pytest.raises(NotImplementedError, match="space is only supported"):
-        ffcx.codegeneration.jit.compile_expressions(
-            [(ufl.Interpolate(u * ufl.TestFunction(W), W), POINTS)]
-        )
-    # Including one whose argument is shaped differently from the space
-    with pytest.raises(NotImplementedError, match="space is only supported"):
-        ffcx.codegeneration.jit.compile_expressions([(ufl.Interpolate(ufl.grad(v), W), POINTS)])
-
-    # The table built for each cell evaluates an expression that is only
-    # linear in the argument at the points of a single basix element
-    quadrature = ufl.FunctionSpace(mesh, basix.ufl.quadrature_element(CELL, degree=2))
-    blocked_quadrature = ufl.FunctionSpace(
-        mesh, basix.ufl.quadrature_element(CELL, value_shape=(1,), degree=2)
-    )
-    real = ufl.FunctionSpace(mesh, basix.ufl.real_element(CELL, ()))
-    for target in [quadrature, blocked_quadrature, real]:
-        expression = u * v if target.value_shape == () else ufl.as_vector([u * v])
-        q = ufl.Interpolate(expression, target)
-        with pytest.raises(NotImplementedError, match="space is not supported"):
-            ffcx.codegeneration.jit.compile_forms([(q if q.ufl_shape == () else q[0]) * ufl.dx])
 
 
 def test_sub_kernel_targets():
