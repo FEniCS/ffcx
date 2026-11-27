@@ -73,6 +73,16 @@ def generator(
     format = Formatter(options["scalar_type"])  # type: ignore
     body = format(parts)
 
+    if ir.is_sub_kernel:
+        # Called by name from the kernels that hold the proxy coefficient,
+        # which are generated after it in the same file, so nothing is declared.
+        return "", ufcx_integrals.sub_kernel.format(
+            factory_name=factory_name,
+            scalar_type=dtype_to_c_type(options["scalar_type"]),  # type: ignore
+            geom_type=dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"])),  # type: ignore
+            tabulate_tensor=body,
+        )
+
     # Generate generic FFCx code snippets and add specific parts
     code = {}
 

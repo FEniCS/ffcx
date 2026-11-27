@@ -43,3 +43,20 @@ ufcx_integral {factory_name} =
 
 // End of code for integral {factory_name}
 """
+
+sub_kernel = """
+// Code for sub-kernel {factory_name}
+
+static void tabulate_tensor_{factory_name}({scalar_type}* restrict A,
+                                           const {scalar_type}* restrict w,
+                                           const {scalar_type}* restrict c,
+                                           const {geom_type}* restrict coordinate_dofs,
+                                           const int* restrict entity_local_index,
+                                           const uint8_t* restrict quadrature_permutation,
+                                           void* custom_data)
+{{
+{tabulate_tensor}
+}}
+
+// End of code for sub-kernel {factory_name}
+"""

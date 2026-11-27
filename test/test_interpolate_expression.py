@@ -498,7 +498,8 @@ def test_interpolations_sharing_a_kernel(compile_args):
     options = ffcx.options.get_options({"scalar_type": "float64"})
     ir = ffcx.ir.representation.compute_ir(analysis, {}, "", options, None)
     assert len(analysis.sub_kernels) == 3  # two proxies in each expression
-    assert len(ir.expressions) == 3  # one kernel, shared, and the two expressions
+    assert len(ir.sub_kernels) == 1  # one kernel, shared
+    assert len(ir.expressions) == 2
 
     compiled, module = compile_expressions([(first, POINTS), (second, POINTS)], compile_args)
     u_values = coefficient_values(V2.ufl_element(), 0)
@@ -640,7 +641,10 @@ def test_sub_kernel_targets():
     proxy, table = interpolations
     assert isinstance(proxy, ffcx.analysis.ProxyCoefficient)
     assert isinstance(table, ufl.Interpolate)
-    assert set(analysis.sub_kernels) == {proxy, table}
+    assert proxy.is_interpolation
+    assert {sub_kernel.target for sub_kernel in analysis.sub_kernels} == {proxy, table}
+    for sub_kernel in analysis.sub_kernels:
+        assert sub_kernel.expression is not None and sub_kernel.form_data is None
 
     assert ffcx.analysis.sub_kernel_coefficients(proxy) == [u]
     assert ffcx.analysis.sub_kernel_constants(proxy) == [c]
@@ -648,7 +652,3 @@ def test_sub_kernel_targets():
     # The proxy coefficient stands for what it is evaluated from
     assert ffcx.analysis.required_coefficients(processed) == [u, z]
     assert ffcx.analysis.required_constants(processed) == [c]
-
-    # The kernels come before the expression that calls them
-    for index in analysis.sub_kernels.values():
-        assert index < len(analysis.expressions) - 1
