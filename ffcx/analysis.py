@@ -335,47 +335,6 @@ def interpolation_has_runtime_table(interpolation: ufl.Interpolate) -> bool:
     return interpolated_argument(interpolation) is None
 
 
-def check_interpolation(interpolation: ufl.Interpolate, argument: ufl.Argument | None) -> None:
-    """Check that an interpolation holding an argument can be turned into a table.
-
-    Args:
-        interpolation: A `ufl.Interpolate`.
-        argument: The argument it maps directly, or None if it interpolates an
-            expression merely linear in its arguments.
-    """
-    target = interpolation_target_space(interpolation).ufl_element()
-    if argument is not None:
-        # The argument's reference basis is pushed straight through the
-        # interpolation, so the table is known at compile time. That needs the
-        # Jacobian factors of the two pull backs to cancel and the block
-        # structures to line up.
-        source = argument.ufl_function_space().ufl_element()
-        if source.pullback != target.pullback:
-            raise NotImplementedError(
-                f"Interpolation of an argument from {source.pullback} to "
-                f"{target.pullback} is not supported."
-            )
-        if source.block_size != target.block_size:
-            raise NotImplementedError(
-                f"Interpolation of an argument from a block size {source.block_size} "
-                f"space into a block size {target.block_size} space is not supported."
-            )
-    else:
-        # The table has to be built for each cell from an expression kernel, see
-        # `ffcx.codegeneration.integral_generator.IntegralGenerator`.
-        _check_target_element(target)
-        if target.pullback != ufl.pullback.identity_pullback:
-            raise NotImplementedError(
-                f"Interpolating an expression into a {target.pullback} space is "
-                "only supported when the expression is the argument itself."
-            )
-        if target.block_size != target.reference_value_size:
-            raise NotImplementedError(
-                "Interpolating an expression into a non-blocked vector valued "
-                "space is only supported when the expression is the argument itself."
-            )
-
-
 def interpolation_points(element: basix.ufl._ElementBase) -> npt.NDArray[np.floating]:
     """Get the points that an expression is evaluated at to interpolate it into an element.
 
@@ -393,24 +352,26 @@ def interpolation_points(element: basix.ufl._ElementBase) -> npt.NDArray[np.floa
     return element.basix_element.points
 
 
-def _check_target_element(element: ufl.AbstractFiniteElement) -> None:
-    """Check that the table of an interpolation linear in an argument can be built per cell.
+def interpolation_block(element: basix.ufl._ElementBase, flat_component: int) -> tuple[int, int]:
+    """Get the first point and component of the sub-element holding a component.
 
-    The table contracts the target element table with the interpolation matrix
-    of a single basix element, see `ffcx.ir.elementtables`, which a mixed,
-    symmetric, quadrature or real space lacks.
+    That is, where the values of the sub-element start among the values of an
+    expression at the interpolation points of the element, see
+    `interpolation_points`. Both are zero unless the element is mixed.
 
     Args:
-        element: The element of the target space.
+        element: The element interpolated into.
+        flat_component: A component of its reference value.
     """
-    if (
-        not isinstance(element, (basix.ufl._BasixElement, basix.ufl._BlockedElement))
-        or element.is_symmetric
-        or element.has_custom_quadrature
-    ):
-        raise NotImplementedError(
-            f"Interpolating an expression into a {element} space is not supported."
-        )
+    point, component = 0, 0
+    while isinstance(element, basix.ufl._MixedElement):
+        for sub_element in element.sub_elements:
+            if flat_component < component + sub_element.reference_value_size:
+                element = sub_element
+                break
+            point += interpolation_points(sub_element).shape[0]
+            component += sub_element.reference_value_size
+    return point, component
 
 
 def check_interpolation_targets(o: ufl.Form | ufl.core.expr.Expr) -> None:
@@ -755,6 +716,13 @@ def _analyze_form(
             # argument, which clashes with the form's own argument of that
             # number once a derivative has been pushed into the interpolation.
             elements = ufl.algorithms.extract_elements(integrand)
+            # An interpolation with a table built for each cell is read at the
+            # quadrature points, which those of a quadrature target must be.
+            elements += tuple(
+                interpolation_target_space(node).ufl_element()
+                for node in unique_pre_traversal(integrand)
+                if isinstance(node, ufl.Interpolate)
+            )
 
             # Vertex integrals do not support discontinuous integrands.
             if integral.integral_type() == "vertex":
@@ -912,7 +880,13 @@ class IntermediateCoefficientReplacer(DAGTraverser):
         # is classified along with it, from the same processing.
         o = typing.cast(ufl.Interpolate, self.reuse_if_untouched(o))
         argument = _classify_interpolation(o, self._processing)
-        check_interpolation(o, argument)
+        if argument is not None:
+            source = argument.ufl_function_space().ufl_element()
+            target = interpolation_target_space(o).ufl_element()
+            if source.pullback != target.pullback or source.block_size != target.block_size:
+                # The map between the reference elements depends on the cell,
+                # so the table is built for each cell instead.
+                argument = None
         if argument is None:
             return o
         # Interpolating the argument itself is a fixed map between the
