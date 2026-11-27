@@ -1622,26 +1622,79 @@ def test_proxy_coefficients_are_not_form_coefficients():
     assert len(sub_kernels) == 1
 
 
-@pytest.mark.parametrize("kind", ["mixed", "symmetric", "quadrature", "real"])
-def test_unsupported_proxy_targets(kind):
-    """Interpolating an expression into a space without one basix element is reported.
+@pytest.mark.parametrize(
+    "kind",
+    [
+        "quadrature",
+        # Basix reports the reference value of a symmetric element with the
+        # shape of the block, which UFL's inverse pull back cannot fill, see
+        # https://github.com/FEniCS/basix/issues/1124
+        pytest.param(
+            "symmetric",
+            marks=pytest.mark.xfail(
+                strict=True,
+                raises=ValueError,
+                reason="Basix symmetric elements report a block-shaped reference value, "
+                "https://github.com/FEniCS/basix/issues/1124",
+            ),
+        ),
+        "mixed",
+        "real",
+    ],
+)
+def test_proxy_target_spaces(compile_args, kind):
+    """Interpolating an expression into a quadrature, symmetric, mixed or real space.
 
-    The dofs of a proxy coefficient are built from a single basix element
-    without symmetry, see `ffcx.analysis.check_proxy_targets`.
+    A quadrature space against the expression at its points. A symmetric space
+    against the full tensor space, a mixed space against its sub-spaces, and a
+    real space against DG0, which it is equivalent to on a cell, with quadratic
+    fields that they do not reproduce.
     """
-    P1 = basix.ufl.element("Lagrange", "triangle", 1)
-    target = {
-        "mixed": basix.ufl.mixed_element([P1, P1]),
-        "symmetric": basix.ufl.blocked_element(P1, shape=(2, 2), symmetry=True),
-        "quadrature": basix.ufl.quadrature_element("triangle", degree=2),
-        "real": basix.ufl.real_element("triangle"),
-    }[kind]
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
-    V = ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", "triangle", 2, shape=(2,)))
-    W = ufl.FunctionSpace(domain, target)
-    f = ufl.Coefficient(V)
-    expression = {(): f[0] * f[1], (2,): f, (2, 2): ufl.outer(f, f)}[W.value_shape]
-    q = ufl.Interpolate(expression, W)
+    x = ufl.SpatialCoordinate(domain)
 
-    with pytest.raises(NotImplementedError, match="is not supported"):
-        ffcx.analysis.analyze_ufl_objects([ufl.inner(q, q) * ufl.dx], np.float64)
+    def space(*args, **kwargs):
+        return ufl.FunctionSpace(domain, basix.ufl.element(*args, **kwargs))
+
+    interpolate = ufl.Interpolate
+    if kind == "quadrature":
+        Q = ufl.FunctionSpace(domain, basix.ufl.quadrature_element("triangle", degree=2))
+        forms = [interpolate(x[0] * x[1], Q) * ufl.dx, x[0] * x[1] * ufl.dx(degree=2)]
+    elif kind == "symmetric":
+        f = ufl.as_matrix([[x[0] * x[1], x[1] ** 2], [x[1] ** 2, x[0] ** 2]])
+        C = ufl.as_matrix([[1.0, 2.0], [3.0, 4.0]])
+        forms = [
+            ufl.inner(interpolate(f, space("Lagrange", "triangle", 1, **shape)), C) * ufl.dx
+            for shape in ({"shape": (2, 2), "symmetry": True}, {"shape": (2, 2)})
+        ]
+    elif kind == "real":
+        f = ufl.as_vector((x[0] * x[1], x[1] ** 2))
+        forms = [
+            ufl.dot(interpolate(f, ufl.FunctionSpace(domain, element)), ufl.as_vector((1.0, 2.0)))
+            * ufl.dx
+            for element in (
+                basix.ufl.real_element("triangle", (2,)),
+                basix.ufl.element("DG", "triangle", 0, shape=(2,)),
+            )
+        ]
+    else:
+        P1, RT = (
+            basix.ufl.element(*e) for e in (("Lagrange", "triangle", 1), ("RT", "triangle", 1))
+        )
+        mixed = ufl.FunctionSpace(domain, basix.ufl.mixed_element([P1, RT]))
+        f, g, c = x[0] * x[1], ufl.as_vector((x[0] ** 2, x[1])), ufl.as_vector((1.0, 2.0, 3.0))
+        forms = [
+            ufl.dot(interpolate(ufl.as_vector((f, g[0], g[1])), mixed), c) * ufl.dx,
+            (
+                interpolate(f, space("Lagrange", "triangle", 1))
+                + 2 * interpolate(g, space("RT", "triangle", 1))[0]
+                + 3 * interpolate(g, space("RT", "triangle", 1))[1]
+            )
+            * ufl.dx,
+        ]
+    compiled, module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms, cffi_extra_compile_args=compile_args
+    )
+    A, A_ref = (_tabulate_scalar(module, _integral(module, form)) for form in compiled)
+    assert abs(A_ref) > 1e-3
+    np.testing.assert_allclose(A, A_ref, rtol=1e-13)

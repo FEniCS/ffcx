@@ -376,6 +376,23 @@ def check_interpolation(interpolation: ufl.Interpolate, argument: ufl.Argument |
             )
 
 
+def interpolation_points(element: basix.ufl._ElementBase) -> npt.NDArray[np.floating]:
+    """Get the points that an expression is evaluated at to interpolate it into an element.
+
+    The degrees of freedom of a quadrature element are the values at its own
+    points. A mixed element interpolates each sub-element at its own points,
+    which follow one another.
+
+    Args:
+        element: The element interpolated into.
+    """
+    if isinstance(element, basix.ufl._MixedElement):
+        return np.vstack([interpolation_points(e) for e in element.sub_elements])
+    if element.has_custom_quadrature:
+        return element.custom_quadrature()[0]
+    return element.basix_element.points
+
+
 def _check_target_element(element: ufl.AbstractFiniteElement) -> None:
     """Check that an expression can be interpolated into an element.
 
@@ -394,24 +411,6 @@ def _check_target_element(element: ufl.AbstractFiniteElement) -> None:
         raise NotImplementedError(
             f"Interpolating an expression into a {element} space is not supported."
         )
-
-
-def check_proxy_targets(o: ufl.Form | ufl.core.expr.Expr) -> None:
-    """Check that each interpolation of an expression lands in a supported space.
-
-    Such an interpolation becomes a `ProxyCoefficient`, whose dofs are built by
-    `ffcx.codegeneration.interpolation`. This is checked before UFL maps the
-    interpolations onto their reference cells. An interpolation holding an
-    argument is checked by `check_interpolation` once it is classified.
-
-    Args:
-        o: A form or an expression, as given.
-    """
-    expressions = [itg.integrand() for itg in o.integrals()] if isinstance(o, ufl.Form) else [o]
-    for expression in expressions:
-        for node in unique_pre_traversal(expression):
-            if isinstance(node, ufl.Interpolate) and not interpolation_arguments(node):
-                _check_target_element(node.ufl_element())
 
 
 def interpolation_target_space(
@@ -566,7 +565,7 @@ def _analyze_interpolation(
     processed = _analyze_expression(expression, scalar_type, do_apply_function_pullbacks=False)
     element = interpolation.ufl_element()
     assert isinstance(element, basix.ufl._ElementBase)
-    return processed, element.basix_element.points, expression
+    return processed, interpolation_points(element), expression
 
 
 def _analyze_expression(
@@ -612,7 +611,6 @@ def _process_expression(
     # pushes a derivative into it.
     expression = apply_derivatives(lowered)
     if do_apply_function_pullbacks:
-        check_proxy_targets(expression)
         # The same passes, in the same order, as `ufl.algorithms.compute_form_data`
         expression = ufl.algorithms.apply_function_pullbacks.apply_function_pullbacks(expression)
     expression = apply_geometry_lowering(expression, preserve_geometry_types)
@@ -682,8 +680,7 @@ def _analyze_form(
 
     # Interpolations of an expression are left in the form for UFL to process,
     # so that it accounts for the coefficients they read, and replaced by proxy
-    # coefficients below. Fail early for the ones that cannot be.
-    check_proxy_targets(form)
+    # coefficients below.
 
     # Compute form metadata
     form_data = _compute_form_data(form, complex_mode, do_cancel_jacobian_products)

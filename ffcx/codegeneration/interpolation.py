@@ -28,7 +28,7 @@ import numpy as np
 import ufl
 
 import ffcx.codegeneration.lnodes as L
-from ffcx.analysis import ProxyCoefficient
+from ffcx.analysis import ProxyCoefficient, interpolation_points
 
 if typing.TYPE_CHECKING:
     from ffcx.codegeneration.backend import FFCXBackend
@@ -185,7 +185,7 @@ def _proxy_coefficients(kernels: list[SubKernelIR], backend: FFCXBackend) -> lis
             label = f"proxy{i}" if side == 0 else f"proxy{i}_{side}"
             values, declarations, statements = _call_kernel(kernel, label, backend, side)
             offset = offsets[proxy] + side * proxy.ufl_element().dim
-            statements += _interpolate(proxy, values, pw, offset, label, declarations)
+            statements += _interpolate(proxy.ufl_element(), values, pw, offset, label, declarations)
             parts.append(
                 L.Section(f"Proxy coefficient {i}", statements, declarations, input=[], output=[])
             )
@@ -193,31 +193,101 @@ def _proxy_coefficients(kernels: list[SubKernelIR], backend: FFCXBackend) -> lis
 
 
 def _interpolate(
-    proxy: ProxyCoefficient,
+    element: basix.ufl._ElementBase,
     values: L.Symbol,
     dofs: L.Symbol,
     offset: int,
     label: str,
     declarations: list[L.Declaration],
+    stride: int | None = None,
+    point_offset: int = 0,
+    component_offset: int = 0,
 ) -> list[L.LNode]:
     """Apply the interpolation matrix of the target element.
 
+    For a mixed element, the sub-kernel evaluates every component of the
+    interpolated expression at the interpolation points of every sub-element,
+    and each sub-element reads only the diagonal block of its own points and
+    components. For P1 x RT on a triangle, ``values`` has shape ``(6, 3)``, and
+    P1 reads rows 0-2 of column 0, and RT rows 3-5 of columns 1-2:
+
+    .. code-block:: c
+
+        for (int aj = 0; aj < 3; ++aj)
+          dofs[aj] = values[aj * 3];
+        for (int aj = 0; aj < 3; ++aj)
+        {
+          dofs[3 + aj] = 0.0;
+          for (int ak = 0; ak < 3; ++ak)
+            for (int ac = 0; ac < 2; ++ac)
+              dofs[3 + aj] += M[aj][ak * 2 + ac] * values[((ak + 3) * 3 + 1) + ac];
+        }
+
     Args:
-        proxy: The proxy coefficient.
-        values: The values of the interpolated expression, ``[point][component]``.
-        dofs: The array to write the degrees of freedom of the proxy to.
-        offset: Where the degrees of freedom of the proxy start in ``dofs``.
+        element: The finite element interpolated into.
+        values: The values the sub-kernel wrote, which are read: those of the
+            interpolated expression at the interpolation points, shape
+            ``(num_points, stride)``.
+        dofs: The array to write the degrees of freedom to.
+        offset: Where the degrees of freedom of the element start in ``dofs``.
         label: Prefix of the names of the arrays declared.
         declarations: Declarations to add to.
+        stride: The number of components of the values at each point, by
+            default the reference value size of the element.
+        point_offset: The first point of the element in the values, zero unless
+            it is a sub-element of a mixed element.
+        component_offset: The first component of the element in the values,
+            zero unless it is a sub-element of a mixed element.
     """
-    element = proxy.ufl_element()
+    stride = stride or element.reference_value_size
+    if isinstance(element, basix.ufl._MixedElement):
+        parts: list[L.LNode] = []
+        for i, sub_element in enumerate(element.sub_elements):
+            parts += _interpolate(
+                sub_element,
+                values,
+                dofs,
+                offset,
+                f"{label}_{i}",
+                declarations,
+                stride,
+                point_offset,
+                component_offset,
+            )
+            offset += sub_element.dim
+            point_offset += interpolation_points(sub_element).shape[0]
+            component_offset += sub_element.reference_value_size
+        return parts
+
+    block_size = element.block_size
+    j = L.Symbol("aj", dtype=L.DataType.INT)
+    b = L.Symbol("ab", dtype=L.DataType.INT)
+    # The dof of node j, and its block component b if there are several
+    dof = dofs[offset + j * block_size + b] if block_size > 1 else dofs[offset + j]
+
+    def value(point: L.LExpr, component: L.LExpr | None) -> L.LExpr:
+        """The value at a point of the element, and a component of it if not the first."""
+        index = (point + point_offset if point_offset else point) * stride
+        if component_offset:
+            index = index + component_offset
+        if component is not None:
+            index = index + component
+        return typing.cast(L.LExpr, values[index])
+
+    def over_blocks(body: list[L.LNode]) -> list[L.LNode]:
+        return [L.ForRange(b, 0, block_size, body)] if block_size > 1 else body
+
+    # The dofs of a quadrature element are its values at its points, and so
+    # are those of an element interpolating by point evaluation
+    if element.has_custom_quadrature or element.basix_element.interpolation_is_identity:
+        if point_offset == 0 and component_offset == 0 and stride == block_size:
+            return [L.ForRange(j, 0, element.dim, [L.Assign(dofs[offset + j], values[j])])]
+        copy = L.Assign(dof, value(j, b if block_size > 1 else None))
+        return [L.ForRange(j, 0, element.dim // block_size, over_blocks([copy]))]
+
     # For a blocked element, this is the scalar sub-element that each block
     # component is interpolated with.
     basix_element = element.basix_element
-    block_size = element.block_size
-    j = L.Symbol("aj", dtype=L.DataType.INT)
-    if basix_element.interpolation_is_identity:
-        return [L.ForRange(j, 0, element.dim, [L.Assign(dofs[offset + j], values[j])])]
 
     # The matrix is ordered [dof][component][point], while the values are
     # [point][component][block component].
@@ -229,18 +299,32 @@ def _interpolate(
     declarations.append(L.ArrayDecl(M, values=matrix, const=True))
 
     k = L.Symbol("ak", dtype=L.DataType.INT)
-    if block_size == 1:
-        dof, value = dofs[offset + j], values[k]
+    if point_offset == 0 and component_offset == 0 and stride == value_size * block_size:
+        # The values of the element are contiguous, [point][component][block component]
+        if block_size == 1:
+            dof, entry = dofs[offset + j], values[k]
+        else:
+            dof, entry = dofs[offset + j * block_size + b], values[k * block_size + b]
+        body: list[L.LNode] = [
+            L.Assign(dof, 0.0),
+            L.ForRange(k, 0, matrix.shape[1], [L.AssignAdd(dof, M[j][k] * entry)]),
+        ]
+        if block_size > 1:
+            body = [L.ForRange(b, 0, block_size, body)]
+        return [L.ForRange(j, 0, num_dofs, body)]
+
+    # A sub-element of a mixed element, whose values are a block of the values of
+    # the mixed element, see the docstring
+    if value_size == 1:
+        term: L.LNode = L.AssignAdd(dof, M[j][k] * value(k, b if block_size > 1 else None))
     else:
-        b = L.Symbol("ab", dtype=L.DataType.INT)
-        dof, value = dofs[offset + j * block_size + b], values[k * block_size + b]
-    body: list[L.LNode] = [
-        L.Assign(dof, 0.0),
-        L.ForRange(k, 0, matrix.shape[1], [L.AssignAdd(dof, M[j][k] * value)]),
-    ]
-    if block_size > 1:
-        body = [L.ForRange(b, 0, block_size, body)]
-    return [L.ForRange(j, 0, num_dofs, body)]
+        c = L.Symbol("ac", dtype=L.DataType.INT)
+        component = c * block_size + b if block_size > 1 else c
+        term = L.ForRange(
+            c, 0, value_size, [L.AssignAdd(dof, M[j][k * value_size + c] * value(k, component))]
+        )
+    body = [L.Assign(dof, 0.0), L.ForRange(k, 0, matrix.shape[1] // value_size, [term])]
+    return [L.ForRange(j, 0, num_dofs, over_blocks(body))]
 
 
 def _interpolated_tables(

@@ -42,6 +42,7 @@ from ffcx.analysis import (
     ProxyCoefficient,
     UFLData,
     integral_sub_kernel_targets,
+    interpolation_points,
     required_coefficients,
     required_constants,
     sub_kernel_coefficients,
@@ -663,7 +664,7 @@ def _compute_sub_kernel_irs(
         assert isinstance(element, basix.ufl._ElementBase)
         # The values of the expression at the points of the target element
         shape: tuple[int, ...] = (
-            element.basix_element.points.shape[0],
+            interpolation_points(element).shape[0],
             element.reference_value_size,
         )
         if isinstance(target, ufl.Interpolate):
