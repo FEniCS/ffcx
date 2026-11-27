@@ -49,11 +49,11 @@ def generator(ir: ExpressionIR, options):
     d["scalar_type"] = dtype_to_c_type(options["scalar_type"])
     d["geom_type"] = dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"]))
 
-    if ir.is_interpolation_kernel:
-        # Called by name from the kernels that hold the interpolation, which
-        # are generated after it in the same file, so nothing is declared.
-        d = {key: d[key] for key in template_keys(expression_template.interpolation_kernel)}
-        return "", expression_template.interpolation_kernel.format_map(d)
+    if ir.is_sub_kernel:
+        # Called by name from the kernels that hold the proxy coefficient,
+        # which are generated after it in the same file, so nothing is declared.
+        d = {key: d[key] for key in template_keys(expression_template.sub_kernel)}
+        return "", expression_template.sub_kernel.format_map(d)
 
     if len(ir.original_coefficient_positions) > 0:
         d["original_coefficient_positions"] = f"original_coefficient_positions_{factory_name}"

@@ -36,13 +36,13 @@ class {factory_name}:
 # End of code for expression {factory_name}
 """
 
-interpolation_kernel = """
-# Code for interpolation kernel {factory_name}
+sub_kernel = """
+# Code for sub-kernel {factory_name}
 
 @numba.njit
 def {factory_name}(A, w, c, coordinate_dofs, entity_local_index,
                   quadrature_permutation, custom_data):
 {tabulate_expression}
 
-# End of code for interpolation kernel {factory_name}
+# End of code for sub-kernel {factory_name}
 """

@@ -49,15 +49,15 @@ class UFLData(typing.NamedTuple):
     unique_coordinate_elements: list[basix.ufl._ElementBase]
     #: List of all expressions after post-processing, with evaluation points and original expression
     expressions: list[tuple[ufl.core.expr.Expr, npt.NDArray[np.floating], ufl.core.expr.Expr]]
-    #: The expression kernel that evaluates each interpolation at the points
-    #: of its target element, as an index into `expressions`
-    interpolation_kernels: dict[ProxyCoefficient | ufl.Interpolate, int]
+    #: The sub-kernel of each proxy coefficient, and of each interpolation whose
+    #: table is built for each cell, as an index into `expressions`
+    sub_kernels: dict[ProxyCoefficient | ufl.Interpolate, int]
 
 
-def kernel_interpolations(
+def sub_kernel_targets(
     expressions: typing.Iterable[ufl.core.expr.Expr],
 ) -> list[ProxyCoefficient | ufl.Interpolate]:
-    """Collect what needs an expression kernel evaluated at interpolation points.
+    """Collect what needs a sub-kernel called in the kernel of some expressions.
 
     A proxy coefficient always needs one: its degrees of freedom are built per
     cell by evaluating the interpolated expression. An interpolation that
@@ -96,19 +96,19 @@ def kernel_interpolations(
     return collected
 
 
-def integral_interpolations(
+def integral_sub_kernel_targets(
     itg_data: ufl.algorithms.domain_analysis.IntegralData,
 ) -> list[ProxyCoefficient | ufl.Interpolate]:
-    """Collect what needs an expression kernel evaluated in an integral.
+    """Collect what needs a sub-kernel called in an integral.
 
-    See `kernel_interpolations`. The proxy coefficients come first, ordered by
+    See `sub_kernel_targets`. The proxy coefficients come first, ordered by
     count, which is also the order they are numbered in within the kernel.
 
     Args:
         itg_data: The integral data of a form analysed by `_analyze_form`,
             whose integrands hold the proxy coefficients.
     """
-    return kernel_interpolations(integral.integrand() for integral in itg_data.integrals)
+    return sub_kernel_targets(integral.integrand() for integral in itg_data.integrals)
 
 
 def required_coefficients(expression: ufl.core.expr.Expr) -> list[ufl.Coefficient]:
@@ -142,32 +142,29 @@ def required_constants(expression: ufl.core.expr.Expr) -> list[ufl.Constant]:
     return typing.cast(list[ufl.Constant], sorted_by_count(constants))
 
 
-def interpolation_coefficients(
-    interpolation: ProxyCoefficient | ufl.Interpolate,
-) -> list[ufl.Coefficient]:
-    """Get the coefficients that the expression kernel of an interpolation reads.
+def sub_kernel_coefficients(target: ProxyCoefficient | ufl.Interpolate) -> list[ufl.Coefficient]:
+    """Get the coefficients that the sub-kernel of a proxy coefficient or an interpolation reads.
 
-    They are passed to the kernel in this order. It is taken from the expression
-    as given rather than as compiled, which may have lost some, so that two
-    interpolations that differ only in their coefficients share one kernel.
+    They are passed to the kernel in this order. They are taken from the
+    expression as given rather than as compiled, which may have lost some, so
+    that two proxies that differ only in their coefficients share one kernel.
 
     Args:
-        interpolation: A `ProxyCoefficient` or a `ufl.Interpolate`.
+        target: A `ProxyCoefficient`, or a `ufl.Interpolate` whose table is
+            built for each cell.
     """
-    return required_coefficients(interpolated_expression(interpolation))
+    return required_coefficients(interpolated_expression(target))
 
 
-def interpolation_constants(
-    interpolation: ProxyCoefficient | ufl.Interpolate,
-) -> list[ufl.Constant]:
-    """Get the constants that the expression kernel of an interpolation reads.
+def sub_kernel_constants(target: ProxyCoefficient | ufl.Interpolate) -> list[ufl.Constant]:
+    """Get the constants that the sub-kernel of a proxy coefficient or an interpolation reads.
 
-    They are passed to the kernel in this order, see `interpolation_coefficients`.
+    They are passed to the kernel in this order, see `sub_kernel_coefficients`.
 
     Args:
-        interpolation: A `ProxyCoefficient` or a `ufl.Interpolate`.
+        target: See `sub_kernel_coefficients`.
     """
-    return required_constants(interpolated_expression(interpolation))
+    return required_constants(interpolated_expression(target))
 
 
 def interpolated_expression(
@@ -490,35 +487,33 @@ def analyze_ufl_objects(
         elements += data.unique_sub_elements
         coordinate_elements += data.coordinate_elements
 
-    # Each interpolation that needs an expression kernel has it compiled as an
-    # expression of its own. A kernel is added before the expressions that call
-    # it, including the kernels of interpolations nested in its own expression,
-    # so that it is generated first.
-    interpolation_kernels: dict[ProxyCoefficient | ufl.Interpolate, int] = {}
+    # Each proxy coefficient, and each interpolation whose table is built for
+    # each cell, has its sub-kernel compiled as an expression of its own. A
+    # sub-kernel is added before the kernels that call it, including those of
+    # the targets nested in its own expression, so that it is generated first.
+    sub_kernels: dict[ProxyCoefficient | ufl.Interpolate, int] = {}
 
-    def add_interpolation_kernels(
-        interpolations: typing.Iterable[ProxyCoefficient | ufl.Interpolate],
-    ) -> None:
-        for interpolation in interpolations:
-            if interpolation in interpolation_kernels:
+    def add_sub_kernels(targets: typing.Iterable[ProxyCoefficient | ufl.Interpolate]) -> None:
+        for target in targets:
+            if target in sub_kernels:
                 continue
-            processed, points, mapped = _analyze_interpolation(interpolation, scalar_type)
+            processed, points, mapped = _analyze_interpolation(target, scalar_type)
             # A proxy coefficient is not a coefficient of the form, so its
             # element is not among those of the form data.
-            target = interpolation.ufl_element()
-            assert isinstance(target, basix.ufl._ElementBase)
-            elements.append(target)
+            element = target.ufl_element()
+            assert isinstance(element, basix.ufl._ElementBase)
+            elements.append(element)
             elements.extend(ufl.algorithms.extract_elements(mapped))
             elements.extend(ufl.algorithms.extract_elements(processed))
-            add_interpolation_kernels(kernel_interpolations([processed]))
-            interpolation_kernels[interpolation] = len(processed_expressions)
+            add_sub_kernels(sub_kernel_targets([processed]))
+            sub_kernels[target] = len(processed_expressions)
             processed_expressions.append((processed, points, mapped))
 
-    # The coefficients that the interpolations read are coefficients of the
-    # form, which UFL collects from inside the interpolations it processed.
+    # The coefficients that the sub-kernels read are coefficients of the form,
+    # which UFL collects from inside the interpolations it processed.
     for data in form_data:
         for itg_data in data.integral_data:
-            add_interpolation_kernels(integral_interpolations(itg_data))
+            add_sub_kernels(integral_sub_kernel_targets(itg_data))
 
     for original_expression, points in expressions:
         processed_expression = _analyze_expression(original_expression, scalar_type)
@@ -526,7 +521,7 @@ def analyze_ufl_objects(
         # coargument of an interpolation that is not inside another expression
         # as a free argument, which clashes with those of nested ones.
         elements += ufl.algorithms.extract_elements(processed_expression)
-        add_interpolation_kernels(kernel_interpolations([processed_expression]))
+        add_sub_kernels(sub_kernel_targets([processed_expression]))
         processed_expressions += [(processed_expression, points, original_expression)]
 
     elements += ufl.algorithms.analysis.extract_sub_elements(elements)
@@ -547,7 +542,7 @@ def analyze_ufl_objects(
         element_numbers=element_numbers,
         unique_coordinate_elements=unique_coordinate_element_list,
         expressions=processed_expressions,
-        interpolation_kernels=interpolation_kernels,
+        sub_kernels=sub_kernels,
     )
 
 

@@ -42,9 +42,9 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     body = "\n".join(["    " + line for line in body.split("\n")])
     d["tabulate_expression"] = body
 
-    if ir.is_interpolation_kernel:
-        d = {key: d[key] for key in template_keys(expression_template.interpolation_kernel)}
-        return (expression_template.interpolation_kernel.format_map(d),)
+    if ir.is_sub_kernel:
+        d = {key: d[key] for key in template_keys(expression_template.sub_kernel)}
+        return (expression_template.sub_kernel.format_map(d),)
 
     # tabulate_expression
     sizes = tensor_sizes(ir)
