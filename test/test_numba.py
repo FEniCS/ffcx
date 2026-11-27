@@ -159,25 +159,18 @@ def test_expression(scalar_type: str, generate_poisson: ModuleType) -> None:
     assert np.allclose(e, e_expected)
 
 
-@pytest.mark.parametrize("scalar_type", ["float32", "float64"])
+@pytest.mark.parametrize("dtype", ["float32", "float64"])  # TODO: complex limited by ctypes
 @pytest.mark.parametrize("element", [("Lagrange", 1), ("DG", 0)], ids=["P1", "DG0"])
-def test_interpolation(scalar_type: str, element: tuple[str, int], tmp_path: Path) -> None:
-    """A form holding an interpolation, and its derivative.
-
-    The interpolation of `u**2` is evaluated by a kernel the integral calls,
-    and `2 u du` in the derivative is linear in the argument, so its table is
-    built for each cell. The degrees of freedom of the target space are point
-    evaluations, so `I(f) = sum_i f(x_i) phi_i` over its interpolation points
-    `x_i`, and both forms are checked by hand.
-    """
+def test_interpolation(dtype: str, element: tuple[str, int], tmp_path: Path) -> None:
     mesh = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
     V = ufl.FunctionSpace(mesh, basix.ufl.element("Lagrange", "triangle", 2))
     W = ufl.FunctionSpace(mesh, basix.ufl.element(element[0], "triangle", element[1]))
+
     u = ufl.Coefficient(V)
     J = ufl.Interpolate(u**2, W) * ufl.dx
     dJ = ufl.derivative(J, u, ufl.TestFunction(V))
 
-    options = ffcx.options.get_options({"language": "numba", "scalar_type": scalar_type})
+    options = ffcx.options.get_options({"language": "numba", "scalar_type": dtype})
     (source,), (suffix,) = compile_ufl_objects(
         [J, dJ], options, object_names={id(J): "J", id(dJ): "dJ"}, namespace="interpolation"
     )
@@ -185,7 +178,6 @@ def test_interpolation(scalar_type: str, element: tuple[str, int], tmp_path: Pat
     path.write_text(source)
     module = load_module(path)
 
-    dtype = np.dtype(scalar_type).type
     dtype_r = dtype_to_scalar_dtype(dtype)
     w = np.array([0.5, -1.0, 2.0, 0.3, 0.7, -0.2], dtype=dtype)
     coords = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [0.0, 3.0, 0.0]], dtype=dtype_r)
