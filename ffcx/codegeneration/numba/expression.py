@@ -14,7 +14,7 @@ from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.common import template_keys, tensor_sizes
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
 from ffcx.codegeneration.numba import expression_template
-from ffcx.codegeneration.numba.formatter import Formatter, expression_kernel_name
+from ffcx.codegeneration.numba.formatter import Formatter
 from ffcx.ir.representation import ExpressionIR
 
 logger = logging.getLogger("ffcx")

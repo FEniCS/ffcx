@@ -15,16 +15,6 @@ from ffcx.codegeneration.interface import Formatter as FormatterInterface
 from ffcx.codegeneration.utils import dtype_to_scalar_dtype
 
 
-def expression_kernel_name(expression_name: str) -> str:
-    """Name of the kernel of an interpolation, generated from its expression.
-
-    It is a `numba.njit` compiled function on arrays rather than a
-    `tabulate_tensor` on raw pointers, which a kernel can not pass for its
-    local arrays.
-    """
-    return f"_tabulate_tensor_{expression_name}"
-
-
 def build_initializer_lists(values: npt.NDArray) -> str:
     """Build list of values."""
     arr = "["
@@ -107,7 +97,7 @@ class Formatter(FormatterInterface):
         if arr.values is None:
             return f"{symbol} = np.empty({arr.sizes}, dtype={typename})\n"
         elif arr.values.size == 1:
-            return f"{symbol} = np.full({arr.sizes}, {arr.values[0]}, dtype={typename})\n"
+            return f"{symbol} = np.full({arr.sizes}, {arr.values.flat[0]}, dtype={typename})\n"
         av = build_initializer_lists(arr.values)
         av = f"np.array({av}, dtype={typename})"
         return f"{symbol} = {av}\n"
@@ -116,7 +106,7 @@ class Formatter(FormatterInterface):
     def _(self, call: L.CallOp) -> str:
         """Format a call to a (sub-)kernel."""
         args = ", ".join(self(arg) for arg in call.args)
-        return f"{expression_kernel_name(call.func)}({args})\n"
+        return f"{call.func}({args})\n"
 
     @__call__.register
     def _(self, arr: L.ArrayAccess) -> str:
