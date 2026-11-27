@@ -318,10 +318,11 @@ def _interpolate(
     if value_size == 1:
         term: L.LNode = L.AssignAdd(dof, M[j][k] * value(k, b if block_size > 1 else None))
     else:
+        # Basix only blocks scalar elements
+        assert block_size == 1
         c = L.Symbol("ac", dtype=L.DataType.INT)
-        component = c * block_size + b if block_size > 1 else c
         term = L.ForRange(
-            c, 0, value_size, [L.AssignAdd(dof, M[j][k * value_size + c] * value(k, component))]
+            c, 0, value_size, [L.AssignAdd(dof, M[j][k * value_size + c] * value(k, c))]
         )
     body = [L.Assign(dof, 0.0), L.ForRange(k, 0, matrix.shape[1] // value_size, [term])]
     return [L.ForRange(j, 0, num_dofs, over_blocks(body))]

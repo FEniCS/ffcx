@@ -1123,20 +1123,22 @@ def _integral(module, form, subdomain_id=-1):
     raise KeyError(subdomain_id)
 
 
-def _tabulate_scalar(module, integral, coefficients=None, constants=None):
+def _tabulate_scalar(module, integral, coefficients=None, constants=None, dtype="float64"):
     """Tabulate a functional on an affine triangle."""
     ffi = module.ffi
-    coords = np.array([[0.1, 0.2, 0.0], [2.0, 0.3, 0.0], [0.4, 1.7, 0.0]]).flatten()
-    A = np.zeros(1)
+    xdtype = dtype_to_scalar_dtype(dtype)
+    coords = np.array([[0.1, 0.2, 0.0], [2.0, 0.3, 0.0], [0.4, 1.7, 0.0]], dtype=xdtype).flatten()
+    A = np.zeros(1, dtype=dtype)
 
-    def pointer(array):
-        return ffi.NULL if array is None else ffi.cast("double *", array.ctypes.data)
+    def pointer(array, c_type):
+        return ffi.NULL if array is None else ffi.cast(f"{c_type} *", array.ctypes.data)
 
-    integral.tabulate_tensor_float64(
-        pointer(A),
-        pointer(coefficients),
-        pointer(constants),
-        pointer(coords),
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+    getattr(integral, f"tabulate_tensor_{dtype}")(
+        pointer(A, c_type),
+        pointer(coefficients, c_type),
+        pointer(constants, c_type),
+        pointer(coords, c_xtype),
         ffi.NULL,
         ffi.NULL,
         ffi.NULL,
@@ -1255,32 +1257,6 @@ def test_two_interpolations_in_one_integral(compile_args):
     A, A_ref = (
         _tabulate_scalar(module, _integral(module, form), coefficients) for form in compiled
     )
-    np.testing.assert_allclose(A, A_ref, rtol=1e-13)
-
-
-def test_interpolate_into_blocked_space_with_interpolation_matrix(compile_args):
-    """A blocked target space whose interpolation matrix is not the identity.
-
-    Each block component is interpolated with the matrix of the scalar
-    sub-element. A linear field lies in the space, so it is reproduced.
-    """
-    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
-    element = basix.ufl.element(
-        "DG", "triangle", 1, shape=(2,), lagrange_variant=basix.LagrangeVariant.legendre
-    )
-    assert not element.basix_element.interpolation_is_identity
-    V = ufl.FunctionSpace(domain, element)
-    x = ufl.SpatialCoordinate(domain)
-    f = ufl.as_vector((x[0] - 2 * x[1], 0.5 + x[1]))
-    forms = [
-        ufl.dot(ufl.Interpolate(f, V), ufl.as_vector((1.0, 3.0))) * ufl.dx,
-        ufl.dot(f, ufl.as_vector((1.0, 3.0))) * ufl.dx,
-    ]
-    compiled, module, _ = ffcx.codegeneration.jit.compile_forms(
-        forms, cffi_extra_compile_args=compile_args
-    )
-    A, A_ref = (_tabulate_scalar(module, _integral(module, form)) for form in compiled)
-    assert abs(A_ref) > 1e-3
     np.testing.assert_allclose(A, A_ref, rtol=1e-13)
 
 
@@ -1640,13 +1616,16 @@ def test_proxy_coefficients_are_not_form_coefficients():
         ),
     ],
 )
-def test_interpolate_into_mixed_space(compile_args, symmetric):
+@pytest.mark.parametrize("dtype", ["float64", "float32"])
+def test_interpolate_into_mixed_space(compile_args, dtype, symmetric):
     """Interpolating an expression into a mixed space.
 
-    The space is P1 x (RT x quadrature), with symmetric tensor P1 added to the
-    inner mixed element if ``symmetric``. It holds a nested mixed element, a
-    Piola mapped sub-element and a quadrature sub-element, whose rule the
-    integral takes.
+    The space is vector DG1 x (RT x quadrature), with symmetric tensor P1 added
+    to the inner mixed element if ``symmetric``. It holds a nested mixed element,
+    a blocked sub-element whose interpolation matrix is not the identity, a Piola
+    mapped sub-element, and a quadrature sub-element, whose rule the integral
+    takes. As the reference interpolates into each sub-space, it holds several
+    proxy coefficients in one integral.
 
     It is checked twice: with a quadratic field, which the sub-spaces do not
     reproduce, against interpolations into each of them, the full tensor space
@@ -1656,31 +1635,34 @@ def test_interpolate_into_mixed_space(compile_args, symmetric):
     """
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
     x = ufl.SpatialCoordinate(domain)
-    P1 = basix.ufl.element("Lagrange", "triangle", 1)
+    DG1 = basix.ufl.element(
+        "DG", "triangle", 1, shape=(2,), lagrange_variant=basix.LagrangeVariant.legendre
+    )
+    assert not DG1.basix_element.interpolation_is_identity
     RT = basix.ufl.element("RT", "triangle", 1)
     Q = basix.ufl.quadrature_element("triangle", degree=2)
     S = basix.ufl.element("Lagrange", "triangle", 1, shape=(2, 2), symmetry=True)
     sub_elements = [RT, Q, S] if symmetric else [RT, Q]
     target = ufl.FunctionSpace(
-        domain, basix.ufl.mixed_element([P1, basix.ufl.mixed_element(sub_elements)])
+        domain, basix.ufl.mixed_element([DG1, basix.ufl.mixed_element(sub_elements)])
     )
     # The space of each part interpolated into for the reference
     references = {
-        "P1": P1,
+        "DG1": DG1,
         "RT": RT,
         "Q": Q,
         "S": basix.ufl.element("Lagrange", "triangle", 1, shape=(2, 2)),
     }
-    names = ["P1", "RT", "Q", "S"] if symmetric else ["P1", "RT", "Q"]
+    names = ["DG1", "RT", "Q", "S"] if symmetric else ["DG1", "RT", "Q"]
     quadratic = {
-        "P1": x[0] * x[1],
+        "DG1": ufl.as_vector((x[0] * x[1], x[1] ** 2)),
         "RT": ufl.as_vector((x[0] ** 2, x[1])),
         "Q": x[0] ** 2 * x[1],
         "S": ufl.as_matrix([[x[0] * x[1], x[1] ** 2], [x[1] ** 2, x[0] ** 2]]),
     }
-    # In P1, RT and symmetric P1, and integrated exactly by the quadrature rule
+    # In DG1, RT and symmetric P1, and integrated exactly by the quadrature rule
     reproduced = {
-        "P1": 1 + 2 * x[0] - x[1],
+        "DG1": ufl.as_vector((1 + 2 * x[0] - x[1], 3 - x[0])),
         "RT": ufl.as_vector((1 + x[0] / 2, -2 + x[1] / 2)),
         "Q": x[0] * x[1],
         "S": ufl.as_matrix([[1 + x[0], x[1]], [x[1], 2 - x[0]]]),
@@ -1708,9 +1690,9 @@ def test_interpolate_into_mixed_space(compile_args, symmetric):
         ufl.inner(combine(reproduced), C) * ufl.dx,
     ]
     compiled, module, _ = ffcx.codegeneration.jit.compile_forms(
-        forms, cffi_extra_compile_args=compile_args
+        forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
     )
-    A = [_tabulate_scalar(module, _integral(module, form)) for form in compiled]
+    A = [_tabulate_scalar(module, _integral(module, form), dtype=dtype) for form in compiled]
     for value, value_ref in ((A[0], A[1]), (A[2], A[3])):
         assert abs(value_ref) > 1e-3
-        np.testing.assert_allclose(value, value_ref, rtol=1e-13)
+        np.testing.assert_allclose(value, value_ref, rtol=500 * np.finfo(dtype).eps)
