@@ -3,13 +3,14 @@
 from typing import TYPE_CHECKING
 
 from ffcx.codegeneration import interface
-from ffcx.codegeneration.C import expression, file, form, integral
+from ffcx.codegeneration.C import expression, external, file, form, integral
 
 from .formatter import Formatter
 
 __all__ = [
     "Formatter",
     "expression",
+    "external",
     "file",
     "form",
     "integral",

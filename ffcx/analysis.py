@@ -49,15 +49,15 @@ class UFLData(typing.NamedTuple):
     unique_coordinate_elements: list[basix.ufl._ElementBase]
     #: List of all expressions after post-processing, with evaluation points and original expression
     expressions: list[tuple[ufl.core.expr.Expr, npt.NDArray[np.floating], ufl.core.expr.Expr]]
-    #: The expression kernel that evaluates each interpolation at the points
-    #: of its target element, as an index into `expressions`
-    interpolation_kernels: dict[ProxyCoefficient | ufl.Interpolate, int]
+    #: The sub-kernel of each proxy coefficient, and of each interpolation whose
+    #: table is built for each cell, as an index into `expressions`
+    sub_kernels: dict[ProxyCoefficient | ufl.Interpolate, int]
 
 
-def kernel_interpolations(
+def sub_kernel_targets(
     expressions: typing.Iterable[ufl.core.expr.Expr],
 ) -> list[ProxyCoefficient | ufl.Interpolate]:
-    """Collect what needs an expression kernel evaluated at interpolation points.
+    """Collect what needs a sub-kernel called in the kernel of some expressions.
 
     A proxy coefficient always needs one: its degrees of freedom are built per
     cell by evaluating the interpolated expression. An interpolation that
@@ -96,19 +96,19 @@ def kernel_interpolations(
     return collected
 
 
-def integral_interpolations(
+def integral_sub_kernel_targets(
     itg_data: ufl.algorithms.domain_analysis.IntegralData,
 ) -> list[ProxyCoefficient | ufl.Interpolate]:
-    """Collect what needs an expression kernel evaluated in an integral.
+    """Collect what needs a sub-kernel called in an integral.
 
-    See `kernel_interpolations`. The proxy coefficients come first, ordered by
+    See `sub_kernel_targets`. The proxy coefficients come first, ordered by
     count, which is also the order they are numbered in within the kernel.
 
     Args:
         itg_data: The integral data of a form analysed by `_analyze_form`,
             whose integrands hold the proxy coefficients.
     """
-    return kernel_interpolations(integral.integrand() for integral in itg_data.integrals)
+    return sub_kernel_targets(integral.integrand() for integral in itg_data.integrals)
 
 
 def required_coefficients(expression: ufl.core.expr.Expr) -> list[ufl.Coefficient]:
@@ -142,32 +142,29 @@ def required_constants(expression: ufl.core.expr.Expr) -> list[ufl.Constant]:
     return typing.cast(list[ufl.Constant], sorted_by_count(constants))
 
 
-def interpolation_coefficients(
-    interpolation: ProxyCoefficient | ufl.Interpolate,
-) -> list[ufl.Coefficient]:
-    """Get the coefficients that the expression kernel of an interpolation reads.
+def sub_kernel_coefficients(target: ProxyCoefficient | ufl.Interpolate) -> list[ufl.Coefficient]:
+    """Get the coefficients that the sub-kernel of a proxy coefficient or an interpolation reads.
 
-    They are passed to the kernel in this order. It is taken from the expression
-    as given rather than as compiled, which may have lost some, so that two
-    interpolations that differ only in their coefficients share one kernel.
+    They are passed to the kernel in this order. They are taken from the
+    expression as given rather than as compiled, which may have lost some, so
+    that two proxies that differ only in their coefficients share one kernel.
 
     Args:
-        interpolation: A `ProxyCoefficient` or a `ufl.Interpolate`.
+        target: A `ProxyCoefficient`, or a `ufl.Interpolate` whose table is
+            built for each cell.
     """
-    return required_coefficients(interpolated_expression(interpolation))
+    return required_coefficients(interpolated_expression(target))
 
 
-def interpolation_constants(
-    interpolation: ProxyCoefficient | ufl.Interpolate,
-) -> list[ufl.Constant]:
-    """Get the constants that the expression kernel of an interpolation reads.
+def sub_kernel_constants(target: ProxyCoefficient | ufl.Interpolate) -> list[ufl.Constant]:
+    """Get the constants that the sub-kernel of a proxy coefficient or an interpolation reads.
 
-    They are passed to the kernel in this order, see `interpolation_coefficients`.
+    They are passed to the kernel in this order, see `sub_kernel_coefficients`.
 
     Args:
-        interpolation: A `ProxyCoefficient` or a `ufl.Interpolate`.
+        target: See `sub_kernel_coefficients`.
     """
-    return required_constants(interpolated_expression(interpolation))
+    return required_constants(interpolated_expression(target))
 
 
 def interpolated_expression(
@@ -490,35 +487,33 @@ def analyze_ufl_objects(
         elements += data.unique_sub_elements
         coordinate_elements += data.coordinate_elements
 
-    # Each interpolation that needs an expression kernel has it compiled as an
-    # expression of its own. A kernel is added before the expressions that call
-    # it, including the kernels of interpolations nested in its own expression,
-    # so that it is generated first.
-    interpolation_kernels: dict[ProxyCoefficient | ufl.Interpolate, int] = {}
+    # Each proxy coefficient, and each interpolation whose table is built for
+    # each cell, has its sub-kernel compiled as an expression of its own. A
+    # sub-kernel is added before the kernels that call it, including those of
+    # the targets nested in its own expression, so that it is generated first.
+    sub_kernels: dict[ProxyCoefficient | ufl.Interpolate, int] = {}
 
-    def add_interpolation_kernels(
-        interpolations: typing.Iterable[ProxyCoefficient | ufl.Interpolate],
-    ) -> None:
-        for interpolation in interpolations:
-            if interpolation in interpolation_kernels:
+    def add_sub_kernels(targets: typing.Iterable[ProxyCoefficient | ufl.Interpolate]) -> None:
+        for target in targets:
+            if target in sub_kernels:
                 continue
-            processed, points, mapped = _analyze_interpolation(interpolation, scalar_type)
+            processed, points, mapped = _analyze_interpolation(target, scalar_type)
             # A proxy coefficient is not a coefficient of the form, so its
             # element is not among those of the form data.
-            target = interpolation.ufl_element()
-            assert isinstance(target, basix.ufl._ElementBase)
-            elements.append(target)
+            element = target.ufl_element()
+            assert isinstance(element, basix.ufl._ElementBase)
+            elements.append(element)
             elements.extend(ufl.algorithms.extract_elements(mapped))
             elements.extend(ufl.algorithms.extract_elements(processed))
-            add_interpolation_kernels(kernel_interpolations([processed]))
-            interpolation_kernels[interpolation] = len(processed_expressions)
+            add_sub_kernels(sub_kernel_targets([processed]))
+            sub_kernels[target] = len(processed_expressions)
             processed_expressions.append((processed, points, mapped))
 
-    # The coefficients that the interpolations read are coefficients of the
-    # form, which UFL collects from inside the interpolations it processed.
+    # The coefficients that the sub-kernels read are coefficients of the form,
+    # which UFL collects from inside the interpolations it processed.
     for data in form_data:
         for itg_data in data.integral_data:
-            add_interpolation_kernels(integral_interpolations(itg_data))
+            add_sub_kernels(integral_sub_kernel_targets(itg_data))
 
     for original_expression, points in expressions:
         processed_expression = _analyze_expression(original_expression, scalar_type)
@@ -526,7 +521,7 @@ def analyze_ufl_objects(
         # coargument of an interpolation that is not inside another expression
         # as a free argument, which clashes with those of nested ones.
         elements += ufl.algorithms.extract_elements(processed_expression)
-        add_interpolation_kernels(kernel_interpolations([processed_expression]))
+        add_sub_kernels(sub_kernel_targets([processed_expression]))
         processed_expressions += [(processed_expression, points, original_expression)]
 
     elements += ufl.algorithms.analysis.extract_sub_elements(elements)
@@ -547,7 +542,7 @@ def analyze_ufl_objects(
         element_numbers=element_numbers,
         unique_coordinate_elements=unique_coordinate_element_list,
         expressions=processed_expressions,
-        interpolation_kernels=interpolation_kernels,
+        sub_kernels=sub_kernels,
     )
 
 
@@ -815,35 +810,86 @@ def _has_custom_integrals(
 
 
 class ProxyCoefficient(ufl.Coefficient):
-    """A coefficient that stands for an interpolation of an expression.
+    """A coefficient that stands for an interpolation, or an external operator.
 
-    Its degrees of freedom are built in the kernel, by evaluating the expression
-    at the interpolation points of the target element, see
-    `ffcx.codegeneration.interpolation`.
+    Its degrees of freedom are built in the kernel, by evaluating an expression
+    at the interpolation points of the target element in a sub-kernel of its
+    own, see `ffcx.codegeneration.interpolation`. For an interpolation that is
+    the interpolated expression, and for an external operator its operands,
+    which the function evaluating it maps onto its values.
     """
 
-    _operator: ufl.Interpolate
+    _operator: ufl.Interpolate | ufl.ExternalOperator
 
-    def __init__(self, V: ufl.FunctionSpace, operator: ufl.Interpolate):
+    def __init__(self, V: ufl.FunctionSpace, operator: ufl.Interpolate | ufl.ExternalOperator):
         """Initialise.
 
         Args:
-            V: The space interpolated into.
+            V: The space interpolated into, or that the external operator is a
+                function of.
             operator: The interpolation, of an expression already mapped onto
-                the reference cell of the target element.
+                the reference cell of the target element, or the external
+                operator.
         """
         self._operator = operator
         super().__init__(V)
 
     @property
     def operand(self) -> ufl.core.expr.Expr:
-        """The expression interpolated, on the reference cell of the target element."""
+        """The expression its sub-kernel evaluates at the points of the target element.
+
+        For an interpolation, the expression interpolated, on the reference cell
+        of the target element. For an external operator, its operands, as one
+        vector of their flattened components.
+        """
+        if isinstance(self._operator, ufl.ExternalOperator):
+            components = [
+                operand[index] if operand.ufl_shape else operand
+                for operand in self._operator.ufl_operands
+                for index in itertools.product(*(range(n) for n in operand.ufl_shape))
+            ]
+            return typing.cast(ufl.core.expr.Expr, ufl.as_vector(components))
         return self._operator.ufl_operands[0]
 
     @property
-    def operator(self) -> ufl.Interpolate:
-        """The interpolation that this proxy coefficient stands for."""
+    def operator(self) -> ufl.Interpolate | ufl.ExternalOperator:
+        """The interpolation or external operator that this proxy coefficient stands for."""
         return self._operator
+
+    @property
+    def external(self) -> ufl.ExternalOperator | None:
+        """The external operator this proxy coefficient stands for, if it stands for one."""
+        return self._operator if isinstance(self._operator, ufl.ExternalOperator) else None
+
+
+class _RestrictionStripper(DAGTraverser):
+    """Strip the restrictions of an expression, collecting the sides stripped."""
+
+    def __init__(self) -> None:
+        """Initialise."""
+        super().__init__()
+        self.sides: set[str] = set()
+
+    @singledispatchmethod
+    def process(self, o: ufl.core.expr.Expr) -> ufl.core.expr.Expr:
+        """Strip the restrictions of an expression.
+
+        Args:
+            o: The expression.
+        """
+        return typing.cast(ufl.core.expr.Expr, super().process(o))
+
+    @process.register(ufl.classes.Restricted)
+    @DAGTraverser.postorder
+    def _(self, o: ufl.classes.Restricted, operand: ufl.core.expr.Expr) -> ufl.core.expr.Expr:
+        """Handle a restriction."""
+        self.sides.add(o.side())
+        return operand
+
+    @process.register(ufl.core.expr.Expr)
+    def _(self, o: ufl.core.expr.Expr) -> ufl.core.expr.Expr:
+        """Handle anything else."""
+        return self.reuse_if_untouched(o)
 
 
 class IntermediateCoefficientReplacer(DAGTraverser):
@@ -894,6 +940,54 @@ class IntermediateCoefficientReplacer(DAGTraverser):
         return typing.cast(
             ufl.core.expr.Expr, o._ufl_expr_reconstruct_(ufl.classes.ReferenceValue(argument))
         )
+
+    @process.register(ufl.ExternalOperator)
+    def _(self, o: ufl.ExternalOperator) -> ufl.core.expr.Expr:
+        """Handle an external operator, which a function evaluates.
+
+        Whether the operator provides that function in the form the backend
+        requires is checked when generating code, see for the C backend
+        `ffcx.codegeneration.C.external.CExternalOperator`.
+
+        UFL has no rule estimating the polynomial degree of an external
+        operator, and warns and falls back to a default. Until it has one, set
+        the quadrature degree of integrals holding one explicitly.
+        """
+        if any(o.derivatives):
+            raise NotImplementedError(
+                f"Derivatives of the external operator {type(o).__name__} are not supported: "
+                "they would need functions of their own."
+            )
+        if any(ufl.algorithms.extract_arguments(operand) for operand in o.ufl_operands):
+            raise NotImplementedError(
+                f"The operands of the external operator {type(o).__name__} may not hold arguments."
+            )
+        V = o.ufl_function_space()
+        element = V.ufl_element()
+        if (
+            not isinstance(element, basix.ufl._BasixElement | basix.ufl._BlockedElement)
+            or element.is_symmetric
+            or element.pullback != ufl.pullback.identity_pullback
+        ):
+            raise NotImplementedError(
+                f"The external operator {type(o).__name__} is only supported in a space with the "
+                f"identity pull back, not {element}."
+            )
+        # On an interior facet UFL propagates the restrictions into the
+        # operands, while the operator is built on the cell of one side, which
+        # the proxy coefficient is read on.
+        stripper = _RestrictionStripper()
+        operands = [stripper(operand) for operand in o.ufl_operands]
+        if len(stripper.sides) > 1:
+            raise ValueError(
+                f"The operands of the external operator {type(o).__name__} are on both sides."
+            )
+        side = next(iter(stripper.sides), None)
+        proxy = ProxyCoefficient(V, o._ufl_expr_reconstruct_(*operands))
+        # UFL does not pull the operator back, so it is read as the reference
+        # value of a coefficient whose pull back is the identity.
+        value = ufl.classes.ReferenceValue(proxy)
+        return typing.cast(ufl.core.expr.Expr, value(side) if side else value)
 
     @process.register(ufl.core.expr.Expr)
     def _(self, o: ufl.core.expr.Expr) -> ufl.core.expr.Expr:

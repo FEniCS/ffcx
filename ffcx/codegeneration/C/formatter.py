@@ -248,7 +248,8 @@ class Formatter(FormatterInterface):
     def _(self, call: L.CallOp) -> str:
         """Format a call to a (sub-)kernel."""
         args = ", ".join(self(arg) for arg in call.args)
-        return f"tabulate_tensor_{call.func}({args});\n"
+        function = f"tabulate_tensor_{call.func}" if call.generated else call.func
+        return f"{function}({args});\n"
 
     @__call__.register
     def _(self, arr: L.ArrayAccess) -> str:
