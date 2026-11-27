@@ -43,10 +43,7 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     d["tabulate_expression"] = body
 
     if ir.is_interpolation_kernel:
-        # A kernel on arrays, which the kernels holding the interpolation call
-        # with their local arrays, see `Formatter`. It is not exported.
         d = {key: d[key] for key in template_keys(expression_template.interpolation_kernel)}
-        # assert set(kernel) == template_keys(expression_template.interpolation_kernel)
         return (expression_template.interpolation_kernel.format_map(d),)
 
     # tabulate_expression
