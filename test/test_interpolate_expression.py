@@ -592,31 +592,18 @@ def test_unsupported_interpolations():
     with pytest.raises(NotImplementedError, match="space is only supported"):
         ffcx.codegeneration.jit.compile_expressions([(ufl.Interpolate(ufl.grad(v), W), POINTS)])
 
-    # The dofs of a proxy coefficient are built from a single basix element
-    x = ufl.SpatialCoordinate(mesh)
-    symmetric = space(mesh, "Lagrange", 1, shape=(2, 2), symmetry=True)
-    mixed = ufl.FunctionSpace(
-        mesh,
-        basix.ufl.mixed_element(
-            [basix.ufl.element("Lagrange", CELL, 1), basix.ufl.element("N1curl", CELL, 1)]
-        ),
-    )
-    for target, expression in [
-        (symmetric, ufl.as_matrix([[x[0], x[1]], [x[1], 1.0]])),
-        (mixed, ufl.as_vector((x[0], x[1], 1.0))),
-    ]:
-        with pytest.raises(NotImplementedError, match="space is not supported"):
-            ffcx.codegeneration.jit.compile_expressions(
-                [(ufl.Interpolate(expression, target), POINTS)]
-            )
-
-    # As is the kernel evaluating an expression that is only linear in the
-    # argument at the interpolation points of the target
+    # The table built for each cell evaluates an expression that is only
+    # linear in the argument at the points of a single basix element
     quadrature = ufl.FunctionSpace(mesh, basix.ufl.quadrature_element(CELL, degree=2))
+    blocked_quadrature = ufl.FunctionSpace(
+        mesh, basix.ufl.quadrature_element(CELL, value_shape=(1,), degree=2)
+    )
     real = ufl.FunctionSpace(mesh, basix.ufl.real_element(CELL, ()))
-    for target in [quadrature, real]:
+    for target in [quadrature, blocked_quadrature, real]:
+        expression = u * v if target.value_shape == () else ufl.as_vector([u * v])
+        q = ufl.Interpolate(expression, target)
         with pytest.raises(NotImplementedError, match="space is not supported"):
-            ffcx.codegeneration.jit.compile_forms([ufl.Interpolate(u * v, target) * ufl.dx])
+            ffcx.codegeneration.jit.compile_forms([(q if q.ufl_shape == () else q[0]) * ufl.dx])
 
 
 def test_sub_kernel_targets():

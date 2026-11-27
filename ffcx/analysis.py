@@ -376,13 +376,29 @@ def check_interpolation(interpolation: ufl.Interpolate, argument: ufl.Argument |
             )
 
 
-def _check_target_element(element: ufl.AbstractFiniteElement) -> None:
-    """Check that an expression can be interpolated into an element.
+def interpolation_points(element: basix.ufl._ElementBase) -> npt.NDArray[np.floating]:
+    """Get the points that an expression is evaluated at to interpolate it into an element.
 
-    The expression is evaluated at the interpolation points of the element by
-    a kernel that `ffcx.codegeneration.interpolation` builds from a single
-    basix element without symmetry, which a mixed, symmetric, quadrature or
-    real space lacks.
+    The degrees of freedom of a quadrature element are the values at its own
+    points. A mixed element interpolates each sub-element at its own points,
+    which follow one another.
+
+    Args:
+        element: The element interpolated into.
+    """
+    if isinstance(element, basix.ufl._MixedElement):
+        return np.vstack([interpolation_points(e) for e in element.sub_elements])
+    if element.has_custom_quadrature:
+        return element.custom_quadrature()[0]
+    return element.basix_element.points
+
+
+def _check_target_element(element: ufl.AbstractFiniteElement) -> None:
+    """Check that the table of an interpolation linear in an argument can be built per cell.
+
+    The table contracts the target element table with the interpolation matrix
+    of a single basix element, see `ffcx.ir.elementtables`, which a mixed,
+    symmetric, quadrature or real space lacks.
 
     Args:
         element: The element of the target space.
@@ -390,19 +406,20 @@ def _check_target_element(element: ufl.AbstractFiniteElement) -> None:
     if (
         not isinstance(element, (basix.ufl._BasixElement, basix.ufl._BlockedElement))
         or element.is_symmetric
+        or element.has_custom_quadrature
     ):
         raise NotImplementedError(
             f"Interpolating an expression into a {element} space is not supported."
         )
 
 
-def check_proxy_targets(o: ufl.Form | ufl.core.expr.Expr) -> None:
-    """Check that each interpolation of an expression lands in a supported space.
+def check_interpolation_targets(o: ufl.Form | ufl.core.expr.Expr) -> None:
+    """Check that UFL can map each interpolation onto the reference cell of its target.
 
-    Such an interpolation becomes a `ProxyCoefficient`, whose dofs are built by
-    `ffcx.codegeneration.interpolation`. This is checked before UFL maps the
-    interpolations onto their reference cells. An interpolation holding an
-    argument is checked by `check_interpolation` once it is classified.
+    UFL's inverse pull back of a symmetric element fills a reference value with
+    one entry per independent component, while basix reports one with the shape
+    of the block, see https://github.com/FEniCS/basix/issues/1124. This is
+    checked before UFL maps the interpolations.
 
     Args:
         o: A form or an expression, as given.
@@ -410,8 +427,22 @@ def check_proxy_targets(o: ufl.Form | ufl.core.expr.Expr) -> None:
     expressions = [itg.integrand() for itg in o.integrals()] if isinstance(o, ufl.Form) else [o]
     for expression in expressions:
         for node in unique_pre_traversal(expression):
-            if isinstance(node, ufl.Interpolate) and not interpolation_arguments(node):
-                _check_target_element(node.ufl_element())
+            if isinstance(node, ufl.Interpolate):
+                _check_symmetric_reference_value(interpolation_target_space(node).ufl_element())
+
+
+def _check_symmetric_reference_value(element: ufl.AbstractFiniteElement) -> None:
+    """Check that a symmetric element, or sub-element, stores its whole reference value."""
+    assert isinstance(element, basix.ufl._ElementBase)
+    if isinstance(element, basix.ufl._MixedElement):
+        for sub_element in element.sub_elements:
+            _check_symmetric_reference_value(sub_element)
+    elif element.is_symmetric and element.reference_value_size != element.block_size:
+        raise NotImplementedError(
+            "Interpolating into a symmetric space is not supported while basix reports its "
+            "reference value with the shape of the block, see "
+            "https://github.com/FEniCS/basix/issues/1124."
+        )
 
 
 def interpolation_target_space(
@@ -566,7 +597,7 @@ def _analyze_interpolation(
     processed = _analyze_expression(expression, scalar_type, do_apply_function_pullbacks=False)
     element = interpolation.ufl_element()
     assert isinstance(element, basix.ufl._ElementBase)
-    return processed, element.basix_element.points, expression
+    return processed, interpolation_points(element), expression
 
 
 def _analyze_expression(
@@ -612,7 +643,7 @@ def _process_expression(
     # pushes a derivative into it.
     expression = apply_derivatives(lowered)
     if do_apply_function_pullbacks:
-        check_proxy_targets(expression)
+        check_interpolation_targets(expression)
         # The same passes, in the same order, as `ufl.algorithms.compute_form_data`
         expression = ufl.algorithms.apply_function_pullbacks.apply_function_pullbacks(expression)
     expression = apply_geometry_lowering(expression, preserve_geometry_types)
@@ -682,8 +713,8 @@ def _analyze_form(
 
     # Interpolations of an expression are left in the form for UFL to process,
     # so that it accounts for the coefficients they read, and replaced by proxy
-    # coefficients below. Fail early for the ones that cannot be.
-    check_proxy_targets(form)
+    # coefficients below.
+    check_interpolation_targets(form)
 
     # Compute form metadata
     form_data = _compute_form_data(form, complex_mode, do_cancel_jacobian_products)
