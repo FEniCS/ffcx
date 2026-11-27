@@ -365,8 +365,10 @@ def _interpolated_tables(
 
     for name, data in sorted(interpolated_tables.items()):
         values, (_, value_size, *dof_dims) = evaluated[data.interpolation]
+        # The contraction has a column for each component and point
         num_quadrature_points, num_columns = data.contraction.shape
-        num_points = num_columns // len(data.components)
+        num_components = len(data.components)
+        num_points = num_columns // num_components
 
         table = L.Symbol(name, dtype=L.DataType.SCALAR)
         backend.symbols.element_tables[name] = table
@@ -376,12 +378,12 @@ def _interpolated_tables(
         ap = L.Symbol("ap", dtype=L.DataType.INT)
         ac = L.Symbol("ac", dtype=L.DataType.INT)
         component: L.LExpr | int
-        if len(data.components) == 1:
+        if num_components == 1:
             (component,), column = data.components, ap
         else:
             # The contraction runs over the components, then the points
             first = data.components[0]
-            assert data.components == tuple(range(first, first + len(data.components)))
+            assert data.components == tuple(range(first, first + num_components))
             component, column = (first + ac if first else ac), ac * num_points + ap
         point = ap + data.point_offset if data.point_offset else ap
         dof_indices = [L.Symbol(f"ad{axis}", dtype=L.DataType.INT) for axis in range(len(dof_dims))]
@@ -411,8 +413,8 @@ def _interpolated_tables(
         term: L.LNode = L.ForRange(
             ap, 0, num_points, [L.AssignAdd(entry, contraction[aq][column] * values[flat_index])]
         )
-        if len(data.components) > 1:
-            term = L.ForRange(ac, 0, len(data.components), [term])
+        if num_components > 1:
+            term = L.ForRange(ac, 0, num_components, [term])
         body: list[L.LNode] = [L.Assign(entry, 0.0), term]
         for index, dim in zip(reversed(dof_indices), reversed(dof_dims)):
             body = [L.ForRange(index, 0, dim, body)]
