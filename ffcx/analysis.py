@@ -394,12 +394,11 @@ def interpolation_points(element: basix.ufl._ElementBase) -> npt.NDArray[np.floa
 
 
 def _check_target_element(element: ufl.AbstractFiniteElement) -> None:
-    """Check that an expression can be interpolated into an element.
+    """Check that the table of an interpolation linear in an argument can be built per cell.
 
-    The expression is evaluated at the interpolation points of the element by
-    a kernel that `ffcx.codegeneration.interpolation` builds from a single
-    basix element without symmetry, which a mixed, symmetric, quadrature or
-    real space lacks.
+    The table contracts the target element table with the interpolation matrix
+    of a single basix element, see `ffcx.ir.elementtables`, which a mixed,
+    symmetric, quadrature or real space lacks.
 
     Args:
         element: The element of the target space.
