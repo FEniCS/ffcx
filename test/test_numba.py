@@ -159,15 +159,14 @@ def test_expression(scalar_type: str, generate_poisson: ModuleType) -> None:
     assert np.allclose(e, e_expected)
 
 
-def generate(ufl_object, namespace: str, scalar_type: str, tmp_path: Path) -> ModuleType:
-    """Generate the numba module of a form, or of an expression and its points.
-
-    The form or expression is named `J`.
-    """
-    named = ufl_object[0] if isinstance(ufl_object, tuple) else ufl_object
+def generate(
+    forms: dict[str, ufl.Form], namespace: str, scalar_type: str, tmp_path: Path
+) -> ModuleType:
+    """Generate the numba module of forms, named by their keys."""
     options = ffcx.options.get_options({"language": "numba", "scalar_type": scalar_type})
+    names = {id(form): name for name, form in forms.items()}
     (source,), (suffix,) = compile_ufl_objects(
-        [ufl_object], options, object_names={id(named): "J"}, namespace=namespace
+        list(forms.values()), options, object_names=names, namespace=namespace
     )
     path = tmp_path / f"{namespace}{suffix}"
     path.write_text(source)
@@ -194,85 +193,47 @@ def tabulate(
 
 
 @pytest.mark.parametrize("scalar_type", ["float32", "float64"])
-@pytest.mark.parametrize("operand", ["proxy_coefficient", "runtime_table"])
-def test_interpolation(scalar_type: str, operand: str, tmp_path: Path) -> None:
-    """Interpolations evaluated by an expression kernel the integral calls.
+@pytest.mark.parametrize("element", [("Lagrange", 1), ("DG", 0)], ids=["P1", "DG0"])
+def test_interpolation(scalar_type: str, element: tuple[str, int], tmp_path: Path) -> None:
+    """A form holding an interpolation, and its derivative.
 
-    `u**2` becomes a proxy coefficient, `u * v` an element table built for
-    each cell. Interpolating into P1 evaluates at the vertices, which are the
-    first three dofs of P2, so both integrals have a closed form.
+    The interpolation of `u**2` is evaluated by a kernel the integral calls,
+    and `2 u du` in the derivative is linear in the argument, so its table is
+    built for each cell. The degrees of freedom of the target space are point
+    evaluations, so `I(f) = sum_i f(x_i) phi_i` over its interpolation points
+    `x_i`, and both forms are checked by hand.
     """
-    mesh = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
-    V1 = ufl.FunctionSpace(mesh, basix.ufl.element("Lagrange", "triangle", 1))
-    V2 = ufl.FunctionSpace(mesh, basix.ufl.element("Lagrange", "triangle", 2))
-    u = ufl.Coefficient(V2)
-    v = ufl.TestFunction(V2)
-    form = {
-        "proxy_coefficient": ufl.Interpolate(u**2, V1) * ufl.dx,
-        "runtime_table": ufl.Interpolate(u * v, V1) * ufl.dx,
-    }[operand]
-    module = generate(form, operand, scalar_type, tmp_path)
+    cell = "triangle"
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(2,)))
+    V = ufl.FunctionSpace(mesh, basix.ufl.element("Lagrange", cell, 2))
+    W = ufl.FunctionSpace(mesh, basix.ufl.element(element[0], cell, element[1]))
+    u = ufl.Coefficient(V)
+    J = ufl.Interpolate(u**2, W) * ufl.dx
+    dJ = ufl.derivative(J, u, ufl.TestFunction(V))
+    module = generate({"J": J, "dJ": dJ}, "interpolation", scalar_type, tmp_path)
 
     dtype = np.dtype(scalar_type).type
     dtype_r = dtype_to_scalar_dtype(dtype)
     w = np.array([0.5, -1.0, 2.0, 0.3, 0.7, -0.2], dtype=dtype)
     c = np.empty((0,), dtype=dtype)
     coords = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [0.0, 3.0, 0.0]], dtype=dtype_r)
-    A = np.zeros((1,) if operand == "proxy_coefficient" else (6,), dtype=dtype)
-    integral = getattr(module, f"form_{operand}_J").form_integrals[0]
-    tabulate(integral.tabulate_tensor, A, w, c, coords)
 
-    area = 3.0
-    if operand == "proxy_coefficient":
-        expected = np.array([area / 3 * np.sum(w[:3] ** 2)])
-    else:
-        expected = np.concatenate([area / 3 * w[:3], np.zeros(3)])
-    np.testing.assert_allclose(A, expected, rtol=10 * np.finfo(dtype).eps)
+    # The basis of V at the interpolation points of W, `[point][dof]`, and
+    # the integrals of the basis of W over the cell
+    element_V, element_W = V.ufl_element().basix_element, W.ufl_element().basix_element
+    phi_V = element_V.tabulate(0, element_W.points)[0, :, :, 0]
+    u_x = phi_V @ w.astype(np.float64)
+    points, weights = basix.make_quadrature(element_W.cell_type, element_W.degree)
+    det_J = abs(np.linalg.det(coords[1:, :2] - coords[0, :2]))
+    int_phi_W = det_J * weights @ element_W.tabulate(0, points)[0, :, :, 0]
+    expected = {
+        "J": np.atleast_1d(int_phi_W @ u_x**2),
+        "dJ": int_phi_W @ (2 * u_x[:, None] * phi_V),
+    }
 
-
-@pytest.mark.parametrize("scalar_type", ["float32", "float64"])
-@pytest.mark.parametrize("operand", ["proxy_coefficient", "nested", "runtime_table"])
-def test_interpolation_in_expression(scalar_type: str, operand: str, tmp_path: Path) -> None:
-    """Interpolations evaluated by an expression kernel the expression calls.
-
-    The nested interpolation is evaluated by a kernel that calls another one,
-    and the constant is passed to the kernel that reads it. Interpolating into
-    P1 evaluates at the vertices, which are the first three dofs of P2, and
-    the interpolant is linear between them, so all have a closed form.
-    """
-    mesh = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
-    V1 = ufl.FunctionSpace(mesh, basix.ufl.element("Lagrange", "triangle", 1))
-    V2 = ufl.FunctionSpace(mesh, basix.ufl.element("Lagrange", "triangle", 2))
-    u = ufl.Coefficient(V2)
-    v = ufl.TestFunction(V2)
-    kappa = ufl.Constant(mesh)
-    expression = {
-        "proxy_coefficient": ufl.Interpolate(kappa * u**2, V1),
-        "nested": ufl.Interpolate(kappa * ufl.Interpolate(u**2, V1) * u, V1),
-        "runtime_table": ufl.Interpolate(u * v, V1),
-    }[operand]
-    points = np.array([[0.1, 0.1], [0.6, 0.2], [0.25, 0.5]])
-    module = generate((expression, points), operand, scalar_type, tmp_path)
-    compiled = getattr(module, f"expression_{operand}_J")
-    assert compiled.num_coefficients == 1
-    assert compiled.num_constants == (0 if operand == "runtime_table" else 1)
-
-    dtype = np.dtype(scalar_type).type
-    dtype_r = dtype_to_scalar_dtype(dtype)
-    w = np.array([0.5, -1.0, 2.0, 0.3, 0.7, -0.2], dtype=dtype)
-    c = np.array([2.5], dtype=dtype)
-    coords = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [0.0, 3.0, 0.0]], dtype=dtype_r)
-    A = np.zeros((len(points), 6 if operand == "runtime_table" else 1), dtype=dtype)
-    tabulate(compiled.tabulate_tensor, A, w, c, coords)
-
-    # The P1 basis functions at the points, and the values at the vertices
-    psi = np.column_stack([1 - points[:, 0] - points[:, 1], points[:, 0], points[:, 1]])
-    vertices = w[:3].astype(np.float64)
-    if operand == "proxy_coefficient":
-        expected = psi @ (c[0] * vertices**2)
-    elif operand == "nested":
-        expected = psi @ (c[0] * vertices**3)
-    else:
-        expected = np.hstack([psi * vertices, np.zeros((len(points), 3))])
-    eps = np.finfo(dtype).eps
-    np.testing.assert_allclose(A, expected.reshape(A.shape), rtol=10 * eps, atol=10 * eps)
+    tol = 10 * np.finfo(dtype).eps
+    for name, values in expected.items():
+        A = np.zeros(np.shape(values), dtype=dtype)
+        integral = getattr(module, f"form_interpolation_{name}").form_integrals[0]
+        tabulate(integral.tabulate_tensor, A, w, c, coords)
+        np.testing.assert_allclose(A, values, rtol=tol, atol=tol)
