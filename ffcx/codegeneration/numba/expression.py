@@ -37,20 +37,17 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     d["factory_name"] = factory_name
     parts = eg.generate()
 
-    format = Formatter(options["scalar_type"])  # type: ignore
+    format = Formatter(options["scalar_type"])
     body = format(parts)
     body = "\n".join(["    " + line for line in body.split("\n")])
+    d["tabulate_expression"] = body
 
     if ir.is_interpolation_kernel:
         # A kernel on arrays, which the kernels holding the interpolation call
         # with their local arrays, see `Formatter`. It is not exported.
-        kernel = {
-            "factory_name": factory_name,
-            "kernel_name": expression_kernel_name(factory_name),
-            "tabulate_expression": body,
-        }
-        assert set(kernel) == template_keys(expression_template.interpolation_kernel)
-        return (expression_template.interpolation_kernel.format_map(kernel),)
+        d = {key: d[key] for key in template_keys(expression_template.interpolation_kernel)}
+        # assert set(kernel) == template_keys(expression_template.interpolation_kernel)
+        return (expression_template.interpolation_kernel.format_map(d),)
 
     # tabulate_expression
     sizes = tensor_sizes(ir)

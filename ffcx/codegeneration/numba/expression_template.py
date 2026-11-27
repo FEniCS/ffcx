@@ -40,7 +40,7 @@ interpolation_kernel = """
 # Code for interpolation kernel {factory_name}
 
 @numba.njit
-def {kernel_name}(A, w, c, coordinate_dofs, entity_local_index,
+def {factory_name}(A, w, c, coordinate_dofs, entity_local_index,
                   quadrature_permutation, custom_data):
 {tabulate_expression}
 
