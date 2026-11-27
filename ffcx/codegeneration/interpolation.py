@@ -8,11 +8,14 @@
 The expression an interpolation interpolates is compiled into an expression
 kernel of its own, evaluated at the interpolation points of the target element,
 see `ffcx.analysis.analyze_ufl_objects`. Integral and expression kernels call it
-before anything that reads the interpolation.
+before anything that reads the interpolation:
 
-A proxy coefficient takes the place of an interpolation of an expression. Its
-degrees of freedom are the interpolation matrix of the target element applied
-to the values the kernel writes.
+- A proxy coefficient takes the place of an interpolation of an expression. Its
+  degrees of freedom are the interpolation matrix of the target element applied
+  to the values the kernel writes.
+- An interpolation of an expression that is only linear in an argument has its
+  element table built for each cell, by contracting the values the kernel writes
+  for each degree of freedom of the argument with the target element table.
 """
 
 from __future__ import annotations
@@ -28,20 +31,29 @@ import ffcx.codegeneration.lnodes as L
 if typing.TYPE_CHECKING:
     from ffcx.analysis import ProxyCoefficient
     from ffcx.codegeneration.backend import FFCXBackend
+    from ffcx.ir.elementtables import InterpolatedTableT
     from ffcx.ir.representation import InterpolationIR, InterpolationKernelIR
 
 
-def generate_interpolations(ir: InterpolationIR, backend: FFCXBackend) -> list[L.LNode]:
+def generate_interpolations(
+    ir: InterpolationIR,
+    backend: FFCXBackend,
+    interpolated_tables: dict[str, InterpolatedTableT],
+) -> list[L.LNode]:
     """Generate the evaluation of the interpolations in a kernel.
 
     Args:
         ir: The interpolations evaluated in the kernel.
         backend: The backend of the kernel.
+        interpolated_tables: The element tables built for each cell, by name.
 
     Returns:
-        Code to place before anything that reads a proxy coefficient.
+        Code to place before anything that reads a proxy coefficient or an
+        element table built for each cell.
     """
-    return _proxy_coefficients(ir.proxies, backend)
+    return _proxy_coefficients(ir.proxies, backend) + _interpolated_tables(
+        ir.tables, backend, interpolated_tables
+    )
 
 
 def _call_kernel(
@@ -60,7 +72,7 @@ def _call_kernel(
             cell restricted to '-'.
 
     Returns:
-        The array the kernel writes, ``[point][component]``, and the
+        The array the kernel writes, ``[point][component][dof]...``, and the
         declarations and statements that fill it.
     """
     symbols = backend.symbols
@@ -222,3 +234,93 @@ def _interpolate(
     if block_size > 1:
         body = [L.ForRange(b, 0, block_size, body)]
     return [L.ForRange(j, 0, num_dofs, body)]
+
+
+def _interpolated_tables(
+    kernels: list[InterpolationKernelIR],
+    backend: FFCXBackend,
+    interpolated_tables: dict[str, InterpolatedTableT],
+) -> list[L.LNode]:
+    """Generate the element tables that are built for each cell.
+
+    Interpolating an expression that is only linear in an argument brings
+    coefficients into the interpolation, so the argument's table depends on the
+    cell. The expression kernel evaluates the interpolated expression at the
+    target element's interpolation points for each dof of the argument, and
+    that is contracted with the target element table times the interpolation
+    matrix.
+    """
+    needed = {table.interpolation for table in interpolated_tables.values()}
+    parts: list[L.LNode] = []
+    evaluated = {}
+    for i, kernel in enumerate(kernels):
+        if kernel.interpolation not in needed:
+            continue
+        values, declarations, statements = _call_kernel(kernel, f"interpolation{i}", backend)
+        evaluated[kernel.interpolation] = (values, kernel.shape)
+        parts.append(
+            L.Section(
+                f"Evaluate interpolated expression {i}",
+                statements,
+                declarations,
+                input=[],
+                output=[],
+            )
+        )
+
+    for name, data in sorted(interpolated_tables.items()):
+        values, (_, value_size, *dof_dims) = evaluated[data.interpolation]
+        num_quadrature_points, num_points = data.contraction.shape
+
+        table = L.Symbol(name, dtype=L.DataType.SCALAR)
+        backend.symbols.element_tables[name] = table
+        contraction = L.Symbol(f"{name}_M", dtype=L.DataType.REAL)
+
+        aq = L.Symbol("aq", dtype=L.DataType.INT)
+        ap = L.Symbol("ap", dtype=L.DataType.INT)
+        dof_indices = [L.Symbol(f"ad{axis}", dtype=L.DataType.INT) for axis in range(len(dof_dims))]
+        table_sizes: tuple[int, ...]
+        # The kernel writes the expression as [point][component][dof]... .
+        block = int(np.prod(dof_dims))
+        flat_index = ap * (value_size * block) + data.flat_component * block
+        stride = block
+        for index, dim in zip(dof_indices, dof_dims):
+            stride //= dim
+            flat_index = flat_index + index * stride
+
+        if len(dof_dims) == 1:
+            # Read back through `table_access`, which indexes a table by
+            # permutation and entity first. Both are singletons here: the
+            # table is the same for every entity and is not permuted.
+            entry = table[0][0][aq]
+            table_sizes = (1, 1, num_quadrature_points, *dof_dims)
+        else:
+            # A dense element tensor block, read directly in `get_arg_factors`
+            # by quadrature point and one index per argument.
+            entry = table[aq]
+            table_sizes = (num_quadrature_points, *dof_dims)
+        for index in dof_indices:
+            entry = entry[index]
+
+        body: list[L.LNode] = [
+            L.Assign(entry, 0.0),
+            L.ForRange(
+                ap, 0, num_points, [L.AssignAdd(entry, contraction[aq][ap] * values[flat_index])]
+            ),
+        ]
+        for index, dim in zip(reversed(dof_indices), reversed(dof_dims)):
+            body = [L.ForRange(index, 0, dim, body)]
+        parts.append(
+            L.Section(
+                name=f"Build interpolated table {name}",
+                statements=[L.ForRange(aq, 0, num_quadrature_points, body)],
+                declarations=[
+                    L.ArrayDecl(contraction, values=data.contraction, const=True),
+                    L.ArrayDecl(table, sizes=table_sizes),
+                ],
+                input=[],
+                output=[],
+            )
+        )
+
+    return parts

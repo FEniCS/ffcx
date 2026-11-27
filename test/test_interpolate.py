@@ -507,12 +507,560 @@ def test_interpolate_derivative_in_form(compile_args, dtype, ngrads, rank):
     np.testing.assert_allclose(A, A_ref @ interpolation, atol=tol)
 
 
+@pytest.mark.parametrize("dtype", ["float64", "float32"])
+@pytest.mark.parametrize("derivative", [False, True], ids=["value", "curl-div"])
+@pytest.mark.parametrize("rank", [1, 2])
+@pytest.mark.parametrize("family", ["N1curl", "RT"])
+def test_interpolate_derivative_piola(compile_args, dtype, derivative, rank, family):
+    """Differentiating a form holding an interpolation into a Piola mapped space.
+
+    As in `test_interpolate_derivative_in_form`, the derivative of ``F(I(u))``
+    along ``du`` is ``F`` applied to ``I(du)``, the interpolation of the
+    argument itself, so its table is known at compile time. The source and
+    target are pulled back alike, so the Jacobian factors of their Piola maps
+    cancel and the tensor is the reference interpolation operator applied to
+    the tensor of the same form posed on the target space. The form reads a
+    component of the interpolation, or the natural derivative of the space: the
+    curl of an N1curl function and the divergence of an RT function.
+    """
+    cell = "triangle"
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(2,)))
+    element_a = basix.ufl.element(family, cell, 1)
+    element_t = basix.ufl.element(family, cell, 2)
+    V_a = ufl.FunctionSpace(domain, element_a)
+    V_t = ufl.FunctionSpace(domain, element_t)
+
+    u, v = ufl.Coefficient(V_a), ufl.TestFunction(V_a)
+    argument = ufl.TestFunction if rank == 1 else ufl.TrialFunction
+    du, du_t = argument(V_a), argument(V_t)
+    operator = ufl.curl if family == "N1curl" else ufl.div
+
+    def scalarise(f):
+        """The natural derivative of the space, or a component of the value."""
+        return operator(f) if derivative else f[0]
+
+    def form(f):
+        """The functional of ``f``, or the residual testing it against ``v``."""
+        return f * ufl.dx if rank == 1 else f * scalarise(v) * ufl.dx
+
+    J = ufl.derivative(form(scalarise(ufl.Interpolate(u, V_t))), u, du)
+    J_ref = form(scalarise(du_t))
+
+    # The interpolation must be recognised as that of the argument itself
+    assert not ffcx.analysis.analyze_ufl_objects([J], np.dtype(dtype)).interpolation_kernels
+
+    compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
+        [J, J_ref], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+    coords = np.array([[0.1, 0.2, 0.0], [2.0, 0.3, 0.0], [0.4, 1.7, 0.0]], dtype=xdtype).flatten()
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+    ffi = module.ffi
+    cell_type = module.lib.cell
+
+    def tabulate(form, shape):
+        offsets = form.form_integral_offsets
+        assert offsets[cell_type + 1] - offsets[cell_type] == 1
+        integral = form.form_integrals[offsets[cell_type]]
+        A = np.zeros(shape, dtype=dtype)
+        getattr(integral, f"tabulate_tensor_{dtype}")(
+            ffi.cast(f"{c_type} *", A.ctypes.data),
+            ffi.NULL,
+            ffi.NULL,
+            ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+            ffi.NULL,
+            ffi.NULL,
+            ffi.NULL,
+        )
+        return A
+
+    # The axis of the test function, for the Jacobian, then of the direction
+    test_axis = (element_a.dim,) if rank == 2 else ()
+    A = tabulate(compiled_forms[0], (*test_axis, element_a.dim))
+    A_ref = tabulate(compiled_forms[1], (*test_axis, element_t.dim))
+
+    interpolation = basix.compute_interpolation_operator(
+        element_a.basix_element, element_t.basix_element
+    )
+    tol = np.finfo(dtype).eps * 100
+    assert np.abs(A).max() > tol
+    np.testing.assert_allclose(A, A_ref @ interpolation, atol=tol)
+
+
+@pytest.mark.parametrize("family", ["N1curl", "RT"])
+def test_interpolate_derivative_piola_runtime_table(family):
+    """A table built for each cell is not mapped onto a Piola mapped target.
+
+    Differentiating a non-linear interpolated expression gives an interpolation
+    that is only linear in the argument, whose table is built for each cell.
+    That is only supported for an identity mapped target.
+    """
+    cell = "triangle"
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(2,)))
+    V_a = ufl.FunctionSpace(domain, basix.ufl.element(family, cell, 1))
+    V_t = ufl.FunctionSpace(domain, basix.ufl.element(family, cell, 2))
+    u, du = ufl.Coefficient(V_a), ufl.TestFunction(V_a)
+    J = ufl.derivative(ufl.Interpolate(ufl.inner(u, u) * u, V_t)[0] * ufl.dx, u, du)
+    with pytest.raises(NotImplementedError, match="only supported when the expression is"):
+        ffcx.analysis.analyze_ufl_objects([J], np.float64)
+
+
+@pytest.mark.parametrize("dtype", ["float64", "float32"])
+@pytest.mark.parametrize("ngrads", [0, 1])
+@pytest.mark.parametrize("block_size", [1, 2])
+def test_interpolate_derivative_runtime_table(compile_args, dtype, ngrads, block_size):
+    """A non-linear interpolated expression needs a table built for each cell.
+
+    Differentiating it gives an interpolation of an expression that is linear in
+    the argument but scaled by coefficients, so the argument's table depends on
+    the cell. Check it against the interpolation applied by hand:
+    ``A[j] = sum_I l_I(dh/du[phi_j]) * ref[I]``, with ``l_I`` the target
+    element's interpolation functionals and ``ref`` the same form on the target.
+    """
+    cell = "triangle"
+    shape = () if block_size == 1 else (block_size,)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(2,)))
+    element_a = basix.ufl.element("Lagrange", cell, 1, shape=shape)
+    # A higher degree target only makes sense when it is not blocked, since a
+    # blocked target must keep the value shape of the interpolated expression.
+    element_t = basix.ufl.element("Lagrange", cell, 2 if block_size == 1 else 1, shape=shape)
+    V_a = ufl.FunctionSpace(domain, element_a)
+    V_t = ufl.FunctionSpace(domain, element_t)
+
+    u, du = ufl.Coefficient(V_a), ufl.TestFunction(V_a)
+    v_t = ufl.TrialFunction(V_t)
+
+    # A non-linear expression, so that d/du brings `u` into the interpolation.
+    if block_size == 1:
+        expression = u * u
+    else:
+        expression = ufl.as_vector([u[i] * u[i] for i in range(block_size)])
+
+    def scalarise(f):
+        """Take ``ngrads`` gradients and index down to a scalar."""
+        if block_size > 1:
+            f = f[0]
+        for _ in range(ngrads):
+            f = ufl.grad(f)
+        return f[(0,) * ngrads] if ngrads else f
+
+    J = ufl.derivative(scalarise(ufl.Interpolate(expression, V_t)) * ufl.dx, u, du)
+    J_ref = scalarise(v_t) * ufl.dx
+
+    compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
+        [J, J_ref], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+    coords = np.array([[0.1, 0.2, 0.0], [2.0, 0.3, 0.0], [0.4, 1.7, 0.0]], dtype=xdtype).flatten()
+    w = np.arange(1, element_a.dim + 1, dtype=dtype) / 2
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+    ffi = module.ffi
+    cell_type = module.lib.cell
+
+    def tabulate(form, size, coefficients=None):
+        integral = form.form_integrals[form.form_integral_offsets[cell_type]]
+        A = np.zeros(size, dtype=dtype)
+        getattr(integral, f"tabulate_tensor_{dtype}")(
+            ffi.cast(f"{c_type} *", A.ctypes.data),
+            ffi.NULL if coefficients is None else ffi.cast(f"{c_type} *", coefficients.ctypes.data),
+            ffi.NULL,
+            ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+            ffi.NULL,
+            ffi.NULL,
+            ffi.NULL,
+        )
+        return A
+
+    A = tabulate(compiled_forms[0], element_a.dim, w)
+    A_ref = tabulate(compiled_forms[1], element_t.dim)
+
+    # Apply the interpolation by hand. Blocked elements interpolate each block
+    # component with the scalar sub-element's functionals.
+    def base_element(element):
+        return element.sub_elements[0] if element.block_size > 1 else element
+
+    scalar_t = base_element(element_t).basix_element
+    scalar_a = base_element(element_a).basix_element
+    matrix, points = scalar_t.interpolation_matrix, scalar_t.points
+    phi = scalar_a.tabulate(0, points)[0][:, :, 0]
+    u_at_points = np.stack([phi @ w[c::block_size] for c in range(block_size)], axis=1)
+
+    # d(expression[c])/d(dof j), with j the blocked dof (node, component).
+    derivative = np.zeros((points.shape[0], element_a.dim, block_size))
+    for j in range(element_a.dim):
+        node, component = divmod(j, block_size)
+        derivative[:, j, component] = 2 * u_at_points[:, component] * phi[:, node]
+
+    interpolated = np.zeros((element_t.dim, element_a.dim))
+    for i in range(matrix.shape[0]):
+        for c in range(block_size):
+            interpolated[i * block_size + c] = matrix[i] @ derivative[:, :, c]
+
+    tol = np.finfo(dtype).eps * 100
+    assert np.abs(A).max() > tol
+    np.testing.assert_allclose(A, interpolated.T @ A_ref, atol=tol, rtol=100 * tol)
+
+
+@pytest.mark.parametrize("dtype", ["float64", "float32"])
+@pytest.mark.parametrize("flat_component", [0, 1, 2])
+def test_interpolate_derivative_mixed_shapes(compile_args, dtype, flat_component):
+    """A runtime table may interpolate into a space of a different value shape.
+
+    The proxy argument then stands on the target space, for its value shape, but
+    its table is indexed by the degrees of freedom of the argument it replaces.
+    """
+    cell = "triangle"
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(2,)))
+    element_a = basix.ufl.element("Lagrange", cell, 1, shape=(2,))
+    element_t = basix.ufl.element("Lagrange", cell, 1, shape=(3,))
+    V_a = ufl.FunctionSpace(domain, element_a)
+    V_t = ufl.FunctionSpace(domain, element_t)
+
+    r, dr = ufl.Coefficient(V_a), ufl.TestFunction(V_a)
+    v_t = ufl.TrialFunction(V_t)
+    expression = ufl.as_vector([r[0] * r[0], r[1] * r[1], r[0] * r[1]])
+
+    J = ufl.derivative(ufl.Interpolate(expression, V_t)[flat_component] * ufl.dx, r, dr)
+    J_ref = v_t[flat_component] * ufl.dx
+
+    compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
+        [J, J_ref], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+    coords = np.array([[0.1, 0.2, 0.0], [2.0, 0.3, 0.0], [0.4, 1.7, 0.0]], dtype=xdtype).flatten()
+    w = np.array([1.0, 2.0, 0.5, 1.5, 2.5, 0.25], dtype=dtype)
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+    ffi = module.ffi
+    cell_type = module.lib.cell
+
+    def tabulate(form, size, coefficients=None):
+        integral = form.form_integrals[form.form_integral_offsets[cell_type]]
+        A = np.zeros(size, dtype=dtype)
+        getattr(integral, f"tabulate_tensor_{dtype}")(
+            ffi.cast(f"{c_type} *", A.ctypes.data),
+            ffi.NULL if coefficients is None else ffi.cast(f"{c_type} *", coefficients.ctypes.data),
+            ffi.NULL,
+            ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+            ffi.NULL,
+            ffi.NULL,
+            ffi.NULL,
+        )
+        return A
+
+    A = tabulate(compiled_forms[0], element_a.dim, w)
+    A_ref = tabulate(compiled_forms[1], element_t.dim)
+
+    # Apply the interpolation by hand.
+    scalar_t = element_t.sub_elements[0].basix_element
+    scalar_a = element_a.sub_elements[0].basix_element
+    matrix, points = scalar_t.interpolation_matrix, scalar_t.points
+    phi = scalar_a.tabulate(0, points)[0][:, :, 0]
+    r_at_points = np.stack([phi @ w[c::2] for c in range(2)], axis=1)
+
+    # d(expression[component])/d(dof j), with j the blocked dof (node, component).
+    derivative = np.zeros((points.shape[0], element_a.dim, 3))
+    for j in range(element_a.dim):
+        node, component = divmod(j, 2)
+        if component == 0:
+            derivative[:, j, 0] = 2 * r_at_points[:, 0] * phi[:, node]
+            derivative[:, j, 2] = r_at_points[:, 1] * phi[:, node]
+        else:
+            derivative[:, j, 1] = 2 * r_at_points[:, 1] * phi[:, node]
+            derivative[:, j, 2] = r_at_points[:, 0] * phi[:, node]
+
+    interpolated = np.zeros((element_t.dim, element_a.dim))
+    for i in range(matrix.shape[0]):
+        for c in range(3):
+            interpolated[i * 3 + c] = matrix[i] @ derivative[:, :, c]
+
+    tol = np.finfo(dtype).eps * 100
+    assert np.abs(A).max() > tol
+    np.testing.assert_allclose(A, interpolated.T @ A_ref, atol=tol, rtol=100 * tol)
+
+
+@pytest.mark.parametrize("dtype", ["float64", "float32"])
+def test_expression_two_arguments(compile_args, dtype):
+    """An expression may hold two arguments.
+
+    The interpolation of an expression bilinear in two arguments needs one, and
+    the tensor written is ``[point][component][dof][dof]``.
+    """
+    cell = "triangle"
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(2,)))
+    element = basix.ufl.element("Lagrange", cell, 1)
+    points = basix.ufl.element("Lagrange", cell, 2).basix_element.points
+    V = ufl.FunctionSpace(domain, element)
+    v, w = ufl.TestFunction(V), ufl.TrialFunction(V)
+
+    compiled, module, _code = ffcx.codegeneration.jit.compile_expressions(
+        [(2 * v * w, points)],
+        options={"scalar_type": dtype},
+        cffi_extra_compile_args=compile_args,
+    )
+    expression = compiled[0]
+    assert expression.num_points == points.shape[0]
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+    coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=xdtype).flatten()
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+    ffi = module.ffi
+    A = np.zeros(points.shape[0] * element.dim**2, dtype=dtype)
+    getattr(expression, f"tabulate_tensor_{dtype}")(
+        ffi.cast(f"{c_type} *", A.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.NULL,
+    )
+
+    phi = element.basix_element.tabulate(0, points)[0][:, :, 0]
+    tol = np.finfo(dtype).eps * 100
+    np.testing.assert_allclose(
+        A.reshape(points.shape[0], element.dim, element.dim),
+        2 * phi[:, :, None] * phi[:, None, :],
+        atol=tol,
+    )
+
+
+@pytest.mark.parametrize("dtype", ["float64", "float32"])
+@pytest.mark.parametrize("ngrads", [0, 1])
+@pytest.mark.parametrize("block_size", [1, 2])
+def test_interpolate_second_derivative(compile_args, dtype, ngrads, block_size):
+    """The Jacobian of an interpolated non-linear expression is a dense block.
+
+    Differentiating twice gives an interpolation of an expression bilinear in
+    both arguments, so it takes one element tensor axis per argument rather than
+    being a product of a factor per axis. Check it against a finite difference
+    of the residual, which is verified separately.
+    """
+    cell = "triangle"
+    shape = () if block_size == 1 else (block_size,)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(2,)))
+    element_a = basix.ufl.element("Lagrange", cell, 1, shape=shape)
+    element_t = basix.ufl.element("Lagrange", cell, 2 if block_size == 1 else 1, shape=shape)
+    V_a = ufl.FunctionSpace(domain, element_a)
+    V_t = ufl.FunctionSpace(domain, element_t)
+
+    u = ufl.Coefficient(V_a)
+    du, ddu = ufl.TestFunction(V_a), ufl.TrialFunction(V_a)
+
+    if block_size == 1:
+        expression = u * u
+    else:
+        expression = ufl.as_vector([u[i] * u[i] for i in range(block_size)])
+
+    integrand = ufl.Interpolate(expression, V_t)
+    if block_size > 1:
+        integrand = integrand[0]
+    for _ in range(ngrads):
+        integrand = ufl.grad(integrand)
+    if ngrads:
+        integrand = integrand[(0,) * ngrads]
+
+    residual = ufl.derivative(integrand * ufl.dx, u, du)
+    jacobian = ufl.derivative(residual, u, ddu)
+
+    compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
+        [residual, jacobian],
+        options={"scalar_type": dtype},
+        cffi_extra_compile_args=compile_args,
+    )
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+    coords = np.array([[0.1, 0.2, 0.0], [2.0, 0.3, 0.0], [0.4, 1.7, 0.0]], dtype=xdtype).flatten()
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+    ffi = module.ffi
+    cell_type = module.lib.cell
+    n = element_a.dim
+
+    def tabulate(form, size, coefficients):
+        integral = form.form_integrals[form.form_integral_offsets[cell_type]]
+        A = np.zeros(size, dtype=dtype)
+        getattr(integral, f"tabulate_tensor_{dtype}")(
+            ffi.cast(f"{c_type} *", A.ctypes.data),
+            ffi.cast(f"{c_type} *", coefficients.ctypes.data),
+            ffi.NULL,
+            ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+            ffi.NULL,
+            ffi.NULL,
+            ffi.NULL,
+        )
+        return A
+
+    w = (np.arange(1, n + 1) / 3).astype(dtype)
+    A = tabulate(compiled_forms[1], n * n, w).reshape(n, n)
+
+    # Finite difference of the residual, column by column.
+    step = 1e-6 if dtype == "float64" else 1e-3
+    expected = np.zeros((n, n))
+    for k in range(n):
+        direction = np.zeros(n, dtype=dtype)
+        direction[k] = step
+        expected[:, k] = (
+            tabulate(compiled_forms[0], n, w + direction)
+            - tabulate(compiled_forms[0], n, w - direction)
+        ) / (2 * step)
+
+    scale = max(np.abs(expected).max(), 1e-30)
+    assert np.abs(A).max() > 1e-10
+    assert np.abs(A - expected).max() / scale < (1e-6 if dtype == "float64" else 1e-2)
+
+
+@pytest.mark.parametrize("dtype", ["float64", "float32"])
+@pytest.mark.parametrize("degrees", [(1, 2), (2, 1)], ids=["P1xP2", "P2xP1"])
+def test_interpolate_second_derivative_mixed_spaces(compile_args, dtype, degrees):
+    """The dense block of a Hessian takes each argument's own dof extent.
+
+    Differentiating ``Interpolate(u*u, P2)*dx`` twice, with the test and trial
+    functions in different spaces, gives one table spanning both element
+    tensor axes. Its extent on each axis is that of the argument the axis
+    belongs to, so the two have to be told apart when the block is written
+    into the element tensor. The Hessian is the interpolation of ``2 du ddu``
+    into P2, so for Lagrange it is the values of ``2 du ddu`` at the P2 nodes
+    weighted by the integrals of the P2 basis functions.
+    """
+    cell = "triangle"
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(2,)))
+    spaces = {
+        degree: ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", cell, degree))
+        for degree in (1, 2)
+    }
+    V_test, V_trial = (spaces[degree] for degree in degrees)
+    P1, P2 = spaces[1], spaces[2]
+
+    u = ufl.Coefficient(P1)
+    du, ddu = ufl.TestFunction(V_test), ufl.TrialFunction(V_trial)
+    residual = ufl.derivative(ufl.Interpolate(u * u, P2) * ufl.dx, u, du)
+    jacobian = ufl.derivative(residual, u, ddu)
+
+    compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
+        [jacobian], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+    coords = np.array([[0.1, 0.2, 0.0], [2.0, 0.3, 0.0], [0.4, 1.7, 0.0]], dtype=xdtype)
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+    ffi = module.ffi
+    form = compiled_forms[0]
+    integral = form.form_integrals[form.form_integral_offsets[module.lib.cell]]
+    shape = (V_test.ufl_element().dim, V_trial.ufl_element().dim)
+    size = shape[0] * shape[1]
+    w = (np.arange(1, 4) / 3).astype(dtype)
+    # Padded, so that a kernel writing past the element tensor is caught
+    A = np.zeros(2 * size, dtype=dtype)
+    getattr(integral, f"tabulate_tensor_{dtype}")(
+        ffi.cast(f"{c_type} *", A.ctypes.data),
+        ffi.cast(f"{c_type} *", w.ctypes.data),
+        ffi.NULL,
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.NULL,
+    )
+    assert not np.any(A[size:])
+
+    target = P2.ufl_element().basix_element
+    phi_test = V_test.ufl_element().basix_element.tabulate(0, target.points)[0, :, :, 0]
+    phi_trial = V_trial.ufl_element().basix_element.tabulate(0, target.points)[0, :, :, 0]
+    points, weights = basix.make_quadrature(basix.CellType.triangle, 2)
+    detJ = abs(np.linalg.det(np.column_stack([coords[1] - coords[0], coords[2] - coords[0]])[:2]))
+    integrals = detJ * (weights @ target.tabulate(0, points)[0, :, :, 0])
+    expected = 2 * np.einsum(
+        "p,pq,qi,qj->ij", integrals, target.interpolation_matrix, phi_test, phi_trial
+    )
+    tol = np.finfo(dtype).eps * 100
+    np.testing.assert_allclose(A[:size].reshape(shape), expected, atol=tol)
+
+
+@pytest.mark.parametrize(
+    "target", [("Lagrange", 1), ("Lagrange", 2), ("N1curl", 1)], ids=["P1", "P2", "N1curl1"]
+)
+def test_shape_derivative_of_interpolation(compile_args, target):
+    """The shape derivative of a functional of an interpolation.
+
+    A simple shape optimisation problem: the misfit ``J = 1/2 |I_W u - u_d|^2 dx``
+    of a given state ``u`` interpolated into ``W`` and a target ``u_d`` given in
+    terms of ``x``. Its shape derivative ``dJ[V] = derivative(J, x, V)`` is
+    checked by a Taylor test on one cell: moving the vertices by ``t * V`` with
+    the dofs of ``u`` kept, ``J`` changes by ``t * dJ[V]`` up to ``O(t**2)``.
+    The dofs of the interpolation move with the cell, through its interpolation
+    points and, for a Piola mapped target, its Jacobian. For the P2 target the
+    interpolation is the identity, so ``dJ`` must also equal the derivative of
+    the functional without it.
+    """
+    family, degree = target
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    element = basix.ufl.element("Lagrange", "triangle", 2)
+    u = ufl.Coefficient(ufl.FunctionSpace(domain, element))
+    W = ufl.FunctionSpace(domain, basix.ufl.element(family, "triangle", degree))
+    x = ufl.SpatialCoordinate(domain)
+    # The shape derivative is taken along the test function of the coordinate space
+    V = ufl.TestFunction(ufl.FunctionSpace(domain, domain.ufl_coordinate_element()))
+    if family == "N1curl":
+        state, u_d = ufl.grad(u), ufl.as_vector([x[1], -x[0] * x[1]])
+    else:
+        state, u_d = u, x[0] * x[1]
+
+    def functional(q):
+        return 0.5 * ufl.inner(q - u_d, q - u_d) * ufl.dx
+
+    J = functional(ufl.Interpolate(state, W))
+    forms = [J, ufl.derivative(J, x, V), ufl.derivative(functional(state), x, V)]
+    compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
+        forms, cffi_extra_compile_args=compile_args
+    )
+    ffi = module.ffi
+    rng = np.random.default_rng(3)
+    u_dofs = rng.uniform(0.5, 1.5, element.dim)
+    vertices = np.array([[0.1, 0.2], [2.0, 0.3], [0.4, 1.7]])
+    direction = rng.uniform(-1, 1, vertices.shape)
+
+    def tabulate(form, t, size):
+        """Tabulate on the cell with its vertices moved by ``t`` along the direction."""
+        coords = np.pad(vertices + t * direction, ((0, 0), (0, 1))).flatten()
+        A = np.zeros(size)
+        _integral(module, form).tabulate_tensor_float64(
+            ffi.cast("double *", A.ctypes.data),
+            ffi.cast("double *", u_dofs.ctypes.data),
+            ffi.NULL,
+            ffi.cast("double *", coords.ctypes.data),
+            ffi.NULL,
+            ffi.NULL,
+            ffi.NULL,
+        )
+        return A
+
+    # The dofs of the coordinate space are the vertex displacements, interleaved
+    num_dofs = direction.size
+    dJ = tabulate(compiled_forms[1], 0.0, num_dofs) @ direction.flatten()
+    assert abs(dJ) > 1e-3
+    J0 = tabulate(compiled_forms[0], 0.0, 1)[0]
+    steps = 1e-2 / 2 ** np.arange(4)
+    residuals = np.array([abs(tabulate(compiled_forms[0], t, 1)[0] - J0 - t * dJ) for t in steps])
+    assert residuals[0] > 1e-8
+    rates = np.log2(residuals[:-1] / residuals[1:])
+    np.testing.assert_allclose(rates, 2, atol=0.05)
+
+    if target == ("Lagrange", 2):
+        dJ_dofs, dJ_ref = (tabulate(form, 0.0, num_dofs) for form in compiled_forms[1:])
+        np.testing.assert_allclose(dJ_dofs, dJ_ref, atol=1e-13)
+
+
 @pytest.mark.parametrize("do_cancel_jacobian_products", [False, True])
-@pytest.mark.parametrize("scalar_type", [np.float64, np.complex128])
+@pytest.mark.parametrize(
+    "scalar_type, complex_node",
+    [(np.float64, None), (np.float64, ufl.conj), (np.float64, ufl.real), (np.complex128, None)],
+    ids=["float64", "float64-conj", "float64-real", "complex128"],
+)
 @pytest.mark.parametrize("measure", ["dx", "ds", "expression"])
 @pytest.mark.parametrize("family", ["Lagrange", "N1curl", "RT", "Regge", "HHJ"])
 def test_interpolate_argument_is_compile_time(
-    family, measure, scalar_type, do_cancel_jacobian_products
+    family, measure, scalar_type, complex_node, do_cancel_jacobian_products
 ):
     """Interpolating an argument itself must not need a table built per cell.
 
@@ -520,6 +1068,11 @@ def test_interpolate_argument_is_compile_time(
     target's, with the geometry of a Piola map lowered, and reduces it to its
     reference value only if Jacobian products are cancelled. The analysis
     recognises it either way, and rewrites it into its reference value.
+
+    For a real scalar type UFL also removes a ``conj`` or ``real`` around the
+    argument, so the operand only becomes the argument during processing. It is
+    recognised all the same, which a Piola mapped target relies on: only the
+    argument itself can be interpolated into one.
     """
     cell = "triangle"
     domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(2,)))
@@ -527,7 +1080,8 @@ def test_interpolate_argument_is_compile_time(
     V_t = ufl.FunctionSpace(domain, basix.ufl.element(family, cell, 1))
     argument = ufl.TestFunction(V_a)
 
-    interpolated = ufl.Interpolate(argument, V_t)
+    operand = argument if complex_node is None else complex_node(argument)
+    interpolated = ufl.Interpolate(operand, V_t)
     integrand = sum(interpolated[i] for i in np.ndindex(interpolated.ufl_shape))
     if measure == "expression":
         points = np.array([[0.25, 0.25]])
@@ -555,6 +1109,7 @@ def test_interpolate_argument_is_compile_time(
     (node,) = interpolations
     assert node.ufl_operands[0] == ufl.classes.ReferenceValue(argument)
     assert ffcx.analysis.interpolated_argument(node) == argument
+    assert not ffcx.analysis.interpolation_has_runtime_table(node)
     assert not analysis.interpolation_kernels
 
 

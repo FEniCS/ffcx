@@ -49,41 +49,60 @@ class UFLData(typing.NamedTuple):
     unique_coordinate_elements: list[basix.ufl._ElementBase]
     #: List of all expressions after post-processing, with evaluation points and original expression
     expressions: list[tuple[ufl.core.expr.Expr, npt.NDArray[np.floating], ufl.core.expr.Expr]]
-    #: The expression kernel that evaluates each proxy coefficient at the
-    #: points of its target element, as an index into `expressions`
-    interpolation_kernels: dict[ProxyCoefficient, int]
+    #: The expression kernel that evaluates each interpolation at the points
+    #: of its target element, as an index into `expressions`
+    interpolation_kernels: dict[ProxyCoefficient | ufl.Interpolate, int]
 
 
 def kernel_interpolations(
     expressions: typing.Iterable[ufl.core.expr.Expr],
-) -> list[ProxyCoefficient]:
+) -> list[ProxyCoefficient | ufl.Interpolate]:
     """Collect what needs an expression kernel evaluated at interpolation points.
 
-    A proxy coefficient needs one: its degrees of freedom are built per cell by
-    evaluating the interpolated expression.
+    A proxy coefficient always needs one: its degrees of freedom are built per
+    cell by evaluating the interpolated expression. An interpolation that
+    survived into the expressions, which is one holding an argument, needs one
+    too, unless its expression is the argument itself and the table is known at
+    compile time. Whatever is nested in the expression of such an interpolation
+    is evaluated by its kernel, so it needs none here.
 
     Args:
         expressions: Processed expressions, such as the integrands of a form.
 
     Returns:
-        The proxy coefficients, ordered by count.
+        The proxy coefficients, ordered by count, followed by the interpolations
+        whose table is built for each cell, in the order they are met.
     """
-    proxies = {
-        coefficient
-        for expression in expressions
-        for coefficient in ufl.algorithms.extract_coefficients(expression)
-        if isinstance(coefficient, ProxyCoefficient)
-    }
-    return list(sorted_by_count(proxies))
+    proxies: set[ProxyCoefficient] = set()
+    tables: list[ufl.Interpolate] = []
+    # `unique_pre_traversal`, not descending into an interpolation whose table
+    # is built for each cell
+    visited: set[ufl.core.expr.Expr] = set()
+    lifo = [expression for expression in expressions if expression not in visited]
+    visited.update(lifo)
+    while lifo:
+        node = lifo.pop()
+        if isinstance(node, ProxyCoefficient):
+            proxies.add(node)
+        elif isinstance(node, ufl.Interpolate) and interpolation_has_runtime_table(node):
+            tables.append(node)
+            continue
+        for operand in node.ufl_operands:
+            if operand not in visited:
+                lifo.append(operand)
+                visited.add(operand)
+    collected: list[ProxyCoefficient | ufl.Interpolate] = list(sorted_by_count(proxies))
+    collected.extend(tables)
+    return collected
 
 
 def integral_interpolations(
     itg_data: ufl.algorithms.domain_analysis.IntegralData,
-) -> list[ProxyCoefficient]:
+) -> list[ProxyCoefficient | ufl.Interpolate]:
     """Collect what needs an expression kernel evaluated in an integral.
 
-    See `kernel_interpolations`. The proxy coefficients are ordered by count,
-    which is also the order they are numbered in within the kernel.
+    See `kernel_interpolations`. The proxy coefficients come first, ordered by
+    count, which is also the order they are numbered in within the kernel.
 
     Args:
         itg_data: The integral data of a form analysed by `_analyze_form`,
@@ -123,7 +142,9 @@ def required_constants(expression: ufl.core.expr.Expr) -> list[ufl.Constant]:
     return typing.cast(list[ufl.Constant], sorted_by_count(constants))
 
 
-def interpolation_coefficients(interpolation: ProxyCoefficient) -> list[ufl.Coefficient]:
+def interpolation_coefficients(
+    interpolation: ProxyCoefficient | ufl.Interpolate,
+) -> list[ufl.Coefficient]:
     """Get the coefficients that the expression kernel of an interpolation reads.
 
     They are passed to the kernel in this order. It is taken from the expression
@@ -131,18 +152,20 @@ def interpolation_coefficients(interpolation: ProxyCoefficient) -> list[ufl.Coef
     interpolations that differ only in their coefficients share one kernel.
 
     Args:
-        interpolation: A `ProxyCoefficient`.
+        interpolation: A `ProxyCoefficient` or a `ufl.Interpolate`.
     """
     return required_coefficients(interpolated_expression(interpolation))
 
 
-def interpolation_constants(interpolation: ProxyCoefficient) -> list[ufl.Constant]:
+def interpolation_constants(
+    interpolation: ProxyCoefficient | ufl.Interpolate,
+) -> list[ufl.Constant]:
     """Get the constants that the expression kernel of an interpolation reads.
 
     They are passed to the kernel in this order, see `interpolation_coefficients`.
 
     Args:
-        interpolation: A `ProxyCoefficient`.
+        interpolation: A `ProxyCoefficient` or a `ufl.Interpolate`.
     """
     return required_constants(interpolated_expression(interpolation))
 
@@ -300,6 +323,21 @@ def _classify_interpolation(
     return argument if operand == ufl.replace(processed, {built: argument}) else None
 
 
+def interpolation_has_runtime_table(interpolation: ufl.Interpolate) -> bool:
+    """Whether an interpolation's element table has to be built for each cell.
+
+    Interpolating an argument itself is a fixed map between the reference
+    elements, so the table is known at compile time. Interpolating an expression
+    that is merely linear in the argument, as differentiating a non-linear
+    interpolated expression produces, brings in coefficients, so the table
+    depends on the cell.
+
+    Args:
+        interpolation: A `ufl.Interpolate`, from an analysed form or expression.
+    """
+    return interpolated_argument(interpolation) is None
+
+
 def check_interpolation(interpolation: ufl.Interpolate, argument: ufl.Argument | None) -> None:
     """Check that an interpolation holding an argument can be turned into a table.
 
@@ -308,26 +346,56 @@ def check_interpolation(interpolation: ufl.Interpolate, argument: ufl.Argument |
         argument: The argument it maps directly, or None if it interpolates an
             expression merely linear in its arguments.
     """
-    if argument is None:
-        raise NotImplementedError(
-            "Interpolating an expression that is linear in an argument is only "
-            "supported when the expression is the argument itself."
-        )
-    # The argument's reference basis is pushed straight through the
-    # interpolation, so the table is known at compile time. That needs the
-    # Jacobian factors of the two pull backs to cancel and the block structures
-    # to line up.
     target = interpolation_target_space(interpolation).ufl_element()
-    source = argument.ufl_function_space().ufl_element()
-    if source.pullback != target.pullback:
+    if argument is not None:
+        # The argument's reference basis is pushed straight through the
+        # interpolation, so the table is known at compile time. That needs the
+        # Jacobian factors of the two pull backs to cancel and the block
+        # structures to line up.
+        source = argument.ufl_function_space().ufl_element()
+        if source.pullback != target.pullback:
+            raise NotImplementedError(
+                f"Interpolation of an argument from {source.pullback} to "
+                f"{target.pullback} is not supported."
+            )
+        if source.block_size != target.block_size:
+            raise NotImplementedError(
+                f"Interpolation of an argument from a block size {source.block_size} "
+                f"space into a block size {target.block_size} space is not supported."
+            )
+    else:
+        # The table has to be built for each cell from an expression kernel, see
+        # `ffcx.codegeneration.integral_generator.IntegralGenerator`.
+        _check_target_element(target)
+        if target.pullback != ufl.pullback.identity_pullback:
+            raise NotImplementedError(
+                f"Interpolating an expression into a {target.pullback} space is "
+                "only supported when the expression is the argument itself."
+            )
+        if target.block_size != target.reference_value_size:
+            raise NotImplementedError(
+                "Interpolating an expression into a non-blocked vector valued "
+                "space is only supported when the expression is the argument itself."
+            )
+
+
+def _check_target_element(element: ufl.AbstractFiniteElement) -> None:
+    """Check that an expression can be interpolated into an element.
+
+    The expression is evaluated at the interpolation points of the element by
+    a kernel that `ffcx.codegeneration.interpolation` builds from a single
+    basix element without symmetry, which a mixed, symmetric, quadrature or
+    real space lacks.
+
+    Args:
+        element: The element of the target space.
+    """
+    if (
+        not isinstance(element, (basix.ufl._BasixElement, basix.ufl._BlockedElement))
+        or element.is_symmetric
+    ):
         raise NotImplementedError(
-            f"Interpolation of an argument from {source.pullback} to "
-            f"{target.pullback} is not supported."
-        )
-    if source.block_size != target.block_size:
-        raise NotImplementedError(
-            f"Interpolation of an argument from a block size {source.block_size} "
-            f"space into a block size {target.block_size} space is not supported."
+            f"Interpolating an expression into a {element} space is not supported."
         )
 
 
@@ -335,9 +403,9 @@ def check_proxy_targets(o: ufl.Form | ufl.core.expr.Expr) -> None:
     """Check that each interpolation of an expression lands in a supported space.
 
     Such an interpolation becomes a `ProxyCoefficient`, whose dofs are built by
-    `ffcx.codegeneration.interpolation` from a single basix element without
-    symmetry, which a mixed, symmetric, quadrature or real space lacks. This is
-    checked before UFL maps the interpolations onto their reference cells.
+    `ffcx.codegeneration.interpolation`. This is checked before UFL maps the
+    interpolations onto their reference cells. An interpolation holding an
+    argument is checked by `check_interpolation` once it is classified.
 
     Args:
         o: A form or an expression, as given.
@@ -345,16 +413,8 @@ def check_proxy_targets(o: ufl.Form | ufl.core.expr.Expr) -> None:
     expressions = [itg.integrand() for itg in o.integrals()] if isinstance(o, ufl.Form) else [o]
     for expression in expressions:
         for node in unique_pre_traversal(expression):
-            if not isinstance(node, ufl.Interpolate) or interpolation_arguments(node):
-                continue
-            element = node.ufl_element()
-            if (
-                not isinstance(element, (basix.ufl._BasixElement, basix.ufl._BlockedElement))
-                or element.is_symmetric
-            ):
-                raise NotImplementedError(
-                    f"Interpolating an expression into a {element} space is not supported."
-                )
+            if isinstance(node, ufl.Interpolate) and not interpolation_arguments(node):
+                _check_target_element(node.ufl_element())
 
 
 def interpolation_target_space(
@@ -434,9 +494,11 @@ def analyze_ufl_objects(
     # expression of its own. A kernel is added before the expressions that call
     # it, including the kernels of interpolations nested in its own expression,
     # so that it is generated first.
-    interpolation_kernels: dict[ProxyCoefficient, int] = {}
+    interpolation_kernels: dict[ProxyCoefficient | ufl.Interpolate, int] = {}
 
-    def add_interpolation_kernels(interpolations: typing.Iterable[ProxyCoefficient]) -> None:
+    def add_interpolation_kernels(
+        interpolations: typing.Iterable[ProxyCoefficient | ufl.Interpolate],
+    ) -> None:
         for interpolation in interpolations:
             if interpolation in interpolation_kernels:
                 continue
@@ -490,12 +552,12 @@ def analyze_ufl_objects(
 
 
 def _analyze_interpolation(
-    interpolation: ProxyCoefficient, scalar_type: npt.DTypeLike
+    interpolation: ProxyCoefficient | ufl.Interpolate, scalar_type: npt.DTypeLike
 ) -> tuple[ufl.core.expr.Expr, npt.NDArray[np.floating], ufl.core.expr.Expr]:
-    """Analyze the expression that a proxy coefficient evaluates at interpolation points.
+    """Analyze the expression that an interpolation evaluates at interpolation points.
 
     Args:
-        interpolation: A `ProxyCoefficient`.
+        interpolation: A `ProxyCoefficient` or a `ufl.Interpolate`.
         scalar_type: The scalar type to compile for.
 
     Returns:
@@ -787,12 +849,12 @@ class ProxyCoefficient(ufl.Coefficient):
 class IntermediateCoefficientReplacer(DAGTraverser):
     """Replace interpolations of an expression by proxy coefficients.
 
-    An interpolation of an argument is left in place: it is a modified terminal,
-    see `ffcx.ir.analysis.modified_terminals`, and its operand is rewritten into
-    the argument's reference value, which `interpolated_argument` recognises
-    from then on. Interpolations nested in the expression of a replaced one are
-    left too, and replaced when that expression is compiled into a kernel of its
-    own.
+    An interpolation holding an argument is left in place: it is a modified
+    terminal, see `ffcx.ir.analysis.modified_terminals`. If it interpolates the
+    argument itself, its operand is rewritten into the argument's reference
+    value, which `interpolated_argument` recognises from then on. Interpolations
+    nested in the expression of a replaced one are left too, and replaced when
+    that expression is compiled into a kernel of its own.
     """
 
     def __init__(self, processing: _Processing | None = None):
@@ -820,9 +882,13 @@ class IntermediateCoefficientReplacer(DAGTraverser):
         """Handle an interpolation."""
         if not interpolation_arguments(o):
             return ProxyCoefficient(interpolation_target_space(o), o)
+        # An interpolation nested in an expression merely linear in an argument
+        # is classified along with it, from the same processing.
+        o = typing.cast(ufl.Interpolate, self.reuse_if_untouched(o))
         argument = _classify_interpolation(o, self._processing)
         check_interpolation(o, argument)
-        assert argument is not None
+        if argument is None:
+            return o
         # Interpolating the argument itself is a fixed map between the
         # reference elements, by the same pull back.
         return typing.cast(
