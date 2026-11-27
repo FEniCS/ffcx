@@ -1623,14 +1623,14 @@ def test_proxy_coefficients_are_not_form_coefficients():
 
 
 @pytest.mark.parametrize(
-    "kind",
+    "symmetric",
     [
-        "quadrature",
+        False,
         # Basix reports the reference value of a symmetric element with the
         # shape of the block, which UFL's inverse pull back cannot fill, see
         # https://github.com/FEniCS/basix/issues/1124
         pytest.param(
-            "symmetric",
+            True,
             marks=pytest.mark.xfail(
                 strict=True,
                 raises=ValueError,
@@ -1638,63 +1638,79 @@ def test_proxy_coefficients_are_not_form_coefficients():
                 "https://github.com/FEniCS/basix/issues/1124",
             ),
         ),
-        "mixed",
-        "real",
     ],
 )
-def test_proxy_target_spaces(compile_args, kind):
-    """Interpolating an expression into a quadrature, symmetric, mixed or real space.
+def test_interpolate_into_mixed_space(compile_args, symmetric):
+    """Interpolating an expression into a mixed space.
 
-    A quadrature space against the expression at its points. A symmetric space
-    against the full tensor space, a mixed space against its sub-spaces, and a
-    real space against DG0, which it is equivalent to on a cell, with quadratic
-    fields that they do not reproduce.
+    The space is P1 x (RT x quadrature), with symmetric tensor P1 added to the
+    inner mixed element if ``symmetric``. It holds a nested mixed element, a
+    Piola mapped sub-element and a quadrature sub-element, whose rule the
+    integral takes.
+
+    It is checked twice: with a quadratic field, which the sub-spaces do not
+    reproduce, against interpolations into each of them, the full tensor space
+    for the symmetric one; and with a field whose integral the interpolation
+    keeps, linear or the product x y at the quadrature points, against the exact
+    integral of the field, which involves no interpolation.
     """
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
     x = ufl.SpatialCoordinate(domain)
+    P1 = basix.ufl.element("Lagrange", "triangle", 1)
+    RT = basix.ufl.element("RT", "triangle", 1)
+    Q = basix.ufl.quadrature_element("triangle", degree=2)
+    S = basix.ufl.element("Lagrange", "triangle", 1, shape=(2, 2), symmetry=True)
+    sub_elements = [RT, Q, S] if symmetric else [RT, Q]
+    target = ufl.FunctionSpace(
+        domain, basix.ufl.mixed_element([P1, basix.ufl.mixed_element(sub_elements)])
+    )
+    # The space of each part interpolated into for the reference
+    references = {
+        "P1": P1,
+        "RT": RT,
+        "Q": Q,
+        "S": basix.ufl.element("Lagrange", "triangle", 1, shape=(2, 2)),
+    }
+    names = ["P1", "RT", "Q", "S"] if symmetric else ["P1", "RT", "Q"]
+    quadratic = {
+        "P1": x[0] * x[1],
+        "RT": ufl.as_vector((x[0] ** 2, x[1])),
+        "Q": x[0] ** 2 * x[1],
+        "S": ufl.as_matrix([[x[0] * x[1], x[1] ** 2], [x[1] ** 2, x[0] ** 2]]),
+    }
+    # In P1, RT and symmetric P1, and integrated exactly by the quadrature rule
+    reproduced = {
+        "P1": 1 + 2 * x[0] - x[1],
+        "RT": ufl.as_vector((1 + x[0] / 2, -2 + x[1] / 2)),
+        "Q": x[0] * x[1],
+        "S": ufl.as_matrix([[1 + x[0], x[1]], [x[1], 2 - x[0]]]),
+    }
 
-    def space(*args, **kwargs):
-        return ufl.FunctionSpace(domain, basix.ufl.element(*args, **kwargs))
-
-    interpolate = ufl.Interpolate
-    if kind == "quadrature":
-        Q = ufl.FunctionSpace(domain, basix.ufl.quadrature_element("triangle", degree=2))
-        forms = [interpolate(x[0] * x[1], Q) * ufl.dx, x[0] * x[1] * ufl.dx(degree=2)]
-    elif kind == "symmetric":
-        f = ufl.as_matrix([[x[0] * x[1], x[1] ** 2], [x[1] ** 2, x[0] ** 2]])
-        C = ufl.as_matrix([[1.0, 2.0], [3.0, 4.0]])
-        forms = [
-            ufl.inner(interpolate(f, space("Lagrange", "triangle", 1, **shape)), C) * ufl.dx
-            for shape in ({"shape": (2, 2), "symmetry": True}, {"shape": (2, 2)})
-        ]
-    elif kind == "real":
-        f = ufl.as_vector((x[0] * x[1], x[1] ** 2))
-        forms = [
-            ufl.dot(interpolate(f, ufl.FunctionSpace(domain, element)), ufl.as_vector((1.0, 2.0)))
-            * ufl.dx
-            for element in (
-                basix.ufl.real_element("triangle", (2,)),
-                basix.ufl.element("DG", "triangle", 0, shape=(2,)),
-            )
-        ]
-    else:
-        P1, RT = (
-            basix.ufl.element(*e) for e in (("Lagrange", "triangle", 1), ("RT", "triangle", 1))
+    def combine(parts):
+        """The parts as one vector, their components one after the other."""
+        return ufl.as_vector(
+            [
+                part[i] if part.ufl_shape else part
+                for part in (parts[name] for name in names)
+                for i in itertools.product(*(range(n) for n in part.ufl_shape))
+            ]
         )
-        mixed = ufl.FunctionSpace(domain, basix.ufl.mixed_element([P1, RT]))
-        f, g, c = x[0] * x[1], ufl.as_vector((x[0] ** 2, x[1])), ufl.as_vector((1.0, 2.0, 3.0))
-        forms = [
-            ufl.dot(interpolate(ufl.as_vector((f, g[0], g[1])), mixed), c) * ufl.dx,
-            (
-                interpolate(f, space("Lagrange", "triangle", 1))
-                + 2 * interpolate(g, space("RT", "triangle", 1))[0]
-                + 3 * interpolate(g, space("RT", "triangle", 1))[1]
-            )
-            * ufl.dx,
-        ]
+
+    C = ufl.as_vector([float(i + 1) for i in range(combine(quadratic).ufl_shape[0])])
+    interpolated = {
+        name: ufl.Interpolate(quadratic[name], ufl.FunctionSpace(domain, references[name]))
+        for name in names
+    }
+    forms = [
+        ufl.inner(ufl.Interpolate(combine(quadratic), target), C) * ufl.dx,
+        ufl.inner(combine(interpolated), C) * ufl.dx,
+        ufl.inner(ufl.Interpolate(combine(reproduced), target), C) * ufl.dx,
+        ufl.inner(combine(reproduced), C) * ufl.dx,
+    ]
     compiled, module, _ = ffcx.codegeneration.jit.compile_forms(
         forms, cffi_extra_compile_args=compile_args
     )
-    A, A_ref = (_tabulate_scalar(module, _integral(module, form)) for form in compiled)
-    assert abs(A_ref) > 1e-3
-    np.testing.assert_allclose(A, A_ref, rtol=1e-13)
+    A = [_tabulate_scalar(module, _integral(module, form)) for form in compiled]
+    for value, value_ref in ((A[0], A[1]), (A[2], A[3])):
+        assert abs(value_ref) > 1e-3
+        np.testing.assert_allclose(value, value_ref, rtol=1e-13)
