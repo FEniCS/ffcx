@@ -1609,7 +1609,7 @@ def test_proxy_coefficients_are_not_form_coefficients():
             True,
             marks=pytest.mark.xfail(
                 strict=True,
-                raises=ValueError,
+                raises=NotImplementedError,
                 reason="Basix symmetric elements report a block-shaped reference value, "
                 "https://github.com/FEniCS/basix/issues/1124",
             ),
@@ -1623,7 +1623,7 @@ def test_interpolate_into_mixed_space(compile_args, dtype, symmetric):
     The space is vector DG1 x (RT x quadrature), with symmetric tensor P1 added
     to the inner mixed element if ``symmetric``. It holds a nested mixed element,
     a blocked sub-element whose interpolation matrix is not the identity, a Piola
-    mapped sub-element, and a quadrature sub-element, whose rule the integral
+    mapped sub-element, and a blocked quadrature sub-element, whose rule the integral
     takes. As the reference interpolates into each sub-space, it holds several
     proxy coefficients in one integral.
 
@@ -1640,7 +1640,7 @@ def test_interpolate_into_mixed_space(compile_args, dtype, symmetric):
     )
     assert not DG1.basix_element.interpolation_is_identity
     RT = basix.ufl.element("RT", "triangle", 1)
-    Q = basix.ufl.quadrature_element("triangle", degree=2)
+    Q = basix.ufl.quadrature_element("triangle", value_shape=(2,), degree=2)
     S = basix.ufl.element("Lagrange", "triangle", 1, shape=(2, 2), symmetry=True)
     sub_elements = [RT, Q, S] if symmetric else [RT, Q]
     target = ufl.FunctionSpace(
@@ -1657,14 +1657,14 @@ def test_interpolate_into_mixed_space(compile_args, dtype, symmetric):
     quadratic = {
         "DG1": ufl.as_vector((x[0] * x[1], x[1] ** 2)),
         "RT": ufl.as_vector((x[0] ** 2, x[1])),
-        "Q": x[0] ** 2 * x[1],
+        "Q": ufl.as_vector((x[0] ** 2 * x[1], x[0] * x[1] ** 2)),
         "S": ufl.as_matrix([[x[0] * x[1], x[1] ** 2], [x[1] ** 2, x[0] ** 2]]),
     }
     # In DG1, RT and symmetric P1, and integrated exactly by the quadrature rule
     reproduced = {
         "DG1": ufl.as_vector((1 + 2 * x[0] - x[1], 3 - x[0])),
         "RT": ufl.as_vector((1 + x[0] / 2, -2 + x[1] / 2)),
-        "Q": x[0] * x[1],
+        "Q": ufl.as_vector((x[0] * x[1], x[1] ** 2)),
         "S": ufl.as_matrix([[1 + x[0], x[1]], [x[1], 2 - x[0]]]),
     }
 
@@ -1696,3 +1696,39 @@ def test_interpolate_into_mixed_space(compile_args, dtype, symmetric):
     for value, value_ref in ((A[0], A[1]), (A[2], A[3])):
         assert abs(value_ref) > 1e-3
         np.testing.assert_allclose(value, value_ref, rtol=500 * np.finfo(dtype).eps)
+
+
+@pytest.mark.parametrize("kind", ["quadrature", "real"])
+def test_interpolate_into_quadrature_or_real_space(compile_args, kind):
+    """Interpolating an expression into a vector quadrature or real space.
+
+    The degrees of freedom of a quadrature space are the values at its points,
+    so the integral is that of the expression with the same rule. A real space
+    is DG0 on a cell: the interpolation is the value at the midpoint of the
+    cell, cell by cell, not a value for the whole domain.
+    """
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    x = ufl.SpatialCoordinate(domain)
+    g, c = ufl.as_vector((x[0] * x[1], x[0] * x[1] ** 2)), ufl.as_vector((1.0, 2.0))
+    if kind == "quadrature":
+        Q = basix.ufl.quadrature_element("triangle", value_shape=(2,), degree=2)
+        target = ufl.FunctionSpace(domain, Q)
+        forms = [ufl.dot(c, g) * ufl.dx(degree=2)]
+    else:
+        target = ufl.FunctionSpace(domain, basix.ufl.real_element("triangle", (2,)))
+        forms = []
+    forms.insert(0, ufl.dot(c, ufl.Interpolate(g, target)) * ufl.dx)
+    compiled, module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms, cffi_extra_compile_args=compile_args
+    )
+    A = [_tabulate_scalar(module, _integral(module, form)) for form in compiled]
+    if kind == "quadrature":
+        A_ref = A[1]
+    else:
+        # The cell of `_tabulate_scalar`
+        vertices = np.array([[0.1, 0.2], [2.0, 0.3], [0.4, 1.7]])
+        x0, x1 = vertices.mean(axis=0)
+        area = abs(np.linalg.det(vertices[1:] - vertices[0])) / 2
+        A_ref = (x0 * x1 + 2 * x0 * x1**2) * area
+    assert abs(A_ref) > 1e-3
+    np.testing.assert_allclose(A[0], A_ref, rtol=1e-13)

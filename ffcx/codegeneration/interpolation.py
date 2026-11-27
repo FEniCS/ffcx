@@ -278,8 +278,11 @@ def _interpolate(
         return [L.ForRange(b, 0, block_size, body)] if block_size > 1 else body
 
     # The dofs of a quadrature element are its values at its points, and so
-    # are those of an element interpolating by point evaluation
-    if element.has_custom_quadrature or element.basix_element.interpolation_is_identity:
+    # are those of a scalar element interpolating by point evaluation
+    if element.has_custom_quadrature or (
+        element.basix_element.interpolation_is_identity
+        and int(np.prod(element.basix_element.value_shape, dtype=int)) == 1
+    ):
         if point_offset == 0 and component_offset == 0 and stride == block_size:
             return [L.ForRange(j, 0, element.dim, [L.Assign(dofs[offset + j], values[j])])]
         copy = L.Assign(dof, value(j, b if block_size > 1 else None))

@@ -406,9 +406,42 @@ def _check_target_element(element: ufl.AbstractFiniteElement) -> None:
     if (
         not isinstance(element, (basix.ufl._BasixElement, basix.ufl._BlockedElement))
         or element.is_symmetric
+        or element.has_custom_quadrature
     ):
         raise NotImplementedError(
             f"Interpolating an expression into a {element} space is not supported."
+        )
+
+
+def check_interpolation_targets(o: ufl.Form | ufl.core.expr.Expr) -> None:
+    """Check that UFL can map each interpolation onto the reference cell of its target.
+
+    UFL's inverse pull back of a symmetric element fills a reference value with
+    one entry per independent component, while basix reports one with the shape
+    of the block, see https://github.com/FEniCS/basix/issues/1124. This is
+    checked before UFL maps the interpolations.
+
+    Args:
+        o: A form or an expression, as given.
+    """
+    expressions = [itg.integrand() for itg in o.integrals()] if isinstance(o, ufl.Form) else [o]
+    for expression in expressions:
+        for node in unique_pre_traversal(expression):
+            if isinstance(node, ufl.Interpolate):
+                _check_symmetric_reference_value(interpolation_target_space(node).ufl_element())
+
+
+def _check_symmetric_reference_value(element: ufl.AbstractFiniteElement) -> None:
+    """Check that a symmetric element, or sub-element, stores its whole reference value."""
+    assert isinstance(element, basix.ufl._ElementBase)
+    if isinstance(element, basix.ufl._MixedElement):
+        for sub_element in element.sub_elements:
+            _check_symmetric_reference_value(sub_element)
+    elif element.is_symmetric and element.reference_value_size != element.block_size:
+        raise NotImplementedError(
+            "Interpolating into a symmetric space is not supported while basix reports its "
+            "reference value with the shape of the block, see "
+            "https://github.com/FEniCS/basix/issues/1124."
         )
 
 
@@ -610,6 +643,7 @@ def _process_expression(
     # pushes a derivative into it.
     expression = apply_derivatives(lowered)
     if do_apply_function_pullbacks:
+        check_interpolation_targets(expression)
         # The same passes, in the same order, as `ufl.algorithms.compute_form_data`
         expression = ufl.algorithms.apply_function_pullbacks.apply_function_pullbacks(expression)
     expression = apply_geometry_lowering(expression, preserve_geometry_types)
@@ -680,6 +714,7 @@ def _analyze_form(
     # Interpolations of an expression are left in the form for UFL to process,
     # so that it accounts for the coefficients they read, and replaced by proxy
     # coefficients below.
+    check_interpolation_targets(form)
 
     # Compute form metadata
     form_data = _compute_form_data(form, complex_mode, do_cancel_jacobian_products)
