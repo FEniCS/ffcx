@@ -547,7 +547,7 @@ def test_interpolate_derivative_piola(compile_args, dtype, derivative, rank, fam
     J_ref = form(scalarise(du_t))
 
     # The interpolation must be recognised as that of the argument itself
-    assert not ffcx.analysis.analyze_ufl_objects([J], np.dtype(dtype)).interpolation_kernels
+    assert not ffcx.analysis.analyze_ufl_objects([J], np.dtype(dtype)).sub_kernels
 
     compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
         [J, J_ref], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
@@ -1110,7 +1110,7 @@ def test_interpolate_argument_is_compile_time(
     assert node.ufl_operands[0] == ufl.classes.ReferenceValue(argument)
     assert ffcx.analysis.interpolated_argument(node) == argument
     assert not ffcx.analysis.interpolation_has_runtime_table(node)
-    assert not analysis.interpolation_kernels
+    assert not analysis.sub_kernels
 
 
 def _integral(module, form, subdomain_id=-1):
@@ -1618,12 +1618,8 @@ def test_proxy_coefficients_are_not_form_coefficients():
             isinstance(c, ffcx.analysis.ProxyCoefficient)
             for c in integral.expression.coefficient_numbering
         )
-    (proxies,) = (
-        integral.interpolation.proxies
-        for integral in ir.integrals
-        if integral.interpolation.proxies
-    )
-    assert len(proxies) == 1
+    (sub_kernels,) = (integral.sub_kernels for integral in ir.integrals if integral.sub_kernels)
+    assert len(sub_kernels) == 1
 
 
 @pytest.mark.parametrize("kind", ["mixed", "symmetric", "quadrature", "real"])

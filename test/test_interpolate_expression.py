@@ -497,7 +497,7 @@ def test_interpolations_sharing_a_kernel(compile_args):
     analysis = ffcx.analysis.analyze_ufl_objects([(first, POINTS), (second, POINTS)], np.float64)
     options = ffcx.options.get_options({"scalar_type": "float64"})
     ir = ffcx.ir.representation.compute_ir(analysis, {}, "", options, None)
-    assert len(analysis.interpolation_kernels) == 3  # two proxies in each expression
+    assert len(analysis.sub_kernels) == 3  # two proxies in each expression
     assert len(ir.expressions) == 3  # one kernel, shared, and the two expressions
 
     compiled, module = compile_expressions([(first, POINTS), (second, POINTS)], compile_args)
@@ -619,8 +619,8 @@ def test_unsupported_interpolations():
             ffcx.codegeneration.jit.compile_forms([ufl.Interpolate(u * v, target) * ufl.dx])
 
 
-def test_kernel_interpolations():
-    """What needs an expression kernel of its own, and what it reads."""
+def test_sub_kernel_targets():
+    """What needs a sub-kernel of its own, and what it reads."""
     mesh = domain()
     V1, V2 = space(mesh, "Lagrange", 1), space(mesh, "Lagrange", 2)
     u, z = ufl.Coefficient(V2), ufl.Coefficient(V1)
@@ -635,20 +635,20 @@ def test_kernel_interpolations():
     analysis = ffcx.analysis.analyze_ufl_objects([(expression, POINTS)], np.float64)
     processed, _, _ = analysis.expressions[-1]
 
-    interpolations = ffcx.analysis.kernel_interpolations([processed])
+    interpolations = ffcx.analysis.sub_kernel_targets([processed])
     assert len(interpolations) == 2
     proxy, table = interpolations
     assert isinstance(proxy, ffcx.analysis.ProxyCoefficient)
     assert isinstance(table, ufl.Interpolate)
-    assert set(analysis.interpolation_kernels) == {proxy, table}
+    assert set(analysis.sub_kernels) == {proxy, table}
 
-    assert ffcx.analysis.interpolation_coefficients(proxy) == [u]
-    assert ffcx.analysis.interpolation_constants(proxy) == [c]
-    assert ffcx.analysis.interpolation_coefficients(table) == [u]
+    assert ffcx.analysis.sub_kernel_coefficients(proxy) == [u]
+    assert ffcx.analysis.sub_kernel_constants(proxy) == [c]
+    assert ffcx.analysis.sub_kernel_coefficients(table) == [u]
     # The proxy coefficient stands for what it is evaluated from
     assert ffcx.analysis.required_coefficients(processed) == [u, z]
     assert ffcx.analysis.required_constants(processed) == [c]
 
     # The kernels come before the expression that calls them
-    for index in analysis.interpolation_kernels.values():
+    for index in analysis.sub_kernels.values():
         assert index < len(analysis.expressions) - 1

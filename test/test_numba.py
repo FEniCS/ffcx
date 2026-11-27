@@ -1,4 +1,4 @@
-# Copyright (C) 2025 Paul T. Kühner
+# Copyright (C) 2025-2026 Paul T. Kühner
 #
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
@@ -9,13 +9,17 @@ import importlib.util
 from pathlib import Path
 from types import ModuleType
 
+import basix.ufl
 import numpy as np
 import numpy.typing as npt
 import pytest
+import ufl
 
 import ffcx.main
+import ffcx.options
 from ffcx.codegeneration.numba.utils import ufcx_kernel_signature
 from ffcx.codegeneration.utils import dtype_to_scalar_dtype
+from ffcx.compiler import compile_ufl_objects
 
 numba = pytest.importorskip("numba")
 
@@ -153,3 +157,57 @@ def test_expression(scalar_type: str, generate_poisson: ModuleType) -> None:
         [5, 7, 8, 11, 15, 18, 14, 16, 17, 32, 36, 39, 23, 25, 26, 53, 57, 60], dtype=dtype
     )
     assert np.allclose(e, e_expected)
+
+
+@pytest.mark.parametrize("dtype", ["float32", "float64"])  # TODO: complex limited by ctypes
+@pytest.mark.parametrize("element", [("Lagrange", 1), ("DG", 0)], ids=["P1", "DG0"])
+def test_interpolation(dtype: str, element: tuple[str, int], tmp_path: Path) -> None:
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    V = ufl.FunctionSpace(mesh, basix.ufl.element("Lagrange", "triangle", 2))
+    W = ufl.FunctionSpace(mesh, basix.ufl.element(element[0], "triangle", element[1]))
+
+    u = ufl.Coefficient(V)
+    J = ufl.Interpolate(u**2, W) * ufl.dx
+    dJ = ufl.derivative(J, u, ufl.TestFunction(V))
+
+    options = ffcx.options.get_options({"language": "numba", "scalar_type": dtype})
+    (source,), (suffix,) = compile_ufl_objects(
+        [J, dJ], options, object_names={id(J): "J", id(dJ): "dJ"}, namespace="interpolation"
+    )
+    path = tmp_path / f"interpolation{suffix}"
+    path.write_text(source)
+    module = load_module(path)
+
+    dtype_r = dtype_to_scalar_dtype(dtype)
+    w = np.array([0.5, -1.0, 2.0, 0.3, 0.7, -0.2], dtype=dtype)
+    coords = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [0.0, 3.0, 0.0]], dtype=dtype_r)
+
+    element_V = V.ufl_element().basix_element
+    element_W = W.ufl_element().basix_element
+    phi_V = element_V.tabulate(0, element_W.points)[0, :, :, 0]
+    u_x = phi_V @ w.astype(np.float64)
+    points, weights = basix.make_quadrature(element_W.cell_type, element_W.degree)
+    det_J = abs(np.linalg.det(coords[1:, :2] - coords[0, :2]))
+    int_phi_W = det_J * weights @ element_W.tabulate(0, points)[0, :, :, 0]
+    expected = {
+        "J": np.atleast_1d(int_phi_W @ u_x**2),
+        "dJ": int_phi_W @ (2 * u_x[:, None] * phi_V),
+    }
+
+    c = np.empty((0,), dtype=dtype)
+    entity_local_index = np.zeros((2,), dtype=np.intc)
+    quadrature_permutation = np.zeros((2,), dtype=np.uint8)
+    for name, values in expected.items():
+        A = np.zeros(np.shape(values), dtype=dtype)
+        integral = getattr(module, f"form_interpolation_{name}").form_integrals[0]
+        kernel = wrap_kernel(dtype, dtype_r)(integral.tabulate_tensor)
+        kernel.ctypes(
+            as_C_array(A),
+            as_C_array(w),
+            as_C_array(c),
+            as_C_array(coords),
+            as_C_array(entity_local_index),
+            as_C_array(quadrature_permutation),
+            None,
+        )
+        np.testing.assert_allclose(A, values, atol=10 * np.finfo(dtype).eps)

@@ -59,8 +59,8 @@ ufcx_expression* {name_from_uflfile} = &{factory_name};
 // End of code for expression {factory_name}
 """
 
-interpolation_kernel = """
-// Code for interpolation kernel {factory_name}
+sub_kernel = """
+// Code for sub-kernel {factory_name}
 
 static void tabulate_tensor_{factory_name}({scalar_type}* restrict A,
                                     const {scalar_type}* restrict w,
@@ -73,5 +73,5 @@ static void tabulate_tensor_{factory_name}({scalar_type}* restrict A,
 {tabulate_expression}
 }}
 
-// End of code for interpolation kernel {factory_name}
+// End of code for sub-kernel {factory_name}
 """

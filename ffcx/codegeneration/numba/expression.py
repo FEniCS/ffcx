@@ -37,6 +37,15 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     d["factory_name"] = factory_name
     parts = eg.generate()
 
+    format = Formatter(options["scalar_type"])  # type: ignore
+    body = format(parts)
+    body = "\n".join(["    " + line for line in body.split("\n")])
+    d["tabulate_expression"] = body
+
+    if ir.is_sub_kernel:
+        d = {key: d[key] for key in template_keys(expression_template.sub_kernel)}
+        return (expression_template.sub_kernel.format_map(d),)
+
     # tabulate_expression
     sizes = tensor_sizes(ir)
     header = f"""
@@ -47,10 +56,6 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     entity_local_index = numba.carray(_entity_local_index, ({sizes.local_index}))
     quadrature_permutation = numba.carray(_quadrature_permutation, ({sizes.permutation}))
     """
-    format = Formatter(options["scalar_type"])  # type: ignore
-    body = format(parts)
-    body = "\n".join(["    " + line for line in body.split("\n")])
-
     d["tabulate_expression"] = header + body
 
     # TODO: original_coefficient_positions_init

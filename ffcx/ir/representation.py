@@ -41,12 +41,12 @@ from ffcx import naming
 from ffcx.analysis import (
     ProxyCoefficient,
     UFLData,
-    integral_interpolations,
-    interpolation_coefficients,
-    interpolation_constants,
-    kernel_interpolations,
+    integral_sub_kernel_targets,
     required_coefficients,
     required_constants,
+    sub_kernel_coefficients,
+    sub_kernel_constants,
+    sub_kernel_targets,
 )
 from ffcx.definitions import entity_types, supported_integral_types
 from ffcx.ir.elementtables import interpolated_elements
@@ -112,17 +112,20 @@ class QuadratureIR(typing.NamedTuple):
     weights: npt.NDArray[np.float64]
 
 
-class InterpolationKernelIR(typing.NamedTuple):
-    """Intermediate representation of a call to the expression kernel of an interpolation.
+class SubKernelIR(typing.NamedTuple):
+    """Intermediate representation of a call to a sub-kernel.
 
-    The kernel evaluates the interpolated expression at the interpolation points
-    of the target element. It is passed the coefficients and constants it reads
-    packed into contiguous arrays, and writes ``[point][component][dof]...``.
+    The kernel is passed the coefficients and constants it reads packed into
+    contiguous arrays. The sub-kernel of an interpolation evaluates the
+    interpolated expression at the interpolation points of the target element,
+    and writes ``[point][component][dof]...``, with one dof axis for each
+    argument the expression is linear in.
     """
 
-    #: The proxy coefficient, or the interpolation whose table is built for each cell
-    interpolation: ProxyCoefficient | ufl.Interpolate
-    #: Name of the expression kernel
+    #: What the sub-kernel builds: the degrees of freedom of a proxy
+    #: coefficient, or the table of an interpolation built for each cell
+    target: ProxyCoefficient | ufl.Interpolate
+    #: Name of the sub-kernel, which each backend names its function from
     name: str
     #: The coefficients the kernel reads, in the order it reads them
     coefficients: list[ufl.Coefficient]
@@ -133,16 +136,6 @@ class InterpolationKernelIR(typing.NamedTuple):
     shape: tuple[int, ...]
 
 
-class InterpolationIR(typing.NamedTuple):
-    """Intermediate representation of the interpolations evaluated in a kernel."""
-
-    #: Proxy coefficients, whose dofs are built for each cell
-    proxies: list[InterpolationKernelIR]
-    #: Interpolations of an expression linear in an argument, whose element
-    #: table is built for each cell
-    tables: list[InterpolationKernelIR]
-
-
 class IntegralIR(typing.NamedTuple):
     """Intermediate representation of an integral."""
 
@@ -150,7 +143,9 @@ class IntegralIR(typing.NamedTuple):
     rank: int
     enabled_coefficients: list[bool]
     part: TensorPart
-    interpolation: InterpolationIR
+    #: The sub-kernels the kernel calls, for its proxy coefficients and the
+    #: tables it builds for each cell
+    sub_kernels: list[SubKernelIR]
     kernel_name: str | None
     kernel_name_is_explicit: bool
 
@@ -163,11 +158,12 @@ class ExpressionIR(typing.NamedTuple):
     coefficient_names: list[str]
     constant_names: list[str]
     name_from_uflfile: str
-    interpolation: InterpolationIR
+    #: The sub-kernels the kernel calls, see `IntegralIR`
+    sub_kernels: list[SubKernelIR]
     #: Whether it evaluates an interpolation for the kernels that hold it,
     #: rather than being an expression asked for. Such a kernel is internal to
     #: the generated code, and not exported as an expression.
-    is_interpolation_kernel: bool
+    is_sub_kernel: bool
 
 
 class DataIR(typing.NamedTuple):
@@ -316,28 +312,25 @@ def compute_ir(
                 prefix,
             )
 
-    # The expression kernels of interpolations are named apart from the
+    # The sub-kernels of the proxy coefficients are named apart from the
     # expressions that were asked for, which they could otherwise share a
     # signature with while being compiled differently. Interpolations that
     # differ only in their coefficients share a kernel.
-    kernel_indices = set(analysis.interpolation_kernels.values())
+    kernel_indices = set(analysis.sub_kernels.values())
     expression_names = [
         naming.expression_name(
-            (org_expr, points), f"{prefix}_interpolation" if i in kernel_indices else prefix
+            (org_expr, points), f"{prefix}_sub_kernel" if i in kernel_indices else prefix
         )
         for i, (_, points, org_expr) in enumerate(analysis.expressions)
     ]
-    interpolation_names = {
-        interpolation: expression_names[i]
-        for interpolation, i in analysis.interpolation_kernels.items()
-    }
+    sub_kernel_names = {target: expression_names[i] for target, i in analysis.sub_kernels.items()}
     irs = [
         _compute_integral_ir(
             fd,
             i,
             analysis.element_numbers.keys(),
             integral_names,
-            interpolation_names,
+            sub_kernel_names,
             object_names,
             prefix,
             options,
@@ -397,7 +390,7 @@ def compute_ir(
                 options,
                 visualise,
                 object_names,
-                interpolation_names,
+                sub_kernel_names,
             )
         )
     return DataIR(
@@ -425,8 +418,8 @@ def _compute_integral_ir(
         form_index: Index of form in the sequence of forms.
         unique_elements: Set of unique elements in the form.
         integral_names: Map from `(form_index, integral_index)` to the name of the integral.
-        kernel_names: Map from an interpolation to the name of the expression kernel
-            that evaluates it at the interpolation points of its target element.
+        kernel_names: Map from a proxy coefficient, or an interpolation whose table is
+            built for each cell, to the name of its sub-kernel.
         object_names: Map from object Python id to object name.
         prefix: Namespace prefix for generated code.
         options: Options for the intermediate representation. 'part': If the full tensor or
@@ -596,11 +589,11 @@ def _compute_integral_ir(
         # The proxy coefficients are not coefficients of the form, but built in
         # the kernel into an array of their own, see
         # `ffcx.codegeneration.interpolation`.
-        interpolations = integral_interpolations(itg_data)
+        targets = integral_sub_kernel_targets(itg_data)
         proxy_coefficient_numbering: dict[ProxyCoefficient, int] = {}
         proxy_coefficient_offsets: dict[ProxyCoefficient, int] = {}
         _offset = 0
-        for i, proxy in enumerate(c for c in interpolations if isinstance(c, ProxyCoefficient)):
+        for i, proxy in enumerate(t for t in targets if isinstance(t, ProxyCoefficient)):
             proxy_coefficient_numbering[proxy] = i
             proxy_coefficient_offsets[proxy] = _offset
             _offset += width * element_dimensions[proxy.ufl_element()]
@@ -639,9 +632,9 @@ def _compute_integral_ir(
             integral_names[(form_index, itg_data_index)],
         )
 
-        # The interpolations evaluated in this integral, in the order they were
-        # collected in `ffcx.analysis.analyze_ufl_objects`.
-        ir["interpolation"] = _compute_interpolation_ir(interpolations, kernel_names)
+        # The sub-kernels called in this integral, in the order their targets
+        # were collected in `ffcx.analysis.analyze_ufl_objects`.
+        ir["sub_kernels"] = _compute_sub_kernel_irs(targets, kernel_names)
 
         expression_ir.update(integral_ir)
 
@@ -653,38 +646,39 @@ def _compute_integral_ir(
     return irs
 
 
-def _compute_interpolation_ir(
-    interpolations: typing.Iterable[ProxyCoefficient | ufl.Interpolate],
+def _compute_sub_kernel_irs(
+    targets: typing.Iterable[ProxyCoefficient | ufl.Interpolate],
     kernel_names: dict[ProxyCoefficient | ufl.Interpolate, str],
-) -> InterpolationIR:
-    """Compute intermediate representation of the interpolations evaluated in a kernel.
+) -> list[SubKernelIR]:
+    """Compute intermediate representation of the sub-kernels a kernel calls.
 
     Args:
-        interpolations: The proxy coefficients and the interpolations whose
-            table is built for each cell.
-        kernel_names: Map from an interpolation to the name of its expression kernel.
+        targets: The proxy coefficients and the interpolations whose table is
+            built for each cell.
+        kernel_names: Map from a target to the name of its sub-kernel.
     """
-    proxies: list[InterpolationKernelIR] = []
-    tables: list[InterpolationKernelIR] = []
-    for interpolation in interpolations:
-        target = interpolation.ufl_element()
-        assert isinstance(target, basix.ufl._ElementBase)
+    sub_kernels: list[SubKernelIR] = []
+    for target in targets:
+        element = target.ufl_element()
+        assert isinstance(element, basix.ufl._ElementBase)
+        # The values of the expression at the points of the target element
         shape: tuple[int, ...] = (
-            target.basix_element.points.shape[0],
-            target.reference_value_size,
+            element.basix_element.points.shape[0],
+            element.reference_value_size,
         )
-        if isinstance(interpolation, ufl.Interpolate):
+        if isinstance(target, ufl.Interpolate):
             # One dof axis for each argument the expression is linear in
-            shape += tuple(element.dim for element in interpolated_elements(interpolation))
-        kernel = InterpolationKernelIR(
-            interpolation=interpolation,
-            name=kernel_names[interpolation],
-            coefficients=interpolation_coefficients(interpolation),
-            constants=interpolation_constants(interpolation),
-            shape=shape,
+            shape += tuple(e.dim for e in interpolated_elements(target))
+        sub_kernels.append(
+            SubKernelIR(
+                target=target,
+                name=kernel_names[target],
+                coefficients=sub_kernel_coefficients(target),
+                constants=sub_kernel_constants(target),
+                shape=shape,
+            )
         )
-        (proxies if isinstance(interpolation, ProxyCoefficient) else tables).append(kernel)
-    return InterpolationIR(proxies=proxies, tables=tables)
+    return sub_kernels
 
 
 def _compute_form_ir(
@@ -775,7 +769,7 @@ def _compute_expression_ir(
     analysis_expr: tuple[ufl.core.expr.Expr, np.ndarray, ufl.core.expr.Expr],
     index: int,
     name: str,
-    is_interpolation_kernel: bool,
+    is_sub_kernel: bool,
     prefix: str,
     analysis: UFLData,
     options: dict,
@@ -790,16 +784,16 @@ def _compute_expression_ir(
             expression it was processed from.
         index: Index of the expression in `analysis.expressions`.
         name: Name of the expression kernel.
-        is_interpolation_kernel: Whether the expression evaluates an
-            interpolation, for the kernels of the integrals and expressions
-            that hold it, rather than being an expression asked for.
+        is_sub_kernel: Whether the expression evaluates an interpolation, for
+            the kernels of the integrals and expressions that hold it, rather
+            than being an expression asked for.
         prefix: Namespace prefix for generated code.
         analysis: The analysed UFL objects.
         options: Options for the intermediate representation.
         visualise: If set, the image format in which to store the graph
             representation of the expression.
         object_names: Map from object Python id to object name.
-        kernel_names: Map from an interpolation to the name of its expression kernel.
+        kernel_names: Map from a sub-kernel's target to its name, see `_compute_integral_ir`.
     """
     logger.info(f"Computing IR for Expression {index}")
 
@@ -840,13 +834,12 @@ def _compute_expression_ir(
         raise RuntimeError("Expression with more than two Arguments not implemented.")
 
     # The coefficients passed to the kernel. Those of a proxy coefficient are
-    # passed in its place, to evaluate it from. The kernel of an interpolation
-    # reads them in the order that its callers pack them, see
-    # `ffcx.analysis.interpolation_coefficients`.
+    # passed in its place, to evaluate it from. A sub-kernel reads them in the
+    # order that its callers pack them, see `ffcx.analysis.sub_kernel_coefficients`.
     original_coefficients = required_coefficients(original_expr)
-    coefficients = original_coefficients if is_interpolation_kernel else required_coefficients(expr)
-    interpolations = kernel_interpolations([expr])
-    proxies = [c for c in interpolations if isinstance(c, ProxyCoefficient)]
+    coefficients = original_coefficients if is_sub_kernel else required_coefficients(expr)
+    targets = sub_kernel_targets([expr])
+    proxies = [c for c in targets if isinstance(c, ProxyCoefficient)]
 
     coefficient_numbering: dict[ufl.Coefficient, int] = {}
     coefficient_offsets: dict[ufl.Coefficient, int] = {}
@@ -873,7 +866,7 @@ def _compute_expression_ir(
     ir["coefficient_names"] = [
         object_names.get(id(obj), f"w{j}") for j, obj in enumerate(coefficients)
     ]
-    ir["interpolation"] = _compute_interpolation_ir(interpolations, kernel_names)
+    ir["sub_kernels"] = _compute_sub_kernel_irs(targets, kernel_names)
 
     if cell is not None:
         if (tdim := cell.topological_dimension) == (pdim := points.shape[1]):
@@ -938,5 +931,5 @@ def _compute_expression_ir(
 
     base_ir.update(expression_ir)
     ir["expression"] = CommonExpressionIR(**base_ir)
-    ir["is_interpolation_kernel"] = is_interpolation_kernel
+    ir["is_sub_kernel"] = is_sub_kernel
     return ExpressionIR(**ir)
