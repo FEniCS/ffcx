@@ -843,13 +843,12 @@ class ProxyCoefficient(ufl.Coefficient):
         vector of their flattened components.
         """
         if isinstance(self._operator, ufl.ExternalOperator):
-            return ufl.as_vector(
-                [
-                    operand[index] if operand.ufl_shape else operand
-                    for operand in self._operator.ufl_operands
-                    for index in itertools.product(*(range(n) for n in operand.ufl_shape))
-                ]
-            )
+            components = [
+                operand[index] if operand.ufl_shape else operand
+                for operand in self._operator.ufl_operands
+                for index in itertools.product(*(range(n) for n in operand.ufl_shape))
+            ]
+            return typing.cast(ufl.core.expr.Expr, ufl.as_vector(components))
         return self._operator.ufl_operands[0]
 
     @property
