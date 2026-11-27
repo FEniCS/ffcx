@@ -37,7 +37,7 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     d["factory_name"] = factory_name
     parts = eg.generate()
 
-    format = Formatter(options["scalar_type"])
+    format = Formatter(options["scalar_type"])  # type: ignore
     body = format(parts)
     body = "\n".join(["    " + line for line in body.split("\n")])
     d["tabulate_expression"] = body
