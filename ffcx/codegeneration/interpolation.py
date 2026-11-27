@@ -3,19 +3,20 @@
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""Code generation for the interpolations evaluated in a kernel.
+"""Code generation for the sub-kernels a kernel calls.
 
-The expression an interpolation interpolates is compiled into an expression
-kernel of its own, evaluated at the interpolation points of the target element,
-see `ffcx.analysis.analyze_ufl_objects`. Integral and expression kernels call it
-before anything that reads the interpolation:
+A sub-kernel is generated ahead of the kernels that call it, in the same file,
+see `ffcx.analysis.analyze_ufl_objects`. Integral and expression kernels call
+their sub-kernels before anything that reads what they build:
 
 - A proxy coefficient takes the place of an interpolation of an expression. Its
-  degrees of freedom are the interpolation matrix of the target element applied
-  to the values the kernel writes.
+  sub-kernel evaluates the expression at the interpolation points of the target
+  element, and the degrees of freedom are the interpolation matrix of the
+  target element applied to the values it writes.
 - An interpolation of an expression that is only linear in an argument has its
-  element table built for each cell, by contracting the values the kernel writes
-  for each degree of freedom of the argument with the target element table.
+  element table built for each cell, by contracting the values its sub-kernel
+  writes for each degree of freedom of the argument with the target element
+  table.
 """
 
 from __future__ import annotations
@@ -27,23 +28,24 @@ import numpy as np
 import ufl
 
 import ffcx.codegeneration.lnodes as L
+from ffcx.analysis import ProxyCoefficient
 
 if typing.TYPE_CHECKING:
-    from ffcx.analysis import ProxyCoefficient
     from ffcx.codegeneration.backend import FFCXBackend
+    from ffcx.codegeneration.C.external import CExternalOperator
     from ffcx.ir.elementtables import InterpolatedTableT
-    from ffcx.ir.representation import InterpolationIR, InterpolationKernelIR
+    from ffcx.ir.representation import SubKernelIR
 
 
-def generate_interpolations(
-    ir: InterpolationIR,
+def generate_sub_kernels(
+    sub_kernels: list[SubKernelIR],
     backend: FFCXBackend,
     interpolated_tables: dict[str, InterpolatedTableT],
 ) -> list[L.LNode]:
-    """Generate the evaluation of the interpolations in a kernel.
+    """Generate the calls to the sub-kernels of a kernel, and what they build.
 
     Args:
-        ir: The interpolations evaluated in the kernel.
+        sub_kernels: The sub-kernels the kernel calls.
         backend: The backend of the kernel.
         interpolated_tables: The element tables built for each cell, by name.
 
@@ -51,15 +53,22 @@ def generate_interpolations(
         Code to place before anything that reads a proxy coefficient or an
         element table built for each cell.
     """
-    return _proxy_coefficients(ir.proxies, backend) + _interpolated_tables(
-        ir.tables, backend, interpolated_tables
+    proxies: list[SubKernelIR] = []
+    tables: list[SubKernelIR] = []
+    for kernel in sub_kernels:
+        if isinstance(kernel.target, ProxyCoefficient):
+            proxies.append(kernel)
+        else:
+            tables.append(kernel)
+    return _proxy_coefficients(proxies, backend) + _interpolated_tables(
+        tables, backend, interpolated_tables
     )
 
 
 def _call_kernel(
-    kernel: InterpolationKernelIR, label: str, backend: FFCXBackend, side: int = 0
+    kernel: SubKernelIR, label: str, backend: FFCXBackend, side: int = 0
 ) -> tuple[L.Symbol, list[L.Declaration], list[L.LNode]]:
-    """Evaluate an interpolated expression by calling its expression kernel.
+    """Call a sub-kernel.
 
     The coefficients and constants that the kernel reads are packed into arrays
     of their own, in the order that the kernel reads them.
@@ -113,25 +122,74 @@ def _call_kernel(
     values = L.Symbol(f"{label}_values", dtype=L.DataType.SCALAR)
     size = int(np.prod(kernel.shape))
     declarations.append(L.ArrayDecl(values, sizes=size))
-    # An expression kernel adds to the values it writes
+    # A kernel adds to the tensor it writes
     statements.append(L.ForRange(index, 0, size, [L.Assign(values[index], 0.0)]))
     statements.append(
         L.Statement(
             L.CallOp(
                 kernel.name,
-                (
-                    values,
-                    coefficients,
-                    constants,
-                    _shift(symbols.coordinate_dofs, side * _num_coordinate_dofs(kernel, backend)),
-                    _shift(symbols.entity_local_index, side),
-                    _shift(symbols.quadrature_permutation, side),
-                    L.Symbol("custom_data", dtype=L.DataType.SCALAR),
-                ),
+                (values, coefficients, constants, *_kernel_arguments(kernel, backend, side)),
             )
         )
     )
     return values, declarations, statements
+
+
+def _kernel_arguments(kernel: SubKernelIR, backend: FFCXBackend, side: int) -> list[L.LExpr]:
+    """The arguments a sub-kernel shares with the kernel that calls it, for one side."""
+    symbols = backend.symbols
+    return [
+        _shift(symbols.coordinate_dofs, side * _num_coordinate_dofs(kernel, backend)),
+        _shift(symbols.entity_local_index, side),
+        _shift(symbols.quadrature_permutation, side),
+        L.Symbol("custom_data", dtype=L.DataType.SCALAR),
+    ]
+
+
+def _call_external(
+    kernel: SubKernelIR,
+    operands: L.Symbol,
+    label: str,
+    backend: FFCXBackend,
+    side: int,
+    declarations: list[L.Declaration],
+) -> tuple[L.Symbol, list[L.LNode]]:
+    """Call the function of an external operator on its operands at the points.
+
+    Args:
+        kernel: The sub-kernel that evaluated the operands.
+        operands: The array the sub-kernel wrote the operands to.
+        label: Prefix of the names of the arrays declared.
+        backend: The backend of the calling kernel.
+        side: See `_call_kernel`.
+        declarations: Declarations to add to.
+
+    Returns:
+        The array the function writes the values of the operator to,
+        ``[point][component]``, and the statements that fill it.
+    """
+    proxy = kernel.target
+    assert isinstance(proxy, ProxyCoefficient)
+    # Checked by the C backend before the kernels are generated, see
+    # `ffcx.codegeneration.C.external` (not imported at runtime: circular)
+    external = typing.cast("CExternalOperator", proxy.external)
+    element = proxy.ufl_element()
+    # Output of the external function: the operator's values at the points,
+    # [point][component]
+    values = L.Symbol(f"{label}_external", dtype=L.DataType.SCALAR)
+    size = kernel.shape[0] * element.reference_value_size
+    declarations.append(L.ArrayDecl(values, sizes=size))
+    call = L.CallOp(
+        external.c_name,
+        (
+            values,
+            operands,
+            L.Symbol("NULL", dtype=L.DataType.SCALAR),
+            *_kernel_arguments(kernel, backend, side),
+        ),
+        generated=False,
+    )
+    return values, [L.Statement(call)]
 
 
 def _shift(pointer: L.Symbol, offset: int) -> L.LExpr:
@@ -139,7 +197,7 @@ def _shift(pointer: L.Symbol, offset: int) -> L.LExpr:
     return pointer if offset == 0 else L.Add(pointer, offset)
 
 
-def _num_coordinate_dofs(kernel: InterpolationKernelIR, backend: FFCXBackend) -> int:
+def _num_coordinate_dofs(kernel: SubKernelIR, backend: FFCXBackend) -> int:
     """The number of entries of `coordinate_dofs` for one cell, three per node.
 
     The layout is that of the calling kernel, whose integration domain differs
@@ -147,16 +205,14 @@ def _num_coordinate_dofs(kernel: InterpolationKernelIR, backend: FFCXBackend) ->
     """
     element = backend.access.integration_domain_coordinate_element
     if element is None:
-        domain = ufl.domain.extract_unique_domain(kernel.interpolation)
+        domain = ufl.domain.extract_unique_domain(kernel.target)
         assert isinstance(domain, ufl.Mesh)
         element = domain.ufl_coordinate_element()
     assert isinstance(element, basix.ufl._ElementBase)
     return 3 * int(element.basix_element.dim)
 
 
-def _proxy_coefficients(
-    kernels: list[InterpolationKernelIR], backend: FFCXBackend
-) -> list[L.LNode]:
+def _proxy_coefficients(kernels: list[SubKernelIR], backend: FFCXBackend) -> list[L.LNode]:
     """Generate the degrees of freedom of the proxy coefficients.
 
     They are written where they are read from, see
@@ -173,10 +229,14 @@ def _proxy_coefficients(
 
     parts: list[L.LNode] = [L.ArrayDecl(pw, sizes=size)]
     for i, kernel in enumerate(kernels):
-        proxy = typing.cast("ProxyCoefficient", kernel.interpolation)
+        proxy = kernel.target
+        assert isinstance(proxy, ProxyCoefficient)
         for side in range(sides):
             label = f"proxy{i}" if side == 0 else f"proxy{i}_{side}"
             values, declarations, statements = _call_kernel(kernel, label, backend, side)
+            if proxy.external is not None:
+                values, call = _call_external(kernel, values, label, backend, side, declarations)
+                statements += call
             offset = offsets[proxy] + side * proxy.ufl_element().dim
             statements += _interpolate(proxy, values, pw, offset, label, declarations)
             parts.append(
@@ -237,7 +297,7 @@ def _interpolate(
 
 
 def _interpolated_tables(
-    kernels: list[InterpolationKernelIR],
+    kernels: list[SubKernelIR],
     backend: FFCXBackend,
     interpolated_tables: dict[str, InterpolatedTableT],
 ) -> list[L.LNode]:
@@ -254,10 +314,10 @@ def _interpolated_tables(
     parts: list[L.LNode] = []
     evaluated = {}
     for i, kernel in enumerate(kernels):
-        if kernel.interpolation not in needed:
+        if kernel.target not in needed:
             continue
         values, declarations, statements = _call_kernel(kernel, f"interpolation{i}", backend)
-        evaluated[kernel.interpolation] = (values, kernel.shape)
+        evaluated[kernel.target] = (values, kernel.shape)
         parts.append(
             L.Section(
                 f"Evaluate interpolated expression {i}",

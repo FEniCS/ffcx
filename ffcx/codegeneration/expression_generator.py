@@ -15,7 +15,7 @@ import ufl
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.interpolation import generate_interpolations
+from ffcx.codegeneration.interpolation import generate_sub_kernels
 from ffcx.codegeneration.lnodes import LNode
 from ffcx.ir.representation import ExpressionIR
 
@@ -50,10 +50,10 @@ class ExpressionGenerator:
             self.ir.expression.integration_domain_coordinate_element,
         )
 
-        # Evaluate the interpolations, for the proxy coefficients and the
-        # element tables that are built for each cell
-        parts += generate_interpolations(
-            self.ir.interpolation,
+        # Call the sub-kernels, for the proxy coefficients and the element
+        # tables that are built for each cell
+        parts += generate_sub_kernels(
+            self.ir.sub_kernels,
             self.backend,
             self.ir.expression.interpolated_tables.get(self.quadrature_rule[0], {}),
         )
@@ -79,7 +79,7 @@ class ExpressionGenerator:
 
         tables = self.ir.expression.unique_tables[self.quadrature_rule[0]]
         # Tables built for each cell are declared and filled by
-        # `generate_interpolations` instead.
+        # `generate_sub_kernels` instead.
         interpolated = self.ir.expression.interpolated_tables.get(self.quadrature_rule[0], {})
         table_names = sorted(name for name in tables if name not in interpolated)
 

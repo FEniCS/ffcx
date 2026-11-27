@@ -34,6 +34,9 @@ def compute_signature(
         if isinstance(ufl_object, ufl.Form):
             kind = "form"
             object_signature += ufl_object.signature()
+            object_signature += _external_signature(
+                [integral.integrand() for integral in ufl_object.integrals()]
+            )
         elif isinstance(ufl_object, tuple) and isinstance(ufl_object[0], ufl.core.expr.Expr):
             expr = ufl_object[0]
             points = ufl_object[1]
@@ -65,6 +68,7 @@ def compute_signature(
             signature = ufl.algorithms.signature.compute_expression_signature(expr, rn)
             object_signature += signature
             object_signature += repr(points)
+            object_signature += _external_signature([expr])
 
             kind = "expression"
         else:
@@ -83,6 +87,26 @@ def compute_signature(
     ]
     string = ";".join(signatures)
     return hashlib.sha1(string.encode("utf-8")).hexdigest()
+
+
+def _external_signature(expressions: list[ufl.core.expr.Expr]) -> str:
+    """What the code generated for some expressions depends on in their external operators.
+
+    UFL's signature of a base form operator only covers its operands, which
+    leaves out the function that evaluates it and the space it is a function
+    of.
+    """
+    from ufl.corealg.traversal import unique_pre_traversal
+
+    from ffcx.codegeneration.C.external import signature
+
+    data = {
+        f"{node.ufl_element()!r};{node.derivatives};{signature(node)}"
+        for expression in expressions
+        for node in unique_pre_traversal(expression)
+        if isinstance(node, ufl.ExternalOperator)
+    }
+    return "".join(sorted(data))
 
 
 def integral_name(

@@ -23,7 +23,7 @@ import ufl
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.definitions import create_dof_index, create_quadrature_index
-from ffcx.codegeneration.interpolation import generate_interpolations
+from ffcx.codegeneration.interpolation import generate_sub_kernels
 from ffcx.codegeneration.optimizer import (
     expr_key,
     optimize,
@@ -287,10 +287,10 @@ class IntegralGenerator:
         all_preparts = []
         all_quadparts = []
 
-        # Evaluate the interpolations, for the proxy coefficients and the
-        # element tables that are built for each cell
-        all_preparts += generate_interpolations(
-            self.ir.interpolation,
+        # Call the sub-kernels, for the proxy coefficients and the element
+        # tables that are built for each cell
+        all_preparts += generate_sub_kernels(
+            self.ir.sub_kernels,
             self.backend,
             self.ir.expression.interpolated_tables.get(domain, {}),
         )
@@ -355,7 +355,7 @@ class IntegralGenerator:
         tables = self.ir.expression.unique_tables[domain]
         table_types = self.ir.expression.unique_table_types[domain]
         # Tables built for each cell are declared and filled by
-        # `generate_interpolations` instead.
+        # `generate_sub_kernels` instead.
         interpolated = self.ir.expression.interpolated_tables.get(domain, {})
         if self.ir.expression.integral_type in ufl.custom_integral_types:
             # Define only piecewise tables
